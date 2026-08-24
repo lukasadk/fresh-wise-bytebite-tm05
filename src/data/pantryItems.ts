@@ -108,9 +108,15 @@ export function formatQuantity(item: Pick<PantryItem, 'quantity' | 'unit'>): str
 // current day instead of from the purchase day.
 
 // Parses the app's display date format ('16 Aug 2026') back into a Date.
+// Deliberately avoids `new Date(someString)` — non-ISO string parsing is implementation-defined
+// by the JS spec, and Hermes (the engine Expo/React Native uses on-device) doesn't parse
+// "Aug 16, 2026"-style strings the same way V8/Node does, silently producing an Invalid Date
+// (which is why this showed up as "NaN days" only on-device, never during the Node type-check).
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 function parseDisplayDate(display: string): Date {
   const [day, month, year] = display.split(' ');
-  return new Date(`${month} ${day}, ${year}`);
+  return new Date(Number(year), MONTHS.indexOf(month), Number(day));
 }
 
 function daysBetween(from: Date, to: Date): number {
