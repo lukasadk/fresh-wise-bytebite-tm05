@@ -1,0 +1,75 @@
+// Design tokens extracted directly from the Figma file (colors, radii, spacing, type).
+// Keep this file as the single source of truth — never hardcode a hex value in a screen/component.
+
+export const colors = {
+  background: '#FCF9F2',
+  card: '#FFFFFF',
+
+  primary: '#1F7A42',
+  primaryDark: '#13331E',
+  primaryPale: '#C7EDD1', // active nav tab bg / light pill
+  primaryTint: '#E4F6EA', // stat card bg
+  primaryTint2: '#E5F7EB', // food row bg
+
+  textPrimary: '#13331E',
+  textSecondary: '#63706B',
+  border: '#D6E0D6',
+  borderSoft: '#CFE5D6',
+  borderFilter: '#D9E5DC',
+
+  white: '#FFFFFF',
+
+  // Expiry pill states
+  expiryUrgentBg: '#FDE8E1',
+  expiryUrgentText: '#B9472E',
+  expiryWarnBg: '#FFE7A3',
+  expiryWarnText: '#6F5600',
+  expirySafeBg: '#C1EFCD',
+  expirySafeText: '#1F7A42',
+
+  // Alert banner
+  alertBg: '#FFD0C1',
+  alertBorder: '#F3C7BC',
+  alertIcon: '#D9603B',
+  alertTitle: '#6F2B21',
+  alertBody: '#7B5A54',
+
+  foodIconBg: '#F4FBF6',
+} as const;
+
+export const radii = {
+  sm: 12,
+  md: 16,
+  lg: 20,
+  xl: 26,
+  xxl: 28,
+  pill: 999,
+} as const;
+
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+} as const;
+
+// Font family names as registered via expo-google-fonts. Load these in App.tsx with useFonts().
+export const fonts = {
+  serif: 'DMSerifDisplay_400Regular',
+  regular: 'Inter_400Regular',
+  semibold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+} as const;
+
+export const fontSize = {
+  xs: 11,
+  sm: 12,
+  base: 13,
+  md: 14,
+  lg: 15,
+  title: 16,
+  heading: 20,
+  display: 31,
+} as const;
