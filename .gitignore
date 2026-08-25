@@ -1,34 +1,51 @@
-# Dependencies
+# ---------------------------------------------------------------
+# FreshWise -- single .gitignore for the whole repo (mobile + backend)
+# Keep all rules here. Do not add per-folder .gitignore files.
+# ---------------------------------------------------------------
+
+# --- Dependencies -----------------------------------------------
 node_modules/
 
-# Expo
+# --- Expo / React Native ----------------------------------------
 .expo/
 .expo-shared/
-
-# Expo build output
 dist/
 web-build/
-
-# Native build files
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
 
-# Environment variables
+# --- Python / FastAPI backend -----------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Environment & secrets --------------------------------------
+# .env.example IS tracked; real .env files never are.
 .env
 .env.local
 .env.*.local
 
-# Logs
+# --- Logs -------------------------------------------------------
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# OS files
+# --- OS ---------------------------------------------------------
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# IDE
+# --- Editors / IDE ----------------------------------------------
 .vscode/
+.idea/
+*.swp
