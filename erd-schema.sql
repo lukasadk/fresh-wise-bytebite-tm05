@@ -10,13 +10,21 @@
 -- personal information: no name, email, phone number, street
 -- address, or password/credential material anywhere below.
 --
---   * Authentication (email/password, OAuth, etc.) is assumed to
---     live entirely OUTSIDE this database, in an identity
---     provider such as Supabase Auth / Firebase Auth / Auth0.
---     `user_profile.user_id` is just the opaque UUID that
---     provider issues per account -- this app DB never sees or
---     stores the credential itself.
---   * `location` is a coarse, self-selected region string
+--   * There is no login, account, email, or password anywhere in
+--     this app at all -- not even held by an external identity
+--     provider. `user_profile.user_id` is a random UUID the client
+--     device generates itself on first launch (e.g. a locally
+--     generated crypto.randomUUID()) and persists on-device; the
+--     backend simply accepts whatever UUID the device presents.
+--     No signup flow and no credential of any kind is collected or
+--     stored, on this DB or anywhere else in the app.
+--     NOTE: this is a device-only identity by design -- it is not
+--     synced across devices or reinstalls. A reinstall or a new
+--     device gets a fresh UUID and starts an unrelated profile.
+--     If cross-device recovery is ever wanted later, it should use
+--     a random, non-identifying recovery code -- not an email- or
+--     phone-based one.
+--   * `location` is a coarse, self-selected, OPTIONAL region string
 --     (e.g. a Malaysian state/city, "Selangor"), not a street
 --     address or GPS coordinate -- keep it to a controlled list
 --     in the application layer so it can't drift into a free-text
@@ -50,12 +58,15 @@
 CREATE TYPE risk_level AS ENUM ('low', 'med', 'high');
 
 -- User_Profile
--- One row per app account. No name/email/password: those live in
--- the external auth provider, keyed by the same UUID.
+-- One row per anonymous device identity -- not an "account" in the
+-- login sense. user_id is a UUID the client app generates itself on
+-- first launch and sends as-is; the DEFAULT below is only a safety
+-- net for a server-side insert that omits it, not the normal path.
+-- No name, email, password, or any credential exists anywhere.
 CREATE TABLE user_profile (
     user_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     household_size  INT NOT NULL CHECK (household_size > 0),
-    location        VARCHAR(50),        -- coarse region only, e.g. state/city
+    location        VARCHAR(50),        -- optional, self-selected coarse region (state/city)
     risk_score      risk_level NOT NULL DEFAULT 'low',
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -123,15 +134,28 @@ CREATE INDEX idx_log_logged_at ON consumption_waste_log(logged_at);
 
 -- Diet_Preference
 -- "someone wants more protein, others don't" -- per-user filter,
--- identified only by the anonymous user_id. Tags/values are not
--- personal data on their own (they describe a diet, not a person).
+-- identified only by the anonymous user_id. Nutrient/macro and general
+-- lifestyle tags (high-protein, low-carb, vegetarian, gluten-free, ...)
+-- are fine here. Religion-linked dietary-law tags (halal, kosher, ...)
+-- are deliberately NOT allowed to be saved against a user_id -- doing so
+-- would persist a proxy for religious affiliation tied to an identifier,
+-- which this project's PII policy rules out under "Private: religion",
+-- even though the identifier itself is anonymous. Those filters can
+-- still be applied ad hoc in the app UI by querying recipe.diet_tags
+-- directly (recipes ARE fine to tag halal-friendly -- that's a property
+-- of the food, not a fact about a person) -- they just never get written
+-- to this table. The CHECK below enforces that at the DB level so it
+-- can't be violated by a future app-layer bug; extend the list if more
+-- religion/ethnicity-linked tags come up.
 CREATE TABLE diet_preference (
     preference_id   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id         UUID NOT NULL REFERENCES user_profile(user_id) ON DELETE CASCADE,
-    tag             TEXT NOT NULL,       -- e.g. 'high-protein', 'vegetarian', 'halal'
+    tag             TEXT NOT NULL,       -- e.g. 'high-protein', 'vegetarian', 'low-sodium'
     target_value    NUMERIC,             -- optional, e.g. grams of protein/day
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (user_id, tag)
+    UNIQUE (user_id, tag),
+    CONSTRAINT diet_preference_tag_not_religion_linked
+        CHECK (lower(tag) NOT IN ('halal', 'kosher', 'jain', 'hindu-vegetarian', 'buddhist-vegetarian'))
 );
 
 -- Recipe
