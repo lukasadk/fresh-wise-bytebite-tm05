@@ -29,7 +29,6 @@ env/
 .ruff_cache/
 
 # --- Environment & secrets --------------------------------------
-# .env.example IS tracked; real .env files never are.
 .env
 .env.local
 .env.*.local
