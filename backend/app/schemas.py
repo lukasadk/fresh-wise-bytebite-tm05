@@ -49,6 +49,9 @@ class UserProfileUpdate(BaseModel):
 
 FoodItemStatus = Literal["active", "consumed", "wasted", "partially_used"]
 FoodItemSource = Literal["manual", "barcode", "photo"]
+# Where the household keeps the item (their choice), NOT the FoodKeeper
+# recommendation -- that is reference data, served from /v1/reference/foodkeeper.
+FoodItemStorage = Literal["refrigerated", "frozen", "room_temp"]
 
 # Statuses a client may set directly via PATCH /v1/pantry/{id}.
 # 'consumed' and 'wasted' are deliberately EXCLUDED: reaching either of those
@@ -69,6 +72,7 @@ class FoodItemCreate(BaseModel):
     purchase_date: date | None = None
     expiry_date: date | None = None
     source: FoodItemSource = "manual"
+    storage: FoodItemStorage | None = None
 
 
 class FoodItemUpdate(BaseModel):
@@ -78,6 +82,7 @@ class FoodItemUpdate(BaseModel):
     unit: str | None = Field(default=None, max_length=20)
     expiry_date: date | None = None
     status: FoodItemPatchableStatus | None = None
+    storage: FoodItemStorage | None = None
 
 
 class FoodItemOut(BaseModel):
@@ -95,6 +100,7 @@ class FoodItemOut(BaseModel):
     expiry_date: date | None
     source: FoodItemSource
     status: FoodItemStatus
+    storage: FoodItemStorage | None
     created_at: datetime
     # Derived, not stored -- the pantry router fills this in from expiry_date.
     days_to_expiry: int | None = None

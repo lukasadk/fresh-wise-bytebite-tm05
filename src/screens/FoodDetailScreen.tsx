@@ -1,18 +1,112 @@
-import React from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import { foodIconFor } from '../icons/FoodIcons';
-import { Refrigerator, Sparkles, ArrowRight } from '../icons/NavIcons';
-import { getPantryItemById, formatQuantity, getExpiryInfo } from '../data/pantryItems';
+import { Refrigerator, Snowflake, Sun, Sparkles, ArrowRight } from '../icons/NavIcons';
+import { usePantryItem, formatQuantity, getExpiryInfo, formatDisplayDate } from '../data/pantryItems.api';
+import { lookupStorage } from '../api/freshwise';
+import type { FoodkeeperStorage } from '../api/types';
+
+type IconComponent = typeof Refrigerator;
+
+// The user's own storage choice, rendered back in human words. Separate from
+// the FoodKeeper *guidance* below -- this is where they said they put it.
+const STORAGE_LABELS: Record<string, string> = {
+  refrigerated: 'Refrigerated',
+  frozen: 'Frozen',
+  room_temp: 'Room temperature',
+};
+
+type StorageGuidance = {
+  Icon: IconComponent;
+  title: string;
+  body: string;
+  // AC 2.3.3: refrigerate = Slate Teal snowflake, freeze = dark Slate Teal
+  // ice-crystal, room temperature = Amber Gold sun.
+  color: string;
+};
+
+// Reference lookup only -- see the Epic 2.3 note: this is the "recommended
+// storage guidance" ACs 2.3.1-2.3.3 actually describe (FoodKeeper data,
+// joined via canonical_food_name), not the user's own Refrigerated/Frozen/
+// Room-temp pick from AddFoodScreen, which the backend doesn't persist yet.
+function pickGuidance(rows: FoodkeeperStorage[]): StorageGuidance | null {
+  const row = rows[0];
+  if (!row) return null;
+  if (row.refrigerate_tips || row.refrigerate_min != null) {
+    return {
+      Icon: Snowflake,
+      title: 'Refrigerate',
+      body: row.refrigerate_tips || 'Keep refrigerated.',
+      color: colors.slateTeal,
+    };
+  }
+  if (row.freeze_tips || row.freeze_min != null) {
+    return {
+      Icon: Refrigerator,
+      title: 'Freeze',
+      body: row.freeze_tips || 'Suitable for freezing.',
+      color: colors.slateTealDark,
+    };
+  }
+  if (row.pantry_tips || row.pantry_min != null) {
+    return {
+      Icon: Sun,
+      title: 'Room temperature',
+      body: row.pantry_tips || 'Store at room temperature.',
+      color: colors.statusSoon,
+    };
+  }
+  return null;
+}
 
 export default function FoodDetailScreen({ navigation, route }: any) {
-  // Falls back to 'milk' so the screen still renders something sensible if it's ever
-  // opened without an id (e.g. while wiring up a new entry point during development).
-  const item = getPantryItemById(route?.params?.id) ?? getPantryItemById('milk')!;
+  const id = route?.params?.id as string | undefined;
+  const { item, loading, error } = usePantryItem(id);
+
+  const [guidance, setGuidance] = useState<StorageGuidance | null>(null);
+  const [guidanceChecked, setGuidanceChecked] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    setGuidance(null);
+    setGuidanceChecked(false);
+    if (!item?.canonicalFoodName) {
+      setGuidanceChecked(true);
+      return;
+    }
+    lookupStorage(item.canonicalFoodName)
+      .then((rows) => alive && setGuidance(pickGuidance(rows)))
+      .catch(() => alive && setGuidance(null))
+      .finally(() => alive && setGuidanceChecked(true));
+    return () => {
+      alive = false;
+    };
+  }, [item?.canonicalFoodName]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !item) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.content}>
+          <BackButton onPress={() => navigation.goBack()} />
+          <Text style={styles.name}>{error ?? 'Item not found'}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const Icon = foodIconFor(item.name);
-  const expiry = getExpiryInfo(item.purchasedDate, item.expiryDate);
+  const expiry = getExpiryInfo(item);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -49,33 +143,38 @@ export default function FoodDetailScreen({ navigation, route }: any) {
         <View style={styles.detailsCard}>
           <DetailRow label="Quantity" value={formatQuantity(item)} />
           <View style={styles.divider} />
-          <DetailRow label="Purchased" value={item.purchasedDate} />
+          <DetailRow label="Purchased" value={formatDisplayDate(item.purchaseDate)} />
           <View style={styles.divider} />
-          <DetailRow label="Expires" value={item.expiryDate} />
+          <DetailRow label="Expires" value={formatDisplayDate(item.expiryDate)} />
+          <View style={styles.divider} />
+          <DetailRow
+            label="Stored in"
+            value={item.storage ? STORAGE_LABELS[item.storage] ?? item.storage : 'Not specified'}
+          />
         </View>
 
         <Text style={styles.sectionTitle}>Storage guidance</Text>
         <View style={styles.guidanceCard}>
           <View style={styles.guidanceRow}>
             <View style={styles.guidanceIcon}>
-              <Refrigerator size={20} color={colors.primary} strokeWidth={2} />
+              {guidance ? (
+                <guidance.Icon size={20} color={guidance.color} strokeWidth={2} />
+              ) : (
+                <Sparkles size={16} color={colors.primary} />
+              )}
             </View>
             <View style={styles.guidanceText}>
-              <Text style={styles.guidanceTitle}>{item.storage}</Text>
-              <Text style={styles.guidanceBody}>{item.storageGuidance}</Text>
+              <Text style={[styles.guidanceTitle, guidance ? { color: guidance.color } : null]}>
+                {guidance ? guidance.title : guidanceChecked ? 'No guidance on file yet' : 'Looking up guidance…'}
+              </Text>
+              <Text style={styles.guidanceBody}>
+                {guidance
+                  ? guidance.body
+                  : item.canonicalFoodName
+                    ? "We don't have storage guidance for this item yet."
+                    : "This item has no reference food name set, so guidance can't be looked up."}
+              </Text>
             </View>
-          </View>
-
-          <View style={styles.guidanceDivider} />
-
-          <View style={styles.tipRow}>
-            <View style={styles.tipIcon}>
-              <Sparkles size={12} color={colors.primary} />
-            </View>
-            <Text style={styles.tipText}>
-              <Text style={styles.tipLabel}>Tip: </Text>
-              {item.storageTip}
-            </Text>
           </View>
         </View>
 
@@ -240,10 +339,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     lineHeight: 18,
   },
-  guidanceDivider: {
-    height: 1,
-    backgroundColor: colors.borderSoft,
-  },
   outcomeLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -255,29 +350,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 14,
     color: colors.primary,
-  },
-  tipRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  tipIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-  },
-  tipText: {
-    flex: 1,
-    fontFamily: fonts.regular,
-    fontSize: 13,
-    color: colors.textPrimary,
-    lineHeight: 18,
-  },
-  tipLabel: {
-    fontFamily: fonts.bold,
   },
 });

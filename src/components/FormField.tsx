@@ -10,7 +10,10 @@ import {
   Platform,
   StyleSheet,
 } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker, {
+  DateTimePickerAndroid,
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import { ChevronDown, Check, Calendar } from '../icons/NavIcons';
 
@@ -107,22 +110,59 @@ type DateFieldProps = {
   minimumDate?: Date;
 };
 
-// Opens the platform's native calendar instead of free-text entry: a tap-to-open dialog
-// on Android, an inline calendar sheet (with a Done button) on iOS.
+/** Strip the time component. Every date in this app is a calendar day, but
+ *  `new Date()` carries the current clock time -- which made "today" compare as
+ *  LATER than a minimumDate of "today", the kind of off-by-a-few-hours that
+ *  crashes the Android dialog (see below). */
+function startOfDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** Android's native DatePickerDialog throws IllegalArgumentException -- a hard
+ *  crash, not a JS error -- if its initial value sits outside [min, max]. The
+ *  expiry field passes minimumDate={purchaseDate}, so opening it with today's
+ *  date after back-dating a purchase would do exactly that. Clamp first. */
+function clampToRange(d: Date, min?: Date, max?: Date): Date {
+  let out = d;
+  if (min && out.getTime() < min.getTime()) out = min;
+  if (max && out.getTime() > max.getTime()) out = max;
+  return out;
+}
+
+// Opens the platform's native calendar instead of free-text entry.
+//
+// Android uses the IMPERATIVE DateTimePickerAndroid.open() dialog rather than
+// rendering <DateTimePicker> into the tree. That's what the library itself
+// recommends: the picker is a dialog (like Alert), the imperative API models
+// that better, and per its README the component approach "appears to be more
+// prone to introducing bugs". iOS keeps the inline calendar sheet, where the
+// component API is the right one.
 export function DateField({ value, onChange, placeholder = 'Select date', maximumDate, minimumDate }: DateFieldProps) {
   const [open, setOpen] = useState(false);
   const [draftDate, setDraftDate] = useState(value ?? new Date());
 
-  const openPicker = () => {
-    setDraftDate(value ?? new Date());
-    setOpen(true);
-  };
+  const min = minimumDate ? startOfDay(minimumDate) : undefined;
+  const max = maximumDate ? startOfDay(maximumDate) : undefined;
 
-  const handleAndroidChange = (event: DateTimePickerEvent, selected?: Date) => {
-    setOpen(false);
-    if (event.type === 'set' && selected) {
-      onChange(selected);
+  const openPicker = () => {
+    const initial = clampToRange(startOfDay(value ?? new Date()), min, max);
+
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: initial,
+        mode: 'date',
+        display: 'calendar',
+        minimumDate: min,
+        maximumDate: max,
+        onChange: (event: DateTimePickerEvent, selected?: Date) => {
+          if (event.type === 'set' && selected) onChange(selected);
+        },
+      });
+      return;
     }
+
+    setDraftDate(initial);
+    setOpen(true);
   };
 
   return (
@@ -134,43 +174,44 @@ export function DateField({ value, onChange, placeholder = 'Select date', maximu
         <Calendar size={18} color={colors.textSecondary} />
       </Pressable>
 
-      {open && Platform.OS === 'android' && (
-        <DateTimePicker
-          value={draftDate}
-          mode="date"
-          display="calendar"
-          maximumDate={maximumDate}
-          minimumDate={minimumDate}
-          onChange={handleAndroidChange}
-        />
-      )}
+      {/* iOS: expand the picker IN PLACE. Two deliberate changes from the
+          previous version, both iOS-only crash risks that Android never hit:
 
-      {Platform.OS === 'ios' && (
-        <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-          <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-            <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-              <View style={styles.sheetHandle} />
-              <DateTimePicker
-                value={draftDate}
-                mode="date"
-                display="inline"
-                maximumDate={maximumDate}
-                minimumDate={minimumDate}
-                onChange={(_, selected) => selected && setDraftDate(selected)}
-                style={styles.iosPicker}
-              />
-              <Pressable
-                style={styles.doneButton}
-                onPress={() => {
-                  onChange(draftDate);
-                  setOpen(false);
-                }}
-              >
-                <Text style={styles.doneButtonText}>Done</Text>
-              </Pressable>
+          1. No react-native <Modal>. AddFoodScreen is itself presented as a
+             native-stack modal (see App.tsx), and nesting an RN Modal inside
+             a native modal screen is a well-known source of iOS breakage.
+          2. display="spinner" rather than "inline". The spinner is the most
+             broadly compatible iOS mode and needs no explicit height, whereas
+             the inline calendar is size-sensitive.
+
+          Once the real cause is confirmed we can move back to the inline
+          calendar, which looks closer to the Figma design. */}
+      {open && Platform.OS === 'ios' && (
+        <View style={styles.iosPickerCard}>
+          <DateTimePicker
+            value={draftDate}
+            mode="date"
+            display="spinner"
+            maximumDate={max}
+            minimumDate={min}
+            onChange={(_, selected) => selected && setDraftDate(selected)}
+            style={styles.iosPicker}
+          />
+          <View style={styles.iosPickerActions}>
+            <Pressable style={styles.cancelButton} onPress={() => setOpen(false)}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
             </Pressable>
-          </Pressable>
-        </Modal>
+            <Pressable
+              style={styles.doneButton}
+              onPress={() => {
+                onChange(draftDate);
+                setOpen(false);
+              }}
+            >
+              <Text style={styles.doneButtonText}>Done</Text>
+            </Pressable>
+          </View>
+        </View>
       )}
     </>
   );
@@ -254,9 +295,35 @@ const styles = StyleSheet.create({
   iosPicker: {
     alignSelf: 'center',
   },
+  iosPickerCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    padding: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  iosPickerActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  cancelButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  cancelButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.textPrimary,
+  },
   doneButton: {
-    marginTop: spacing.md,
-    alignSelf: 'stretch',
+    flex: 1,
     alignItems: 'center',
     paddingVertical: spacing.md,
     borderRadius: radii.pill,

@@ -1,14 +1,27 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { Field, TextField, SelectField, DateField } from '../components/FormField';
 import { FilterPill } from '../components/PantryControls';
+import { addPantryItem, toStorage } from '../api/freshwise';
+import { ApiError } from '../api/client';
 
 const CATEGORIES = ['Dairy', 'Protein', 'Vegetables', 'Fruit', 'Pantry', 'Frozen', 'Beverages', 'Other'];
 const STORAGE_OPTIONS = ['Refrigerated', 'Frozen', 'Room temp'] as const;
+
+// ISO ("2026-08-27") is what the API expects -- new Date(str) parsing is
+// implementation-defined across engines, so build the string by hand here too
+// rather than relying on toISOString() (which is UTC and can shift the date
+// by a day near midnight in local time).
+function toIsoDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 export default function AddFoodScreen({ navigation }: any) {
   const [name, setName] = useState('');
@@ -18,10 +31,37 @@ export default function AddFoodScreen({ navigation }: any) {
   const [purchaseDate, setPurchaseDate] = useState<Date | null>(null);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
   const [storage, setStorage] = useState<(typeof STORAGE_OPTIONS)[number]>('Refrigerated');
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    // TODO: POST to the FastAPI backend (see architecture doc: `POST /pantry`) once it's wired up.
-    navigation.goBack();
+  const handleSave = async () => {
+    const qty = Number(quantity);
+    if (!name.trim() || !category || !unit.trim() || !expiryDate || !qty || qty <= 0) {
+      Alert.alert(
+        'Missing information',
+        'Food name, category, quantity, unit, and expiry date are all required.',
+      );
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await addPantryItem({
+        name: name.trim(),
+        category,
+        quantity: qty,
+        unit: unit.trim(),
+        purchase_date: purchaseDate ? toIsoDate(purchaseDate) : undefined,
+        expiry_date: toIsoDate(expiryDate),
+        source: 'manual',
+        storage: toStorage(storage),
+      });
+      navigation.goBack();
+    } catch (e) {
+      const message = e instanceof ApiError ? e.message : "Couldn't save this item. Please try again.";
+      Alert.alert("Couldn't save", message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -82,7 +122,11 @@ export default function AddFoodScreen({ navigation }: any) {
         </Field>
 
         <View style={styles.actions}>
-          <Button label="Save to pantry" onPress={handleSave} style={styles.fullWidthButton} />
+          <Button
+            label={saving ? 'Saving…' : 'Save to pantry'}
+            onPress={saving ? undefined : handleSave}
+            style={styles.fullWidthButton}
+          />
           <Button
             label="Cancel"
             variant="danger"

@@ -1,22 +1,26 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { Check } from '../icons/NavIcons';
-import { getPantryItemById, formatQuantity } from '../data/pantryItems';
+import { usePantryItem } from '../data/pantryItems.api';
 
 function formatAmount(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
 export default function WasteRecordedScreen({ navigation, route }: any) {
-  const item = getPantryItemById(route?.params?.id) ?? getPantryItemById('milk')!;
+  const id = route?.params?.id as string | undefined;
+  const { item, loading } = usePantryItem(id);
   const wastedQty: number = route?.params?.wastedQty ?? 0;
   const reason: string = route?.params?.reason ?? 'Other';
 
-  const remaining = Math.max(0, item.quantity - wastedQty);
+  // The item was just logged against on the previous screen, so its
+  // `quantity` already IS what's left -- the backend decremented it in the
+  // same transaction as the log write. No local subtraction needed here.
+  const remaining = item?.quantity ?? 0;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -33,15 +37,23 @@ export default function WasteRecordedScreen({ navigation, route }: any) {
         <Text style={styles.savedTitle}>Waste record saved!</Text>
         <Text style={styles.savedSubtitle}>Your pantry has been updated.</Text>
 
-        <View style={styles.remainingCard}>
-          <Text style={styles.itemName}>{item.name}</Text>
-          <Text style={styles.cardLabel}>Remaining in pantry</Text>
-          <Text style={styles.cardValue}>{formatAmount(remaining)} {item.unit}</Text>
-        </View>
+        {loading ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : (
+          <View style={styles.remainingCard}>
+            <Text style={styles.itemName}>{item?.name ?? ''}</Text>
+            <Text style={styles.cardLabel}>Remaining in pantry</Text>
+            <Text style={styles.cardValue}>
+              {formatAmount(remaining)} {item?.unit ?? ''}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.wastedCard}>
           <Text style={styles.cardLabel}>Waste recorded</Text>
-          <Text style={styles.cardValue}>{formatAmount(wastedQty)} {item.unit}</Text>
+          <Text style={styles.cardValue}>
+            {formatAmount(wastedQty)} {item?.unit ?? ''}
+          </Text>
           <Text style={styles.reasonText}>Reason: {reason}</Text>
         </View>
 

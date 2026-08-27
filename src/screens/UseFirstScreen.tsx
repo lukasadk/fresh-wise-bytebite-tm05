@@ -1,59 +1,138 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
 import FoodRow from '../components/FoodRow';
-import { MilkIcon } from '../icons/FoodIcons';
-import { ArrowRight } from '../icons/NavIcons';
-import { getPantryItemById, getExpiryInfo } from '../data/pantryItems';
+import { foodIconFor } from '../icons/FoodIcons';
+import { usePantry, getExpiryInfo, PantryItem } from '../data/pantryItems.api';
 
-const UP_NEXT_IDS = ['chicken-breast', 'spinach', 'tomatoes'];
+// AC 2.2.4 -- the three bands, in priority order. Boundaries match
+// getExpiryInfo()/ExpiryPill exactly (Coral Red is 0-days/expired only), so a
+// row's badge colour can never disagree with the section it sits under.
+const SECTIONS = [
+  {
+    key: 'today',
+    title: 'Use Today',
+    color: colors.statusToday,
+    blurb: 'Expired or expiring today.',
+    match: (days: number | null) => days !== null && days <= 0,
+  },
+  {
+    key: 'soon',
+    title: 'Use Soon',
+    color: colors.statusSoon,
+    blurb: 'Expiring in the next three days.',
+    match: (days: number | null) => days !== null && days >= 1 && days <= 3,
+  },
+  {
+    key: 'fresh',
+    title: 'Fresh',
+    color: colors.statusFresh,
+    blurb: 'Plenty of time — no action needed yet.',
+    // Items with no expiry date land here rather than being dropped from the
+    // screen entirely. The API already sorts them last (NULLS LAST).
+    match: (days: number | null) => days === null || days > 3,
+  },
+] as const;
 
 export default function UseFirstScreen({ navigation }: any) {
+  // Every item, not just the expiring ones -- the "Fresh" band needs the rest
+  // of the pantry to have anything to show. The API returns them already
+  // ordered by expiry date ascending, so each bucket stays nearest-first
+  // without re-sorting here.
+  const { items, loading, error, refresh } = usePantry();
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
+
+  // The single most urgent item gets the hero treatment and is then EXCLUDED
+  // from its section below, so nothing appears on this screen twice.
+  const priority: PantryItem | undefined = items[0];
+
+  const buckets = useMemo(() => {
+    const rest = items.slice(1);
+    return SECTIONS.map((section) => ({
+      ...section,
+      items: rest.filter((item) => section.match(item.daysToExpiry)),
+    }));
+  }, [items]);
+
+  const heroExpiry = priority ? getExpiryInfo(priority) : null;
+  const HeroIcon = priority ? foodIconFor(priority.name) : null;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Use First</Text>
         <Text style={styles.subtitle}>Prioritised by expiry so nothing gets forgotten.</Text>
 
-        {/* Priority hero */}
-        <View style={styles.hero}>
-          <View style={styles.heroTopRow}>
-            <Text style={styles.heroEyebrow}>TODAY'S PRIORITY</Text>
-            <View style={styles.heroIcon}>
-              <MilkIcon size={58} />
-            </View>
+        {loading && items.length === 0 ? (
+          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+        ) : error ? (
+          <View style={styles.messageCard}>
+            <Text style={styles.messageTitle}>Can't reach the API</Text>
+            <Text style={styles.messageBody}>{error}</Text>
           </View>
-          <Text style={styles.heroTitle}>Milk</Text>
-          <Text style={styles.heroSubtitle}>Expires tomorrow</Text>
-          <Text style={styles.heroBody}>Perfect for breakfast, baking, or a creamy soup.</Text>
-          <View style={styles.heroBottomRow}>
-            <Button label="See recipe" variant="onDark" />
-            <View style={styles.swipeHint}>
-              <Text style={styles.swipeHintText}>Swipe to manage</Text>
-              <ArrowRight size={14} color="#D1EDD9" />
-            </View>
+        ) : !priority || !HeroIcon ? (
+          <View style={styles.messageCard}>
+            <Text style={styles.messageTitle}>Nothing to prioritise</Text>
+            <Text style={styles.messageBody}>
+              Your pantry is empty — add food to see what needs using first.
+            </Text>
           </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>Up next</Text>
-        <View style={{ gap: spacing.md }}>
-          {UP_NEXT_IDS.map(getPantryItemById).map((item) => {
-            if (!item) return null;
-            const expiry = getExpiryInfo(item.purchasedDate, item.expiryDate);
-            return (
-              <FoodRow
-                key={item.id}
-                name={item.name}
-                subtitle={item.storage}
-                expiryLabel={expiry.rowExpiryLabel}
-                expiryLevel={expiry.expiryLevel}
-                onPress={() => navigation.navigate('FoodDetail', { id: item.id })}
+        ) : (
+          <View style={styles.hero}>
+            <View style={styles.heroTopRow}>
+              <Text style={styles.heroEyebrow}>TODAY'S PRIORITY</Text>
+              <View style={styles.heroIcon}>
+                <HeroIcon size={58} />
+              </View>
+            </View>
+            <Text style={styles.heroTitle}>{priority.name}</Text>
+            <Text style={styles.heroSubtitle}>{heroExpiry?.detailExpiryTitle}</Text>
+            <View style={styles.heroBottomRow}>
+              <Button
+                label="View details"
+                variant="onDark"
+                onPress={() => navigation.navigate('FoodDetail', { id: priority.id })}
               />
-            );
-          })}
-        </View>
+            </View>
+          </View>
+        )}
+
+        {buckets.map((section) =>
+          section.items.length === 0 ? null : (
+            <View key={section.key} style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.sectionDot, { backgroundColor: section.color }]} />
+                <Text style={[styles.sectionTitle, { color: section.color }]}>{section.title}</Text>
+                <Text style={styles.sectionCount}>{section.items.length}</Text>
+              </View>
+              <Text style={styles.sectionBlurb}>{section.blurb}</Text>
+
+              <View style={styles.sectionList}>
+                {section.items.map((item) => {
+                  const expiry = getExpiryInfo(item);
+                  return (
+                    <FoodRow
+                      key={item.id}
+                      name={item.name}
+                      subtitle={item.category}
+                      expiryLabel={expiry.rowExpiryLabel}
+                      expiryLevel={expiry.expiryLevel}
+                      onPress={() => navigation.navigate('FoodDetail', { id: item.id })}
+                    />
+                  );
+                })}
+              </View>
+            </View>
+          ),
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -109,30 +188,61 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: colors.white,
   },
-  heroBody: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.white,
-    marginBottom: spacing.sm,
-  },
   heroBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: spacing.sm,
   },
-  swipeHint: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  messageCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
     gap: 4,
   },
-  swipeHintText: {
+  messageTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  messageBody: {
     fontFamily: fonts.regular,
-    fontSize: 12,
-    color: '#D1EDD9',
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
+  section: {
+    gap: spacing.sm,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  sectionDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   sectionTitle: {
     fontFamily: fonts.bold,
     fontSize: 19,
-    color: colors.textPrimary,
+  },
+  sectionCount: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  sectionBlurb: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: -spacing.xs,
+  },
+  sectionList: {
+    gap: spacing.md,
+    marginTop: spacing.xs,
   },
 });

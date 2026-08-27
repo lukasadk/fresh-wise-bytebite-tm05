@@ -1,12 +1,14 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { foodIconFor } from '../icons/FoodIcons';
 import { Minus, Plus, RefreshCw } from '../icons/NavIcons';
-import { getPantryItemById } from '../data/pantryItems';
+import { usePantryItem } from '../data/pantryItems.api';
+import { recordOutcome } from '../api/freshwise';
+import { ApiError } from '../api/client';
 
 // How much the +/- steppers move per tap. Matches the 1 -> 0.5 step shown in the Figma frames.
 const STEP = 0.5;
@@ -18,34 +20,73 @@ function formatAmount(value: number): string {
 }
 
 export default function MarkConsumedScreen({ navigation, route }: any) {
-  const item = getPantryItemById(route?.params?.id) ?? getPantryItemById('milk')!;
-  const Icon = foodIconFor(item.name);
+  const id = route?.params?.id as string | undefined;
+  const { item, loading, error } = usePantryItem(id);
 
-  const [consumedQty, setConsumedQty] = useState(item.quantity);
+  const [consumedQty, setConsumedQty] = useState(0);
+  const [saving, setSaving] = useState(false);
 
-  const halfQty = item.quantity / 2;
+  // Seed the stepper once the real item loads -- we don't know the starting
+  // quantity before then.
+  useEffect(() => {
+    if (item) setConsumedQty(item.quantity);
+  }, [item?.id]);
+
+  const halfQty = (item?.quantity ?? 0) / 2;
   // Derived rather than a separate piece of state, so the pill selection always matches
-  // wherever the stepper currently sits — tapping +/- naturally lands on "Custom" unless
-  // it happens to land exactly back on the full or half amount.
+  // wherever the stepper currently sits.
   const selection: QuickOption =
-    consumedQty === item.quantity ? 'full' : consumedQty === halfQty ? 'half' : 'custom';
+    !item ? 'full' : consumedQty === item.quantity ? 'full' : consumedQty === halfQty ? 'half' : 'custom';
 
-  const remaining = Math.max(0, item.quantity - consumedQty);
-  const isFullyConsumed = consumedQty >= item.quantity;
+  const remaining = Math.max(0, (item?.quantity ?? 0) - consumedQty);
+  const isFullyConsumed = item ? consumedQty >= item.quantity : true;
 
   const inventoryNote = useMemo(() => {
+    if (!item) return '';
     return isFullyConsumed
       ? `This will remove ${item.name} from your active pantry.`
       : `${formatAmount(remaining)} ${item.unit} will remain in your active pantry.`;
-  }, [isFullyConsumed, item.name, item.unit, remaining]);
+  }, [isFullyConsumed, item, remaining]);
 
-  const clamp = (value: number) => Math.min(item.quantity, Math.max(0, Math.round(value * 2) / 2));
-
-  const handleConfirm = () => {
-    // TODO: POST the consumed outcome once the backend is wired up
-    // (e.g. `POST /pantry/:id/consume` with { amount: consumedQty }).
-    navigation.popToTop();
+  const clamp = (value: number) => {
+    const max = item?.quantity ?? 0;
+    return Math.min(max, Math.max(0, Math.round(value * 2) / 2));
   };
+
+  const handleConfirm = async () => {
+    if (!item || consumedQty <= 0) return;
+    setSaving(true);
+    try {
+      await recordOutcome({ itemId: item.id, status: 'consumed', quantity: consumedQty });
+      navigation.popToTop();
+    } catch (e) {
+      const message = e instanceof ApiError ? e.message : "Couldn't save this outcome. Please try again.";
+      Alert.alert("Couldn't save", message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !item) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.content}>
+          <BackButton onPress={() => navigation.goBack()} />
+          <Text style={styles.title}>{error ?? 'Item not found'}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const Icon = foodIconFor(item.name);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -109,7 +150,11 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
           </View>
         </View>
 
-        <Button label="Confirm consumed" onPress={handleConfirm} style={styles.fullWidthButton} />
+        <Button
+          label={saving ? 'Saving…' : 'Confirm consumed'}
+          onPress={saving ? undefined : handleConfirm}
+          style={styles.fullWidthButton}
+        />
       </ScrollView>
     </SafeAreaView>
   );

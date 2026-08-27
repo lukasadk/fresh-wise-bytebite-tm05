@@ -1,16 +1,37 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { foodIconFor } from '../icons/FoodIcons';
-import { getPantryItemById, formatQuantity, getExpiryInfo } from '../data/pantryItems';
+import { usePantryItem, formatQuantity, getExpiryInfo } from '../data/pantryItems.api';
 
 export default function RecordOutcomeScreen({ navigation, route }: any) {
-  const item = getPantryItemById(route?.params?.id) ?? getPantryItemById('milk')!;
+  const id = route?.params?.id as string | undefined;
+  const { item, loading, error } = usePantryItem(id);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !item) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.content}>
+          <BackButton onPress={() => navigation.goBack()} />
+          <Text style={styles.title}>{error ?? 'Item not found'}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const Icon = foodIconFor(item.name);
-  const expiry = getExpiryInfo(item.purchasedDate, item.expiryDate);
+  const expiry = getExpiryInfo(item);
 
   const handleMarkWasted = () => {
     navigation.navigate('MarkWasted', { id: item.id });

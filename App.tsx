@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -24,6 +24,7 @@ import MarkWastedScreen from './src/screens/MarkWastedScreen';
 import WasteRecordedScreen from './src/screens/WasteRecordedScreen';
 import BottomNav from './src/components/BottomNav';
 import { colors } from './src/theme/theme';
+import { registerDevice } from './src/api/freshwise';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -58,6 +59,17 @@ export default function App() {
     Inter_700Bold,
     DMSerifDisplay_400Regular,
   });
+
+  // Creates (or reuses) this device's profile on the backend. Every /v1/*
+  // endpoint 404s until this has run once (see API_INTEGRATION.md). Deliberately
+  // non-blocking: if the API is unreachable (backend not running, wrong LAN_IP
+  // in src/api/config.ts), the app still renders -- individual screens surface
+  // their own "can't reach the API" errors instead of leaving the user stuck.
+  useEffect(() => {
+    registerDevice(1).catch((e) => {
+      console.warn('API unreachable at startup:', e?.message ?? e);
+    });
+  }, []);
 
   const onLayoutRootView = useCallback(async () => {
     if (fontsLoaded) {
