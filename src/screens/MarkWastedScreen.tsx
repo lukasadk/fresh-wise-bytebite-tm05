@@ -4,29 +4,50 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
-import { getPantryItemById } from '../data/pantryItems';
-
-const WASTE_REASONS = ['Expired', 'Over-purchased', 'Forgotten', 'Spoiled', 'Changed meal plans', 'Other'] as const;
+import { recordOutcome, WASTE_REASONS, WASTE_REASON_TO_BACKEND, WasteReasonLabel } from '../data/logs';
+import { ApiError } from '../data/api';
+import { usePantryItem } from '../hooks/usePantryItem';
+import { LoadingState, ErrorState } from '../components/ScreenState';
 
 function formatAmount(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
 export default function MarkWastedScreen({ navigation, route }: any) {
-  const item = getPantryItemById(route?.params?.id) ?? getPantryItemById('milk')!;
+  const { item, loading, error } = usePantryItem(route?.params?.id);
 
-  const [wastedQty, setWastedQty] = useState(formatAmount(item.quantity));
-  const [reason, setReason] = useState<(typeof WASTE_REASONS)[number] | null>(null);
+  const [wastedQty, setWastedQty] = useState('');
+  const [reason, setReason] = useState<WasteReasonLabel | null>(null);
   const [otherReason, setOtherReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const handleSave = () => {
-    // TODO: POST the wasted outcome once the backend is wired up (e.g. `POST /pantry/:id/waste`
-    // with { amount: Number(wastedQty), reason: reason === 'Other' ? otherReason : reason }).
-    navigation.navigate('WasteRecorded', {
-      id: item.id,
-      wastedQty: Number(wastedQty) || 0,
-      reason: reason === 'Other' ? otherReason || 'Other' : reason ?? 'Other',
-    });
+  if (loading) return <LoadingState />;
+  if (!item) return <ErrorState message={error ?? 'Item not found.'} />;
+
+  if (!wastedQty) setWastedQty(formatAmount(item.quantity));
+
+  const handleSave = async () => {
+    const quantity = Number(wastedQty) || 0;
+    const chosenReason = reason ?? 'Other';
+    const label = chosenReason === 'Other' ? otherReason || 'Other' : chosenReason;
+
+    setSaveError(null);
+    setSaving(true);
+    try {
+      await recordOutcome({
+        itemId: item.id,
+        status: 'wasted',
+        quantity,
+        wasteReason: WASTE_REASON_TO_BACKEND[chosenReason],
+        notes: chosenReason === 'Other' ? otherReason || undefined : undefined,
+      });
+      navigation.navigate('WasteRecorded', { id: item.id, wastedQty: quantity, reason: label });
+    } catch (err) {
+      setSaveError(err instanceof ApiError ? err.message : "Couldn't save this — check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -79,7 +100,13 @@ export default function MarkWastedScreen({ navigation, route }: any) {
           </View>
         )}
 
-        <Button label="Save waste record" variant="danger" onPress={handleSave} style={styles.fullWidthButton} />
+        {saveError ? <Text style={styles.saveError}>{saveError}</Text> : null}
+        <Button
+          label={saving ? 'Saving…' : 'Save waste record'}
+          variant="danger"
+          onPress={saving ? undefined : handleSave}
+          style={styles.fullWidthButton}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -200,6 +227,12 @@ const styles = StyleSheet.create({
     minHeight: 96,
     padding: spacing.md,
     textAlignVertical: 'top',
+  },
+  saveError: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.errorText,
+    textAlign: 'center',
   },
   fullWidthButton: {
     alignSelf: 'stretch',

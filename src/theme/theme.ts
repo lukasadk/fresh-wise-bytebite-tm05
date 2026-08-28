@@ -35,6 +35,30 @@ export const colors = {
   alertBody: '#7B5A54',
 
   foodIconBg: '#F4FBF6',
+
+  // Inline validation errors (Add Food form)
+  errorText: '#D9603B',
+
+  // Success confirmation toast (e.g. "Added" on My Pantry)
+  toastSuccessBg: '#2C5F3E',
+
+  // Entry-source tags on pantry rows
+  sourceManual: '#8A8F87',
+  sourcePhotoAI: '#4A6B7A',
+
+  // Expiry status border + dot on inventory rows/cards (Epic 2)
+  expiryUrgentBorder: '#D9603B', // Coral Red -- expired or due today
+  expiryWarnBorder: '#C68A2E', // Amber Gold -- 1-3 days
+  expirySafeBorder: '#2C5F3E', // Forest Green -- more than 3 days
+
+  // Empty-state illustration on My Pantry
+  emptyStateIllustration: '#D9E4DD',
+
+  // Removable filter chip above the inventory list (Epic 2 continued)
+  filterChipBg: '#4A6B7A',
+
+  // Brief highlight on a row after its item was edited
+  rowHighlightBg: '#E4EEF1',
 } as const;
 
 export const radii = {

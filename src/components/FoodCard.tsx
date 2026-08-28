@@ -9,24 +9,23 @@ import { Check } from '../icons/NavIcons';
 type Props = {
   name: string;
   category?: string; // used as a fallback icon signal when name doesn't match a keyword
-  subtitle: string; // e.g. "Dairy · 1 carton" or "Refrigerated"
-  expiryLabel: string; // e.g. "Tomorrow", "3 days"
+  subtitle: string;
+  expiryLabel: string;
   expiryLevel?: ExpiryLevel;
-  source?: EntrySource; // 'Manual' or 'Photo AI' (see Epic 14) — how the item was captured
-  selectMode?: boolean; // shows a checkbox instead of navigating on tap -- see PantryScreen's bulk actions
+  source?: EntrySource;
+  selectMode?: boolean;
   selected?: boolean;
-  highlighted?: boolean; // brief flash after this item was just edited -- see PantryScreen
+  highlighted?: boolean;
   onPress?: () => void;
 };
 
-// Forest Green / Amber Gold / Coral Red -- matches the left-border + dot spec in Epic 2.
 const expiryBorderColor: Record<ExpiryLevel, string> = {
   urgent: colors.expiryUrgentBorder,
   warn: colors.expiryWarnBorder,
   safe: colors.expirySafeBorder,
 };
 
-export default function FoodRow({
+export default function FoodCard({
   name,
   category,
   subtitle,
@@ -44,35 +43,35 @@ export default function FoodRow({
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        styles.row,
+        styles.card,
         { borderLeftWidth: 4, borderLeftColor: borderColor },
-        highlighted && styles.rowHighlighted,
+        highlighted && styles.cardHighlighted,
         pressed && { opacity: 0.9 },
       ]}
     >
-      {selectMode ? (
-        <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-          {selected ? <Check size={14} color={colors.white} strokeWidth={3} /> : null}
-        </View>
-      ) : null}
-      <Icon size={48} />
-      <View style={styles.textCol}>
-        <View style={styles.nameRow}>
-          <Text style={styles.name} numberOfLines={1}>{name}</Text>
-          {source ? (
-            <View
-              style={[
-                styles.sourceTag,
-                { backgroundColor: source === 'Photo AI' ? colors.sourcePhotoAI : colors.sourceManual },
-              ]}
-            >
-              <Text style={styles.sourceTagText}>{source}</Text>
-            </View>
-          ) : null}
-        </View>
-        <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
+      <View style={styles.topRow}>
+        {selectMode ? (
+          <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+            {selected ? <Check size={12} color={colors.white} strokeWidth={3} /> : null}
+          </View>
+        ) : (
+          <View />
+        )}
+        {source ? (
+          <View
+            style={[
+              styles.sourceTag,
+              { backgroundColor: source === 'Photo AI' ? colors.sourcePhotoAI : colors.sourceManual },
+            ]}
+          >
+            <Text style={styles.sourceTagText}>{source}</Text>
+          </View>
+        ) : null}
       </View>
-      <View style={styles.expiryCol}>
+      <Icon size={44} />
+      <Text style={styles.name} numberOfLines={1}>{name}</Text>
+      <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
+      <View style={styles.expiryRow}>
         {expiryLevel ? <View style={[styles.dot, { backgroundColor: borderColor }]} /> : null}
         <ExpiryPill label={expiryLabel} level={expiryLevel} />
       </View>
@@ -81,28 +80,33 @@ export default function FoodRow({
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  card: {
+    flex: 1,
     backgroundColor: colors.primaryTint2,
     borderWidth: 1,
     borderColor: colors.borderSoft,
     borderRadius: radii.lg,
-    padding: spacing.md - 1,
-    gap: spacing.md,
-    // subtle shadow matching the Figma spec (0px 2px 6px rgba(26,51,31,0.08))
+    padding: spacing.md,
+    gap: 6,
+    alignItems: 'flex-start',
     shadowColor: '#1A331F',
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  rowHighlighted: {
+  cardHighlighted: {
     backgroundColor: colors.rowHighlightBg,
   },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+  },
   checkbox: {
-    width: 22,
-    height: 22,
+    width: 20,
+    height: 20,
     borderRadius: radii.sm,
     borderWidth: 2,
     borderColor: colors.border,
@@ -112,21 +116,6 @@ const styles = StyleSheet.create({
   checkboxSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
-  },
-  textCol: {
-    flex: 1,
-    gap: 2,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  name: {
-    fontFamily: fonts.bold,
-    fontSize: 16,
-    color: colors.textPrimary,
-    flexShrink: 1,
   },
   sourceTag: {
     paddingHorizontal: 6,
@@ -138,14 +127,23 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: colors.white,
   },
+  name: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.textPrimary,
+    alignSelf: 'stretch',
+  },
   subtitle: {
     fontFamily: fonts.regular,
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
+    alignSelf: 'stretch',
   },
-  expiryCol: {
+  expiryRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    marginTop: 4,
   },
   dot: {
     width: 8,

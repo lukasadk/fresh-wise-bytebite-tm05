@@ -6,11 +6,16 @@ import Button from '../components/Button';
 import FoodRow from '../components/FoodRow';
 import { MilkIcon } from '../icons/FoodIcons';
 import { ArrowRight } from '../icons/NavIcons';
-import { getPantryItemById, getExpiryInfo } from '../data/pantryItems';
-
-const UP_NEXT_IDS = ['chicken-breast', 'spinach', 'tomatoes'];
+import { getExpiryInfo } from '../data/pantryItems';
+import { usePantryItems } from '../hooks/usePantryItems';
 
 export default function UseFirstScreen({ navigation }: any) {
+  // Backend already returns items ordered soonest-expiry-first (see
+  // backend/backend/app/routers/pantry.py) -- "Up next" is just the next few after
+  // whatever's shown in the hero card above.
+  const { items } = usePantryItems();
+  const upNext = items.slice(0, 3);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -39,14 +44,13 @@ export default function UseFirstScreen({ navigation }: any) {
 
         <Text style={styles.sectionTitle}>Up next</Text>
         <View style={{ gap: spacing.md }}>
-          {UP_NEXT_IDS.map(getPantryItemById).map((item) => {
-            if (!item) return null;
+          {upNext.map((item) => {
             const expiry = getExpiryInfo(item.purchasedDate, item.expiryDate);
             return (
               <FoodRow
                 key={item.id}
                 name={item.name}
-                subtitle={item.storage}
+                subtitle={`${item.category} · ${expiry.rowExpiryLabel}`}
                 expiryLabel={expiry.rowExpiryLabel}
                 expiryLevel={expiry.expiryLevel}
                 onPress={() => navigation.navigate('FoodDetail', { id: item.id })}

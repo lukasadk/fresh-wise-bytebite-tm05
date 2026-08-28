@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
@@ -6,7 +6,10 @@ import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { foodIconFor } from '../icons/FoodIcons';
 import { Minus, Plus, RefreshCw } from '../icons/NavIcons';
-import { getPantryItemById } from '../data/pantryItems';
+import { recordOutcome } from '../data/logs';
+import { ApiError } from '../data/api';
+import { usePantryItem } from '../hooks/usePantryItem';
+import { LoadingState, ErrorState } from '../components/ScreenState';
 
 // How much the +/- steppers move per tap. Matches the 1 -> 0.5 step shown in the Figma frames.
 const STEP = 0.5;
@@ -18,10 +21,20 @@ function formatAmount(value: number): string {
 }
 
 export default function MarkConsumedScreen({ navigation, route }: any) {
-  const item = getPantryItemById(route?.params?.id) ?? getPantryItemById('milk')!;
-  const Icon = foodIconFor(item.name);
+  const { item, loading, error } = usePantryItem(route?.params?.id);
+  const [consumedQty, setConsumedQty] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const [consumedQty, setConsumedQty] = useState(item.quantity);
+  // Seed the stepper once the item arrives from the API (it starts at 0 while loading).
+  useEffect(() => {
+    if (item) setConsumedQty(item.quantity);
+  }, [item?.id]);
+
+  if (loading) return <LoadingState />;
+  if (!item) return <ErrorState message={error ?? 'Item not found.'} />;
+
+  const Icon = foodIconFor(item.name, item.category);
 
   const halfQty = item.quantity / 2;
   // Derived rather than a separate piece of state, so the pill selection always matches
@@ -41,10 +54,17 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
 
   const clamp = (value: number) => Math.min(item.quantity, Math.max(0, Math.round(value * 2) / 2));
 
-  const handleConfirm = () => {
-    // TODO: POST the consumed outcome once the backend is wired up
-    // (e.g. `POST /pantry/:id/consume` with { amount: consumedQty }).
-    navigation.popToTop();
+  const handleConfirm = async () => {
+    setSaveError(null);
+    setSaving(true);
+    try {
+      await recordOutcome({ itemId: item.id, status: 'consumed', quantity: consumedQty });
+      navigation.popToTop();
+    } catch (err) {
+      setSaveError(err instanceof ApiError ? err.message : "Couldn't save this — check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -109,7 +129,12 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
           </View>
         </View>
 
-        <Button label="Confirm consumed" onPress={handleConfirm} style={styles.fullWidthButton} />
+        {saveError ? <Text style={styles.saveError}>{saveError}</Text> : null}
+        <Button
+          label={saving ? 'Saving…' : 'Confirm consumed'}
+          onPress={saving ? undefined : handleConfirm}
+          style={styles.fullWidthButton}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -262,6 +287,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textPrimary,
     lineHeight: 18,
+  },
+  saveError: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.errorText,
+    textAlign: 'center',
   },
   fullWidthButton: {
     alignSelf: 'stretch',

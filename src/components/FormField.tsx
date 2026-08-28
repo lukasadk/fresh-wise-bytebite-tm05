@@ -27,23 +27,30 @@ export function FieldLabel({ label, required }: { label: string; required?: bool
 type FieldProps = {
   label: string;
   required?: boolean;
+  error?: string;
   children: React.ReactNode;
 };
 
 // Wraps a label + input together with the vertical rhythm the form uses.
-export function Field({ label, required, children }: FieldProps) {
+export function Field({ label, required, error, children }: FieldProps) {
   return (
     <View style={styles.field}>
       <FieldLabel label={label} required={required} />
       {children}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }
 
 // Plain text/number entry, styled to match the search bar / card inputs used elsewhere.
-export function TextField(props: TextInputProps) {
+// `error` swaps the border to Coral Red — pair it with a Field `error` message.
+export function TextField({ error, style, ...props }: TextInputProps & { error?: boolean }) {
   return (
-    <TextInput placeholderTextColor={colors.textSecondary} style={styles.input} {...props} />
+    <TextInput
+      placeholderTextColor={colors.textSecondary}
+      style={[styles.input, error && styles.inputError, style]}
+      {...props}
+    />
   );
 }
 
@@ -52,16 +59,17 @@ type SelectFieldProps = {
   options: string[];
   onSelect: (value: string) => void;
   placeholder?: string;
+  error?: boolean;
 };
 
 // Dropdown-style field (e.g. Category). Opens a bottom sheet of options — no extra
 // picker dependency required, everything here is built from core React Native.
-export function SelectField({ value, options, onSelect, placeholder = 'Select' }: SelectFieldProps) {
+export function SelectField({ value, options, onSelect, placeholder = 'Select', error }: SelectFieldProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Pressable style={[styles.input, styles.selectInput]} onPress={() => setOpen(true)}>
+      <Pressable style={[styles.input, styles.selectInput, error && styles.inputError]} onPress={() => setOpen(true)}>
         <Text style={value ? styles.inputText : styles.placeholderText}>{value || placeholder}</Text>
         <ChevronDown size={18} color={colors.textSecondary} />
       </Pressable>
@@ -105,11 +113,12 @@ type DateFieldProps = {
   placeholder?: string;
   maximumDate?: Date;
   minimumDate?: Date;
+  error?: boolean;
 };
 
 // Opens the platform's native calendar instead of free-text entry: a tap-to-open dialog
 // on Android, an inline calendar sheet (with a Done button) on iOS.
-export function DateField({ value, onChange, placeholder = 'Select date', maximumDate, minimumDate }: DateFieldProps) {
+export function DateField({ value, onChange, placeholder = 'Select date', maximumDate, minimumDate, error }: DateFieldProps) {
   const [open, setOpen] = useState(false);
   const [draftDate, setDraftDate] = useState(value ?? new Date());
 
@@ -127,7 +136,7 @@ export function DateField({ value, onChange, placeholder = 'Select date', maximu
 
   return (
     <>
-      <Pressable style={[styles.input, styles.selectInput]} onPress={openPicker}>
+      <Pressable style={[styles.input, styles.selectInput, error && styles.inputError]} onPress={openPicker}>
         <Text style={value ? styles.inputText : styles.placeholderText}>
           {value ? formatDate(value) : placeholder}
         </Text>
@@ -198,6 +207,14 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     height: 48,
     paddingHorizontal: spacing.md,
+  },
+  inputError: {
+    borderColor: colors.errorText,
+  },
+  errorText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.errorText,
   },
   selectInput: {
     flexDirection: 'row',

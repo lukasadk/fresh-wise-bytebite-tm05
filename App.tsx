@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -23,7 +23,9 @@ import MarkConsumedScreen from './src/screens/MarkConsumedScreen';
 import MarkWastedScreen from './src/screens/MarkWastedScreen';
 import WasteRecordedScreen from './src/screens/WasteRecordedScreen';
 import BottomNav from './src/components/BottomNav';
+import AnimatedLoadingScreen from './src/components/AnimatedLoadingScreen';
 import { colors } from './src/theme/theme';
+import { ensureDeviceRegistered } from './src/data/registration';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -59,14 +61,36 @@ export default function App() {
     DMSerifDisplay_400Regular,
   });
 
+  // Every pantry/logs/diet request 404s until this device has a profile -- see
+  // src/data/registration.ts and backend/README.md's "Identity model".
+  const [deviceReady, setDeviceReady] = useState(false);
+  useEffect(() => {
+    ensureDeviceRegistered()
+      .catch(() => {
+        // Swallowed deliberately: registration retries lazily via api.ts's own
+        // per-request device-id header next time a screen makes a request, rather
+        // than blocking app startup forever if the API happens to be unreachable
+        // right at launch.
+      })
+      .finally(() => setDeviceReady(true));
+  }, []);
+
+  const appReady = fontsLoaded && deviceReady;
+
+  // Safety net for the (rare) case fonts + registration both resolve before this
+  // component's very first paint -- then AnimatedLoadingScreen below is skipped
+  // entirely, so its own onLayout never fires to hide the native splash.
   const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded) {
+    if (appReady) {
       await SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [appReady]);
 
-  if (!fontsLoaded) {
-    return null;
+  if (!appReady) {
+    // Hides the native (static, un-animatable) splash as soon as this screen has
+    // painted its first frame, so what the user actually sees while fonts/device
+    // registration finish is the pulsing logo animation, not a frozen image.
+    return <AnimatedLoadingScreen onLayout={() => SplashScreen.hideAsync()} />;
   }
 
   return (

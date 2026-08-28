@@ -1,28 +1,37 @@
-// Food illustration icons, ported 1:1 from the Figma-exported SVG paths.
-// Each icon is a rounded-square "avatar" with the food illustration inside.
+// Food illustration icons. Milk/Bread/Pasta/Tomato/Soup/Spinach are real PNG
+// artwork from the design team (see /assets/food-icons). Chicken has no matching
+// asset yet, so it's still the hand-coded SVG ported from the original Figma
+// export. GenericFoodIcon is a deliberately neutral fallback for anything that
+// doesn't match a known food -- previously unmatched foods silently fell back to
+// MilkIcon, which was misleading (a "Bread" item showing a milk carton).
 import React from 'react';
-import Svg, { Rect, Ellipse, Path, G, Defs, ClipPath } from 'react-native-svg';
-import { colors } from '../theme/theme';
+import { Image, View, StyleSheet } from 'react-native';
+import Svg, { Rect, Ellipse, Path, G } from 'react-native-svg';
+import { colors, radii } from '../theme/theme';
 
 type IconProps = { size?: number };
 
-export function MilkIcon({ size = 48 }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <G>
-        <Rect fill={colors.foodIconBg} width="48" height="48" rx="14" />
-        <Rect fill="#BFE8F4" x="11" y="13" width="26" height="27" rx="4" />
-        <Rect fill="#D6F1F8" x="14" y="9" width="20" height="7" rx="3" />
-        <Rect fill="#9DD9E8" x="18" y="6" width="12" height="5" rx="2" />
-        <Ellipse cx="19.6" cy="25" rx="1.6" ry="2" fill="#173A24" />
-        <Ellipse cx="28.6" cy="25" rx="1.6" ry="2" fill="#173A24" />
-        <Ellipse cx="16" cy="29.1" rx="2" ry="1.1" fill="#F3A5A5" />
-        <Ellipse cx="33" cy="29.1" rx="2" ry="1.1" fill="#F3A5A5" />
-        <Path d="M21 28C23 32 26 32 28 28" stroke="#173A24" strokeWidth="1.2" />
-      </G>
-    </Svg>
-  );
+// 14/48 matches the corner radius ratio the SVG icons use (rx="14" on a 48-wide box).
+const CORNER_RADIUS_RATIO = 14 / 48;
+
+function makeImageIcon(source: number) {
+  return function ImageIcon({ size = 48 }: IconProps) {
+    return (
+      <Image
+        source={source}
+        style={{ width: size, height: size, borderRadius: size * CORNER_RADIUS_RATIO }}
+        resizeMode="cover"
+      />
+    );
+  };
 }
+
+export const MilkIcon = makeImageIcon(require('../../assets/food-icons/milk.png'));
+export const BreadIcon = makeImageIcon(require('../../assets/food-icons/bread.png'));
+export const PastaIcon = makeImageIcon(require('../../assets/food-icons/pasta.png'));
+export const TomatoIcon = makeImageIcon(require('../../assets/food-icons/tomato.png'));
+export const SoupIcon = makeImageIcon(require('../../assets/food-icons/soup.png'));
+export const SpinachIcon = makeImageIcon(require('../../assets/food-icons/spinach.png'));
 
 export function ChickenIcon({ size = 48 }: IconProps) {
   return (
@@ -42,72 +51,68 @@ export function ChickenIcon({ size = 48 }: IconProps) {
   );
 }
 
-export function SpinachIcon({ size = 48 }: IconProps) {
+// Neutral fallback -- a plain rounded square with a soft dot, distinct from every
+// real food icon so an unrecognised name doesn't masquerade as milk (or anything
+// else specific).
+export function GenericFoodIcon({ size = 48 }: IconProps) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <G>
-        <Rect fill={colors.foodIconBg} width="48" height="48" rx="14" />
-        <Ellipse cx="16.5" cy="23" rx="8.5" ry="13" fill="#78B96B" />
-        <Ellipse cx="27.5" cy="20.5" rx="8.5" ry="14.5" fill="#5DA45B" />
-        <Ellipse cx="35.5" cy="23" rx="6.5" ry="12" fill="#86C879" />
-        <Rect fill="#7EAF63" x="20" y="29" width="8" height="12" rx="3" />
-        <Ellipse cx="20.6" cy="25" rx="1.6" ry="2" fill="#173A24" />
-        <Ellipse cx="29.6" cy="25" rx="1.6" ry="2" fill="#173A24" />
-        <Ellipse cx="17" cy="29.1" rx="2" ry="1.1" fill="#F3A5A5" />
-        <Ellipse cx="34" cy="29.1" rx="2" ry="1.1" fill="#F3A5A5" />
-        <Path d="M22 28C24 32 27 32 29 28" stroke="#173A24" strokeWidth="1.2" />
-      </G>
-    </Svg>
+    <View
+      style={[
+        styles.genericBg,
+        { width: size, height: size, borderRadius: size * CORNER_RADIUS_RATIO },
+      ]}
+    >
+      <View
+        style={{
+          width: size * 0.36,
+          height: size * 0.36,
+          borderRadius: size * 0.09,
+          backgroundColor: colors.sourceManual,
+          opacity: 0.35,
+        }}
+      />
+    </View>
   );
 }
 
-export function PastaIcon({ size = 48 }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <G>
-        <Rect fill={colors.foodIconBg} width="48" height="48" rx="14" />
-        <Rect fill="#F3D46B" x="11" y="8" width="26" height="33" rx="5" />
-        <Rect fill="#78A95D" x="11" y="8" width="26" height="7" rx="3.5" />
-        <Rect fill="#78A95D" x="11" y="34" width="26" height="7" rx="3.5" />
-        <Ellipse cx="19.6" cy="26" rx="1.6" ry="2" fill="#173A24" />
-        <Ellipse cx="28.6" cy="26" rx="1.6" ry="2" fill="#173A24" />
-        <Ellipse cx="16" cy="30.1" rx="2" ry="1.1" fill="#F3A5A5" />
-        <Ellipse cx="33" cy="30.1" rx="2" ry="1.1" fill="#F3A5A5" />
-        <Path d="M21 29C23 33 26 33 28 29" stroke="#173A24" strokeWidth="1.2" />
-      </G>
-    </Svg>
-  );
-}
+const styles = StyleSheet.create({
+  genericBg: {
+    backgroundColor: colors.foodIconBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
-export function TomatoIcon({ size = 46 }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 46 46" fill="none">
-      <Defs>
-        <ClipPath id="tomatoClip">
-          <Rect fill="white" width="46" height="46" rx="14" />
-        </ClipPath>
-      </Defs>
-      <G clipPath="url(#tomatoClip)">
-        <Rect fill="#F5FBF7" width="46" height="46" rx="14" />
-        <Ellipse cx="23" cy="24" rx="12" ry="11" fill="#F06352" />
-        <Path
-          d="M10.5 8L4.31813 4.89058L6.6794 -0.140576L14.3206 -0.140576L16.6819 4.89058L10.5 8Z"
-          fill="#3B8C47"
-        />
-        <Ellipse cx="18.25" cy="21.25" rx="1.25" ry="1.25" fill="#13331E" />
-        <Ellipse cx="27.25" cy="21.25" rx="1.25" ry="1.25" fill="#13331E" />
-      </G>
-    </Svg>
-  );
-}
-
-// Maps a pantry category/food name to its icon — extend as new food items are added.
-export function foodIconFor(name: string) {
+// Maps a pantry item's name (and, failing that, its category) to an icon. Name is
+// checked first since it's the most specific signal (e.g. "Chicken breast" should
+// show chicken even if its category happens to be something generic); category is
+// a coarser fallback for items whose name doesn't hit a keyword -- only mapped for
+// categories with a real matching asset (Dairy/Protein/Vegetables). Categories with
+// no good matching icon (Fruit, Pantry, Frozen, Beverages, Other) intentionally
+// fall through to GenericFoodIcon rather than showing a food they aren't.
+export function foodIconFor(name: string, category?: string) {
   const key = name.toLowerCase();
   if (key.includes('milk')) return MilkIcon;
-  if (key.includes('chicken')) return ChickenIcon;
-  if (key.includes('spinach')) return SpinachIcon;
-  if (key.includes('pasta')) return PastaIcon;
+  if (key.includes('bread') || key.includes('bun') || key.includes('loaf') || key.includes('bagel')) return BreadIcon;
+  if (key.includes('chicken') || key.includes('poultry') || key.includes('turkey')) return ChickenIcon;
+  if (
+    key.includes('spinach') ||
+    key.includes('broccoli') ||
+    key.includes('lettuce') ||
+    key.includes('kale') ||
+    key.includes('cabbage') ||
+    key.includes('veg')
+  )
+    return SpinachIcon;
+  if (key.includes('pasta') || key.includes('noodle') || key.includes('spaghetti') || key.includes('macaroni'))
+    return PastaIcon;
   if (key.includes('tomato')) return TomatoIcon;
-  return MilkIcon;
+  if (key.includes('soup') || key.includes('broth') || key.includes('stew')) return SoupIcon;
+
+  const cat = category?.toLowerCase();
+  if (cat === 'dairy') return MilkIcon;
+  if (cat === 'protein') return ChickenIcon;
+  if (cat === 'vegetables') return SpinachIcon;
+
+  return GenericFoodIcon;
 }

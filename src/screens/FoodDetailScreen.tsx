@@ -1,24 +1,80 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { foodIconFor } from '../icons/FoodIcons';
 import { Refrigerator, Sparkles, ArrowRight } from '../icons/NavIcons';
-import { getPantryItemById, formatQuantity, getExpiryInfo } from '../data/pantryItems';
+import { formatQuantity, getExpiryInfo, deletePantryItem } from '../data/pantryItems';
+import { usePantryItem } from '../hooks/usePantryItem';
+import { useFoodkeeperGuidance } from '../hooks/useFoodkeeperGuidance';
+import { LoadingState, ErrorState } from '../components/ScreenState';
+import { ApiError } from '../data/api';
 
 export default function FoodDetailScreen({ navigation, route }: any) {
-  // Falls back to 'milk' so the screen still renders something sensible if it's ever
-  // opened without an id (e.g. while wiring up a new entry point during development).
-  const item = getPantryItemById(route?.params?.id) ?? getPantryItemById('milk')!;
-  const Icon = foodIconFor(item.name);
+  const { item, loading, error } = usePantryItem(route?.params?.id);
+  const justAdded = !!route?.params?.justAdded;
+  const justEdited = !!route?.params?.justEdited;
+  const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+
+  // Storage guidance isn't stored on the item at all -- it's looked up live from the
+  // FoodKeeper reference dataset by name/category (see backend/db/erd-schema.sql;
+  // food_item has no storage columns).
+  const { guidance, loading: guidanceLoading } = useFoodkeeperGuidance(item?.name, item?.category);
+
+  const handleBack = () => {
+    // Landed here straight from Add Food, or straight back from editing -- either
+    // way "back" means My Pantry, and it should signal the row change (an "Added"
+    // toast, or a brief highlight on the edited row) now that the change is real.
+    // Pantry lives inside the nested "Main" tab navigator, not on this screen's
+    // own root stack, so it has to be targeted via { screen, params } rather than
+    // navigation.navigate('Pantry', ...) directly (that only works for screens on
+    // the SAME navigator, or going "up" to a parent -- not back "down" into a
+    // different nested one).
+    if (justAdded) {
+      navigation.navigate('Main', { screen: 'Pantry', params: { added: item?.name } });
+    } else if (justEdited) {
+      navigation.navigate('Main', { screen: 'Pantry', params: { highlightId: item?.id } });
+    } else {
+      navigation.goBack();
+    }
+  };
+
+  const [confirmRemoveVisible, setConfirmRemoveVisible] = useState(false);
+
+  const confirmRemove = async () => {
+    if (!item) return;
+    setConfirmRemoveVisible(false);
+    setRemoveError(null);
+    setRemoving(true);
+    try {
+      await deletePantryItem(item.id);
+      navigation.navigate('Main', { screen: 'Pantry' });
+    } catch (err) {
+      setRemoveError(err instanceof ApiError ? err.message : "Couldn't remove this item — try again.");
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  if (loading) return <LoadingState />;
+  if (!item) return <ErrorState message={error ?? 'Item not found.'} />;
+
+  const Icon = foodIconFor(item.name, item.category);
   const expiry = getExpiryInfo(item.purchasedDate, item.expiryDate);
+
+  // Prefer refrigeration guidance since that's the most common case shown elsewhere
+  // in the app; fall back to pantry tips if that's all FoodKeeper has for this food.
+  const guidanceTitle = guidance?.categoryName ?? guidance?.name ?? 'Storage guidance';
+  const guidanceBody = guidance?.refrigerateTips ?? guidance?.pantryTips ?? guidance?.freezeTips ?? null;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <BackButton onPress={() => navigation.goBack()} />
+          <BackButton onPress={handleBack} />
           <Pressable
             style={({ pressed }) => [styles.editButton, pressed && { opacity: 0.85 }]}
             onPress={() => navigation.navigate('AddFood', { id: item.id })}
@@ -54,30 +110,39 @@ export default function FoodDetailScreen({ navigation, route }: any) {
           <DetailRow label="Expires" value={item.expiryDate} />
         </View>
 
-        <Text style={styles.sectionTitle}>Storage guidance</Text>
-        <View style={styles.guidanceCard}>
-          <View style={styles.guidanceRow}>
-            <View style={styles.guidanceIcon}>
-              <Refrigerator size={20} color={colors.primary} strokeWidth={2} />
-            </View>
-            <View style={styles.guidanceText}>
-              <Text style={styles.guidanceTitle}>{item.storage}</Text>
-              <Text style={styles.guidanceBody}>{item.storageGuidance}</Text>
-            </View>
-          </View>
+        {!guidanceLoading && guidanceBody ? (
+          <>
+            <Text style={styles.sectionTitle}>Storage guidance</Text>
+            <View style={styles.guidanceCard}>
+              <>
+                <View style={styles.guidanceRow}>
+                  <View style={styles.guidanceIcon}>
+                    <Refrigerator size={20} color={colors.primary} strokeWidth={2} />
+                  </View>
+                  <View style={styles.guidanceText}>
+                    <Text style={styles.guidanceTitle}>{guidanceTitle}</Text>
+                    <Text style={styles.guidanceBody}>{guidanceBody}</Text>
+                  </View>
+                </View>
 
-          <View style={styles.guidanceDivider} />
-
-          <View style={styles.tipRow}>
-            <View style={styles.tipIcon}>
-              <Sparkles size={12} color={colors.primary} />
+                {guidance?.pantryTips && guidance.refrigerateTips ? (
+                  <>
+                    <View style={styles.guidanceDivider} />
+                    <View style={styles.tipRow}>
+                      <View style={styles.tipIcon}>
+                        <Sparkles size={12} color={colors.primary} />
+                      </View>
+                      <Text style={styles.tipText}>
+                        <Text style={styles.tipLabel}>Tip: </Text>
+                        {guidance.pantryTips}
+                      </Text>
+                    </View>
+                  </>
+                ) : null}
+              </>
             </View>
-            <Text style={styles.tipText}>
-              <Text style={styles.tipLabel}>Tip: </Text>
-              {item.storageTip}
-            </Text>
-          </View>
-        </View>
+          </>
+        ) : null}
 
         <Pressable
           style={({ pressed }) => [styles.outcomeLink, pressed && { opacity: 0.7 }]}
@@ -86,7 +151,24 @@ export default function FoodDetailScreen({ navigation, route }: any) {
           <Text style={styles.outcomeLinkText}>Record food outcome</Text>
           <ArrowRight size={16} color={colors.primary} />
         </Pressable>
+
+        {removeError ? <Text style={styles.removeError}>{removeError}</Text> : null}
+        <Pressable
+          style={({ pressed }) => [styles.removeLink, pressed && { opacity: 0.7 }]}
+          onPress={removing ? undefined : () => setConfirmRemoveVisible(true)}
+        >
+          <Text style={styles.removeLinkText}>{removing ? 'Removing…' : 'Remove item'}</Text>
+        </Pressable>
       </ScrollView>
+
+      <ConfirmDialog
+        visible={confirmRemoveVisible}
+        title="Remove this item?"
+        message={`"${item.name}" will be permanently removed from your pantry. This can't be undone.`}
+        confirmLabel="Remove"
+        onConfirm={confirmRemove}
+        onCancel={() => setConfirmRemoveVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -255,6 +337,22 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 14,
     color: colors.primary,
+  },
+  removeLink: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+  },
+  removeLinkText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.errorText,
+  },
+  removeError: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.errorText,
+    textAlign: 'center',
   },
   tipRow: {
     flexDirection: 'row',

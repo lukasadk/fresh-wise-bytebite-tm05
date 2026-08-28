@@ -5,18 +5,26 @@ import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { Check } from '../icons/NavIcons';
-import { getPantryItemById, formatQuantity } from '../data/pantryItems';
+import { formatQuantity } from '../data/pantryItems';
+import { usePantryItem } from '../hooks/usePantryItem';
+import { LoadingState, ErrorState } from '../components/ScreenState';
 
 function formatAmount(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
 export default function WasteRecordedScreen({ navigation, route }: any) {
-  const item = getPantryItemById(route?.params?.id) ?? getPantryItemById('milk')!;
+  const { item, loading, error } = usePantryItem(route?.params?.id);
   const wastedQty: number = route?.params?.wastedQty ?? 0;
   const reason: string = route?.params?.reason ?? 'Other';
 
-  const remaining = Math.max(0, item.quantity - wastedQty);
+  if (loading) return <LoadingState />;
+  if (!item) return <ErrorState message={error ?? 'Item not found.'} />;
+
+  // The backend already decremented item.quantity when the log was posted (see
+  // backend/backend/app/routers/logs.py) -- what we just fetched IS the remaining
+  // amount, not the pre-waste amount, so this is NOT (item.quantity - wastedQty).
+  const remaining = item.quantity;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

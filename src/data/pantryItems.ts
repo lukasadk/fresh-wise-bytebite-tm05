@@ -1,122 +1,179 @@
-// Mock "database" for pantry items. Every screen that shows or edits a food item reads
-// from this one list instead of hardcoding its own copy — that way FoodDetailScreen,
-// RecordOutcomeScreen, and MarkConsumedScreen always agree on the same item for a given id.
-//
-// TODO: once the backend is wired up, replace PANTRY_ITEMS with a fetch and turn
-// getPantryItemById into an async call (e.g. `GET /pantry/:id`). Every screen that
-// consumes this file already reads through the two helper functions below, so that's
-// the only place a real API call needs to be plugged in.
+import { api, ApiError } from './api';
+
+// Every screen that shows or edits a food item reads through the functions in this
+// file instead of hardcoding its own copy -- that way FoodDetailScreen,
+// RecordOutcomeScreen, and MarkConsumedScreen always agree on the same item for a
+// given id. This file is the ONLY place that knows about the backend's actual
+// field names (item_id, purchase_date, snake_case source values, etc.) -- every
+// screen only ever sees the shapes below.
 
 export type ExpiryLevel = 'urgent' | 'warn' | 'safe';
-export type StorageType = 'Refrigerated' | 'Frozen' | 'Room temp';
+export type EntrySource = 'Manual' | 'Photo AI'; // how the item was captured -- see Epic 14 for Photo AI
 
 export type PantryItem = {
   id: string;
   name: string;
   category: string;
   quantity: number;
-  unit: string; // e.g. 'carton', 'g', 'bag', 'pack', 'pcs'
+  unit: string; // '' when not set -- formatQuantity() omits it from display when blank
   purchasedDate: string; // display string, e.g. '16 Aug 2026'
-  expiryDate: string; // display string, e.g. '17 Aug 2026' — paired with purchasedDate in getExpiryInfo() for every derived label
-  storage: StorageType;
-  storageGuidance: string;
-  storageTip: string;
+  expiryDate: string; // display string, e.g. '17 Aug 2026' -- paired with purchasedDate in getExpiryInfo()
+  source: EntrySource;
 };
 
-export const PANTRY_ITEMS: PantryItem[] = [
-  {
-    id: 'milk',
-    name: 'Milk',
-    category: 'Dairy',
-    quantity: 1,
-    unit: 'carton',
-    purchasedDate: '16 Aug 2026',
-    expiryDate: '17 Aug 2026',
-    storage: 'Refrigerated',
-    storageGuidance: 'Keep at 4\u00b0C or below. Return milk to the fridge promptly after use.',
-    storageTip: 'Store on the main shelves, not the door.',
-  },
-  {
-    id: 'chicken-breast',
-    name: 'Chicken breast',
-    category: 'Protein',
-    quantity: 500,
-    unit: 'g',
-    purchasedDate: '16 Aug 2026',
-    expiryDate: '18 Aug 2026',
-    storage: 'Refrigerated',
-    storageGuidance: 'Keep at 4\u00b0C or below. Cook thoroughly before eating.',
-    storageTip: 'Store on the lowest fridge shelf in a sealed container to avoid cross-contamination.',
-  },
-  {
-    id: 'spinach',
-    name: 'Spinach',
-    category: 'Vegetables',
-    quantity: 1,
-    unit: 'bag',
-    purchasedDate: '16 Aug 2026',
-    expiryDate: '19 Aug 2026',
-    storage: 'Refrigerated',
-    storageGuidance: 'Keep at 4\u00b0C or below in its bag or a sealed container.',
-    storageTip: 'Keep a paper towel in the bag to absorb excess moisture.',
-  },
-  {
-    id: 'pasta',
-    name: 'Pasta',
-    category: 'Pantry',
-    quantity: 2,
-    unit: 'packs',
-    purchasedDate: '10 Aug 2026',
-    expiryDate: '10 Dec 2026',
-    storage: 'Room temp',
-    storageGuidance: 'Store in a cool, dry cupboard away from direct sunlight.',
-    storageTip: 'Reseal the bag tightly, or transfer to an airtight container after opening.',
-  },
-  {
-    id: 'tomatoes',
-    name: 'Tomatoes',
-    category: 'Vegetables',
-    quantity: 6,
-    unit: 'pcs',
-    purchasedDate: '18 Aug 2026',
-    expiryDate: '23 Aug 2026',
-    storage: 'Room temp',
-    storageGuidance: 'Keep on the counter, away from direct sunlight, until ripe.',
-    storageTip: 'Refrigerating too early dulls the flavour — only chill once fully ripe.',
-  },
-];
+export type NewPantryItem = {
+  name: string;
+  category: string;
+  quantity: number;
+  unit?: string; // optional -- backend's FoodItemCreate.unit is nullable
+  purchasedDate: string;
+  expiryDate: string;
+  source: EntrySource;
+};
 
-export function getPantryItemById(id?: string): PantryItem | undefined {
-  return PANTRY_ITEMS.find((item) => item.id === id);
+// --- Backend shapes (see backend/backend/app/schemas.py, FoodItemOut/FoodItemCreate) ---
+
+type BackendSource = 'manual' | 'barcode' | 'photo';
+
+type BackendFoodItem = {
+  item_id: string;
+  name: string;
+  category: string | null;
+  quantity: number;
+  unit: string | null;
+  purchase_date: string; // ISO date, e.g. '2026-08-16'
+  expiry_date: string | null;
+  source: BackendSource;
+};
+
+type BackendFoodItemCreate = {
+  name: string;
+  category?: string | null;
+  quantity: number;
+  unit?: string | null;
+  purchase_date?: string;
+  expiry_date?: string;
+  source: BackendSource;
+};
+
+function toBackendSource(source: EntrySource): BackendSource {
+  return source === 'Photo AI' ? 'photo' : 'manual';
+}
+
+function fromBackendSource(source: BackendSource): EntrySource {
+  return source === 'manual' ? 'Manual' : 'Photo AI';
+}
+
+function fromBackendItem(raw: BackendFoodItem): PantryItem {
+  return {
+    id: raw.item_id,
+    name: raw.name,
+    category: raw.category ?? 'Other',
+    quantity: raw.quantity,
+    unit: raw.unit ?? '',
+    purchasedDate: isoToDisplay(raw.purchase_date),
+    // The backend allows a null expiry_date, but every item this app creates always
+    // sets one (it's a required field on Add Food) -- falling back to the purchase
+    // date keeps the rest of the app's date math from having to handle a null case
+    // for items that, in practice, never have one.
+    expiryDate: raw.expiry_date ? isoToDisplay(raw.expiry_date) : isoToDisplay(raw.purchase_date),
+    source: fromBackendSource(raw.source),
+  };
+}
+
+export async function getPantryItems(): Promise<PantryItem[]> {
+  const raw = await api.get<BackendFoodItem[]>('/v1/pantry');
+  return raw.map(fromBackendItem);
+}
+
+export async function getPantryItemById(id?: string): Promise<PantryItem | undefined> {
+  if (!id) return undefined;
+  try {
+    const raw = await api.get<BackendFoodItem>(`/v1/pantry/${id}`);
+    return fromBackendItem(raw);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return undefined;
+    throw err;
+  }
+}
+
+export async function addPantryItem(item: NewPantryItem): Promise<PantryItem> {
+  const body: BackendFoodItemCreate = {
+    name: item.name,
+    category: item.category,
+    quantity: item.quantity,
+    unit: item.unit?.trim() || null,
+    purchase_date: displayToIso(item.purchasedDate),
+    expiry_date: displayToIso(item.expiryDate),
+    source: toBackendSource(item.source),
+  };
+  const raw = await api.post<BackendFoodItem>('/v1/pantry', body);
+  return fromBackendItem(raw);
+}
+
+// Matches backend/backend/app/schemas.py's FoodItemUpdate -- name/category/quantity/
+// unit/expiry_date are all independently optional there (partial update), but
+// purchase_date and source can't be changed after creation, so they're not offered
+// here at all.
+export type PantryItemEdit = {
+  name?: string;
+  category?: string;
+  quantity?: number;
+  unit?: string;
+  expiryDate?: string;
+};
+
+export async function updatePantryItem(id: string, edit: PantryItemEdit): Promise<PantryItem> {
+  const body: Record<string, unknown> = {};
+  if (edit.name !== undefined) body.name = edit.name;
+  if (edit.category !== undefined) body.category = edit.category;
+  if (edit.quantity !== undefined) body.quantity = edit.quantity;
+  if (edit.unit !== undefined) body.unit = edit.unit;
+  if (edit.expiryDate !== undefined) body.expiry_date = displayToIso(edit.expiryDate);
+
+  const raw = await api.patch<BackendFoodItem>(`/v1/pantry/${id}`, body);
+  return fromBackendItem(raw);
+}
+
+export async function deletePantryItem(id: string): Promise<void> {
+  await api.delete(`/v1/pantry/${id}`);
 }
 
 export function formatQuantity(item: Pick<PantryItem, 'quantity' | 'unit'>): string {
   const qty = Number.isInteger(item.quantity) ? item.quantity : item.quantity.toFixed(1);
-  return `${qty} ${item.unit}`;
+  return item.unit ? `${qty} ${item.unit}` : `${qty}`;
 }
 
-// --- Expiry date math -------------------------------------------------------------------
-// Everything shown on screen (the "3 days" pill, the urgent/warn/safe colour, the "Expires
-// in 3 days" banner) is derived from purchasedDate/expiryDate here instead of being typed by
-// hand per item, so it can never drift out of sync with the actual dates (the old hardcoded
-// Pasta copy said "120 days" when the real gap between its dates was 122).
-//
-// daysLeft is measured from the item's own purchasedDate rather than a single global "today" —
-// every item in the mock data was "just bought", so purchasedDate doubles as its reference point.
-// TODO: once the backend is wired up and purchasedDate reflects real purchase history, swap the
-// `from` side of daysBetween() below for `new Date()` so daysLeft counts down from the real
-// current day instead of from the purchase day.
+// --- Date conversion + expiry math -------------------------------------------------
+// Everything shown on screen (the "3 days" pill, the urgent/warn/safe colour, the
+// "Expires in 3 days" banner) is derived from purchasedDate/expiryDate here instead
+// of being typed by hand per item, so it can never drift out of sync with the real
+// dates. The app displays dates as '16 Aug 2026' throughout; the backend stores and
+// returns ISO ('2026-08-16'). displayToIso/isoToDisplay below are the only place
+// that conversion happens.
 
-// Parses the app's display date format ('16 Aug 2026') back into a Date.
-// Deliberately avoids `new Date(someString)` — non-ISO string parsing is implementation-defined
-// by the JS spec, and Hermes (the engine Expo/React Native uses on-device) doesn't parse
-// "Aug 16, 2026"-style strings the same way V8/Node does, silently producing an Invalid Date
-// (which is why this showed up as "NaN days" only on-device, never during the Node type-check).
+// Deliberately avoids `new Date(someString)` for the display format -- non-ISO
+// string parsing is implementation-defined by the JS spec, and Hermes (the engine
+// Expo/React Native uses on-device) doesn't parse "Aug 16, 2026"-style strings the
+// same way V8/Node does, silently producing an Invalid Date.
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function parseDisplayDate(display: string): Date {
   const [day, month, year] = display.split(' ');
   return new Date(Number(year), MONTHS.indexOf(month), Number(day));
+}
+
+function displayToIso(display: string): string {
+  const d = parseDisplayDate(display);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function isoToDisplay(iso: string): string {
+  const [yyyy, mm, dd] = iso.split('-').map(Number);
+  return `${dd} ${MONTHS[mm - 1]} ${yyyy}`;
 }
 
 function daysBetween(from: Date, to: Date): number {
@@ -135,11 +192,15 @@ export type ExpiryInfo = {
 };
 
 // Single source of truth for every expiry-derived label/colour shown across the app.
-// Pass in an item's purchasedDate/expiryDate strings and get back everything the UI needs.
-export function getExpiryInfo(purchasedDate: string, expiryDate: string): ExpiryInfo {
-  const daysLeft = daysBetween(parseDisplayDate(purchasedDate), parseDisplayDate(expiryDate));
+// daysLeft is measured from today, not from purchasedDate -- unlike the old mock data
+// (where every item was "just bought"), real items have a real purchase history, so
+// the countdown has to be relative to now. purchasedDate is kept as a parameter for
+// call-site compatibility even though it's unused here now.
+export function getExpiryInfo(_purchasedDate: string, expiryDate: string): ExpiryInfo {
+  const daysLeft = daysBetween(new Date(), parseDisplayDate(expiryDate));
 
-  const expiryLevel: ExpiryLevel = daysLeft <= 1 ? 'urgent' : daysLeft <= 3 ? 'warn' : 'safe';
+  // Forest Green (>3 days) / Amber Gold (1-3 days) / Coral Red (expired or due today) -- see Epic 2.
+  const expiryLevel: ExpiryLevel = daysLeft <= 0 ? 'urgent' : daysLeft <= 3 ? 'warn' : 'safe';
 
   const rowExpiryLabel = daysLeft <= 0 ? 'Expired' : daysLeft === 1 ? 'Tomorrow' : `${daysLeft} days`;
 
