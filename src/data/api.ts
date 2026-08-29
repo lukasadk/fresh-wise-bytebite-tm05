@@ -9,7 +9,7 @@ import { getDeviceId } from './device';
 // doing so no longer collide in git. Falls back to the shared Tailscale host
 // when no .env is present, so existing setups keep working untouched.
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://100.108.18.20:8000';
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://freshwise-api-production.up.railway.app';
 
 // Every authenticated route needs this -- see backend/README.md's "Identity model".
 const DEVICE_ID_HEADER = 'X-Device-Id';
