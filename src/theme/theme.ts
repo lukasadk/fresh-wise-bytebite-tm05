@@ -11,6 +11,24 @@ export const colors = {
   primaryTint: '#E4F6EA', // stat card bg
   primaryTint2: '#E5F7EB', // food row bg
 
+  // Neutral accent used by the design doc for non-green/non-red selections
+  // (waste-reason chips, entry-source tags, filter chips, storage icons) —
+  // deliberately distinct from `primary` so a selected state doesn't read as
+  // "this is good" or `alertIcon` so it doesn't read as "this is bad".
+  slateTeal: '#4A6B7A',
+  slateTealDark: '#35505C',
+
+  // Semantic expiry-status colours exactly as named in the Visual &
+  // Interaction Design Reference (ACs 1.2.3, 2.1.4, 2.2.4). Used for section
+  // headers and status accents. NOTE these are NOT the same values as the
+  // expiry *pill* surfaces below -- those came from the Figma export and are
+  // slightly different (e.g. Figma green #1F7A42 vs spec Forest Green
+  // #2C5F3E). Both are kept rather than silently overwriting the Figma
+  // palette; worth reconciling with the designer.
+  statusToday: '#D9603B',   // Coral Red    -- expired or due today
+  statusSoon: '#C68A2E',    // Amber Gold   -- 1-3 days left
+  statusFresh: '#2C5F3E',   // Forest Green -- more than 3 days left
+
   textPrimary: '#13331E',
   textSecondary: '#63706B',
   border: '#D6E0D6',

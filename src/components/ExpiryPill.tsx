@@ -4,15 +4,22 @@ import { colors, fonts, radii } from '../theme/theme';
 
 export type ExpiryLevel = 'urgent' | 'warn' | 'safe';
 
-// Business rule ported from the design: <2 days = urgent (red), <7 days = warn (yellow), else safe (green).
+// Colour bands per the Visual & Interaction Design Reference (AC 2.1.4):
+//   Coral Red    -- 0 days left / expired
+//   Amber Gold   -- 1-3 days left
+//   Forest Green -- more than 3 days left
+//
+// NOTE: "tomorrow" (1 day) belongs in the AMBER band. An earlier version of
+// this function returned 'urgent' for it, which turned the badge red a full
+// day early and disagreed with getExpiryInfo() in the data layer.
 export function levelForDaysLabel(label: string): ExpiryLevel {
   const lower = label.toLowerCase();
-  if (lower.includes('tomorrow') || lower.includes('today')) return 'urgent';
+  if (lower.includes('expired') || lower.includes('today')) return 'urgent';
+  if (lower.includes('tomorrow')) return 'warn';
   const match = lower.match(/(\d+)\s*day/);
   if (match) {
     const days = parseInt(match[1], 10);
-    if (days <= 3) return 'warn';
-    return 'safe';
+    return days <= 3 ? 'warn' : 'safe';
   }
   return 'warn';
 }

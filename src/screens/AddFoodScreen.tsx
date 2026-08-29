@@ -5,33 +5,44 @@ import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { Field, TextField, SelectField, DateField } from '../components/FormField';
-import { addPantryItem, updatePantryItem } from '../data/pantryItems';
-import { usePantryItem } from '../hooks/usePantryItem';
+import { FilterPill } from '../components/PantryControls';
+import { addPantryItem, updatePantryItem, toStorage } from '../api/freshwise';
+import { usePantryItem } from '../data/pantryItems';
+import { ApiError } from '../api/client';
 import { LoadingState, ErrorState } from '../components/ScreenState';
-import { ApiError } from '../data/api';
 
 const CATEGORIES = ['Dairy', 'Protein', 'Vegetables', 'Fruit', 'Pantry', 'Frozen', 'Beverages', 'Other'];
+const STORAGE_OPTIONS = ['Refrigerated', 'Frozen', 'Room temp'] as const;
+type StorageLabel = (typeof STORAGE_OPTIONS)[number];
 
-// Renders a 'DD Mon YYYY' string (e.g. '16 Aug 2026') to match what pantryItems.ts
-// expects everywhere else -- keeps date formatting in exactly one place.
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-function formatDate(date: Date): string {
-  return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+// Reverse of api/freshwise.ts's STORAGE_BY_LABEL -- needed to seed the picker's
+// selected pill when editing an existing item (the API returns the backend enum
+// value, not the UI label).
+const STORAGE_LABEL_BY_VALUE: Record<string, StorageLabel> = {
+  refrigerated: 'Refrigerated',
+  frozen: 'Frozen',
+  room_temp: 'Room temp',
+};
+
+// ISO ("2026-08-27") is what the API expects -- new Date(str) parsing is
+// implementation-defined across engines, so build/parse the string by hand
+// rather than relying on toISOString()/Date parsing (UTC shifts can land on
+// the wrong day near midnight local time, and Hermes doesn't parse non-ISO
+// strings the way V8 does).
+function toIsoDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
-
-// Reverses formatDate -- needed to seed the DateField's Date value when editing an
-// existing item, since PantryItem stores dates as these same display strings.
-function parseDisplayDate(display: string): Date {
-  const [day, month, year] = display.split(' ');
-  return new Date(Number(year), MONTHS.indexOf(month), Number(day));
+function parseIsoDate(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
 }
 
 export default function AddFoodScreen({ navigation, route }: any) {
   // Edit mode when opened with an id (see FoodDetailScreen's "Edit" button) --
-  // create mode otherwise. The backend only supports editing name/category/
-  // quantity/unit/expiry_date (see FoodItemUpdate) -- purchase date and source
-  // can't be changed after creation, so the Purchase date field is hidden in edit
-  // mode rather than shown-but-broken.
+  // create mode otherwise.
   const editId: string | undefined = route?.params?.id;
   const isEditing = !!editId;
   const { item: existingItem, loading: loadingExisting, error: loadError } = usePantryItem(editId);
@@ -42,23 +53,38 @@ export default function AddFoodScreen({ navigation, route }: any) {
   const [unit, setUnit] = useState('');
   const [purchaseDate, setPurchaseDate] = useState<Date | null>(null);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
+  const [storage, setStorage] = useState<StorageLabel>('Refrigerated');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Prefill once the existing item loads (edit mode only).
+  // Prefill once the existing item loads (edit mode only). Purchase date is
+  // deliberately NOT seeded/shown in edit mode -- the backend's FoodItemUpdate
+  // doesn't accept it, so showing a field that silently can't be changed would
+  // be misleading. Storage CAN be edited (FoodItemUpdate.storage exists), so
+  // that one carries over.
   useEffect(() => {
     if (!existingItem) return;
     setName(existingItem.name);
     setCategory(existingItem.category);
     setQuantity(String(existingItem.quantity));
     setUnit(existingItem.unit);
-    setExpiryDate(parseDisplayDate(existingItem.expiryDate));
+    if (existingItem.expiryDate) setExpiryDate(parseIsoDate(existingItem.expiryDate));
+    if (existingItem.storage) setStorage(STORAGE_LABEL_BY_VALUE[existingItem.storage] ?? 'Refrigerated');
   }, [existingItem?.id]);
 
-  if (isEditing && loadingExisting) return <LoadingState />;
-  if (isEditing && !existingItem) return <ErrorState message={loadError ?? 'Item not found.'} />;
+  if (isEditing && loadingExisting) return null;
+  if (isEditing && !existingItem) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.content}>
+          <BackButton onPress={() => navigation.goBack()} />
+          <Text style={styles.subtitle}>{loadError ?? 'Item not found.'}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handleSave = async () => {
     const parsedQuantity = Number(quantity);
@@ -91,7 +117,8 @@ export default function AddFoodScreen({ navigation, route }: any) {
           category,
           quantity: parsedQuantity,
           unit: unit.trim(),
-          expiryDate: formatDate(expiryDate as Date),
+          expiry_date: toIsoDate(expiryDate as Date),
+          storage: toStorage(storage),
         });
         navigation.navigate('FoodDetail', { id: editId, justEdited: true });
       } else {
@@ -100,11 +127,12 @@ export default function AddFoodScreen({ navigation, route }: any) {
           category,
           quantity: parsedQuantity,
           unit: unit.trim(),
-          purchasedDate: formatDate(purchaseDate ?? new Date()),
-          expiryDate: formatDate(expiryDate as Date),
-          source: 'Manual',
+          purchase_date: toIsoDate(purchaseDate ?? new Date()),
+          expiry_date: toIsoDate(expiryDate as Date),
+          source: 'manual',
+          storage: toStorage(storage),
         });
-        navigation.navigate('FoodDetail', { id: newItem.id, justAdded: true });
+        navigation.navigate('FoodDetail', { id: newItem.item_id, justAdded: true });
       }
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.message : "Couldn't save this item — check your connection and try again.");
@@ -197,6 +225,19 @@ export default function AddFoodScreen({ navigation, route }: any) {
           />
         </Field>
 
+        <Field label="Storage">
+          <View style={styles.storageRow}>
+            {STORAGE_OPTIONS.map((option) => (
+              <FilterPill
+                key={option}
+                label={option}
+                active={storage === option}
+                onPress={() => setStorage(option)}
+              />
+            ))}
+          </View>
+        </Field>
+
         <View style={styles.actions}>
           {submitError ? <Text style={styles.submitError}>{submitError}</Text> : null}
           <Button
@@ -232,6 +273,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 14,
     color: colors.textSecondary,
+  },
+  storageRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   actions: {
     gap: spacing.md,

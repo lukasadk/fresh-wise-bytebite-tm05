@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import ExpiryPill, { ExpiryLevel } from './ExpiryPill';
 import { foodIconFor } from '../icons/FoodIcons';
-import { EntrySource } from '../data/pantryItems';
+import { PantryItem, SOURCE_LABELS } from '../data/pantryItems';
 import { Check } from '../icons/NavIcons';
 
 type Props = {
@@ -12,7 +12,7 @@ type Props = {
   subtitle: string; // e.g. "Dairy · 1 carton" or "Refrigerated"
   expiryLabel: string; // e.g. "Tomorrow", "3 days"
   expiryLevel?: ExpiryLevel;
-  source?: EntrySource; // 'Manual' or 'Photo AI' (see Epic 14) — how the item was captured
+  source?: PantryItem['source']; // raw backend value ('manual' | 'barcode' | 'photo') -- see Epic 1 AC4
   selectMode?: boolean; // shows a checkbox instead of navigating on tap -- see PantryScreen's bulk actions
   selected?: boolean;
   highlighted?: boolean; // brief flash after this item was just edited -- see PantryScreen
@@ -63,10 +63,10 @@ export default function FoodRow({
             <View
               style={[
                 styles.sourceTag,
-                { backgroundColor: source === 'Photo AI' ? colors.sourcePhotoAI : colors.sourceManual },
+                { backgroundColor: source === 'photo' ? colors.sourcePhotoAI : colors.sourceManual },
               ]}
             >
-              <Text style={styles.sourceTagText}>{source}</Text>
+              <Text style={styles.sourceTagText}>{SOURCE_LABELS[source]}</Text>
             </View>
           ) : null}
         </View>

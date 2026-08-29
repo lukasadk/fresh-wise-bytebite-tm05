@@ -42,6 +42,7 @@ food_item_status_enum = Enum(
     "active", "consumed", "wasted", "partially_used", name="food_item_status", create_type=False
 )
 food_item_source_enum = Enum("manual", "barcode", "photo", name="food_item_source", create_type=False)
+storage_type_enum = Enum("refrigerated", "frozen", "room_temp", name="storage_type", create_type=False)
 log_status_enum = Enum("consumed", "wasted", name="log_status", create_type=False)
 waste_reason_enum = Enum(
     "expired",
@@ -102,6 +103,10 @@ class FoodItem(Base):
     expiry_date: Mapped[date | None] = mapped_column(Date, index=True)
     source: Mapped[str] = mapped_column(food_item_source_enum, nullable=False, server_default="manual")
     status: Mapped[str] = mapped_column(food_item_status_enum, nullable=False, server_default="active", index=True)
+    # The household's own choice of where to keep this item. NULL means "not
+    # specified" -- it is NOT a fallback to the FoodKeeper recommendation,
+    # which stays in ref_foodkeeper_storage and is served separately.
+    storage: Mapped[str | None] = mapped_column(storage_type_enum)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["UserProfile"] = relationship(back_populates="food_items")

@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
-import { recordOutcome, WASTE_REASONS, WASTE_REASON_TO_BACKEND, WasteReasonLabel } from '../data/logs';
-import { ApiError } from '../data/api';
-import { usePantryItem } from '../hooks/usePantryItem';
+import { usePantryItem } from '../data/pantryItems';
+import { recordOutcome, WASTE_REASON_BY_LABEL } from '../api/freshwise';
+import { ApiError } from '../api/client';
 import { LoadingState, ErrorState } from '../components/ScreenState';
+
+// Same reason set the bulk-select waste picker on PantryScreen uses -- derived
+// from the API's own mapping so this screen can never drift out of sync with it
+// (or with the backend's enum) by hardcoding a shorter local list.
+type WasteReasonLabel = keyof typeof WASTE_REASON_BY_LABEL;
+const WASTE_REASONS = Object.keys(WASTE_REASON_BY_LABEL) as WasteReasonLabel[];
 
 function formatAmount(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -22,15 +28,28 @@ export default function MarkWastedScreen({ navigation, route }: any) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  if (loading) return <LoadingState />;
-  if (!item) return <ErrorState message={error ?? 'Item not found.'} />;
-
-  if (!wastedQty) setWastedQty(formatAmount(item.quantity));
+  // Seed the quantity once the real item loads -- mirrors MarkConsumedScreen's
+  // pattern (a useEffect, not a bare setState-during-render) so both screens seed
+  // their initial value the same way.
+  useEffect(() => {
+    if (item) setWastedQty(formatAmount(item.quantity));
+  }, [item?.id]);
 
   const handleSave = async () => {
-    const quantity = Number(wastedQty) || 0;
-    const chosenReason = reason ?? 'Other';
-    const label = chosenReason === 'Other' ? otherReason || 'Other' : chosenReason;
+    if (!item) return;
+    const qty = Number(wastedQty);
+    if (!qty || qty <= 0) {
+      setSaveError('Enter how much was wasted.');
+      return;
+    }
+    if (!reason) {
+      setSaveError('Choose a reason.');
+      return;
+    }
+    if (reason === 'Other' && !otherReason.trim()) {
+      setSaveError('Tell us what happened in the text box.');
+      return;
+    }
 
     setSaveError(null);
     setSaving(true);
@@ -38,17 +57,24 @@ export default function MarkWastedScreen({ navigation, route }: any) {
       await recordOutcome({
         itemId: item.id,
         status: 'wasted',
-        quantity,
-        wasteReason: WASTE_REASON_TO_BACKEND[chosenReason],
-        notes: chosenReason === 'Other' ? otherReason || undefined : undefined,
+        quantity: qty,
+        reasonLabel: reason,
+        notes: reason === 'Other' ? otherReason.trim() : undefined,
       });
-      navigation.navigate('WasteRecorded', { id: item.id, wastedQty: quantity, reason: label });
+      navigation.navigate('WasteRecorded', {
+        id: item.id,
+        wastedQty: qty,
+        reason: reason === 'Other' ? otherReason.trim() || 'Other' : reason,
+      });
     } catch (err) {
       setSaveError(err instanceof ApiError ? err.message : "Couldn't save this — check your connection and try again.");
     } finally {
       setSaving(false);
     }
   };
+
+  if (loading) return <LoadingState />;
+  if (!item) return <ErrorState message={error ?? 'Item not found.'} />;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -193,7 +219,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   reasonPillActive: {
-    backgroundColor: colors.primary,
+    // Neutral Slate Teal, not the app's green/red action colours -- keeps waste-reason
+    // selection from reading as a judgement (AC 3.3.4).
+    backgroundColor: colors.slateTeal,
   },
   reasonPillInactive: {
     backgroundColor: colors.card,

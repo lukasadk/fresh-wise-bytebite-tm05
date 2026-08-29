@@ -75,6 +75,10 @@ CREATE TABLE user_profile (
 -- What a household currently has (or had) and when it expires.
 CREATE TYPE food_item_status AS ENUM ('active', 'consumed', 'wasted', 'partially_used');
 CREATE TYPE food_item_source AS ENUM ('manual', 'barcode', 'photo');
+-- Where the household chose to KEEP the item. Distinct from the storage
+-- *guidance* served by /v1/reference/foodkeeper, which is reference data
+-- about how a food SHOULD be stored and is deliberately not duplicated here.
+CREATE TYPE storage_type AS ENUM ('refrigerated', 'frozen', 'room_temp');
 
 CREATE TABLE food_item (
     item_id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -89,6 +93,7 @@ CREATE TABLE food_item (
     expiry_date         DATE,
     source              food_item_source NOT NULL DEFAULT 'manual',
     status              food_item_status NOT NULL DEFAULT 'active',
+    storage             storage_type,         -- nullable: 'not specified'
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

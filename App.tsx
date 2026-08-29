@@ -25,7 +25,7 @@ import WasteRecordedScreen from './src/screens/WasteRecordedScreen';
 import BottomNav from './src/components/BottomNav';
 import AnimatedLoadingScreen from './src/components/AnimatedLoadingScreen';
 import { colors } from './src/theme/theme';
-import { ensureDeviceRegistered } from './src/data/registration';
+import { registerDevice } from './src/api/freshwise';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -62,15 +62,15 @@ export default function App() {
   });
 
   // Every pantry/logs/diet request 404s until this device has a profile -- see
-  // src/data/registration.ts and backend/README.md's "Identity model".
+  // src/api/freshwise.ts's registerDevice() and backend/README.md's "Identity model".
   const [deviceReady, setDeviceReady] = useState(false);
   useEffect(() => {
-    ensureDeviceRegistered()
+    registerDevice()
       .catch(() => {
-        // Swallowed deliberately: registration retries lazily via api.ts's own
-        // per-request device-id header next time a screen makes a request, rather
-        // than blocking app startup forever if the API happens to be unreachable
-        // right at launch.
+        // Swallowed deliberately: every request already sends the device header
+        // regardless (see src/api/client.ts), so a later request just 404s and
+        // surfaces its own error rather than blocking app startup forever if the
+        // API happens to be unreachable right at launch.
       })
       .finally(() => setDeviceReady(true));
   }, []);

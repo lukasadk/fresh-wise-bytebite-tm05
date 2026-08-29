@@ -6,9 +6,9 @@ import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { foodIconFor } from '../icons/FoodIcons';
 import { Minus, Plus, RefreshCw } from '../icons/NavIcons';
-import { recordOutcome } from '../data/logs';
-import { ApiError } from '../data/api';
-import { usePantryItem } from '../hooks/usePantryItem';
+import { usePantryItem } from '../data/pantryItems';
+import { recordOutcome } from '../api/freshwise';
+import { ApiError } from '../api/client';
 import { LoadingState, ErrorState } from '../components/ScreenState';
 
 // How much the +/- steppers move per tap. Matches the 1 -> 0.5 step shown in the Figma frames.
@@ -26,35 +26,38 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Seed the stepper once the item arrives from the API (it starts at 0 while loading).
+  // Seed the stepper once the real item loads -- we don't know the starting
+  // quantity before then.
   useEffect(() => {
     if (item) setConsumedQty(item.quantity);
   }, [item?.id]);
 
-  if (loading) return <LoadingState />;
-  if (!item) return <ErrorState message={error ?? 'Item not found.'} />;
-
-  const Icon = foodIconFor(item.name, item.category);
-
-  const halfQty = item.quantity / 2;
+  const halfQty = (item?.quantity ?? 0) / 2;
   // Derived rather than a separate piece of state, so the pill selection always matches
-  // wherever the stepper currently sits — tapping +/- naturally lands on "Custom" unless
-  // it happens to land exactly back on the full or half amount.
+  // wherever the stepper currently sits.
   const selection: QuickOption =
-    consumedQty === item.quantity ? 'full' : consumedQty === halfQty ? 'half' : 'custom';
+    !item ? 'full' : consumedQty === item.quantity ? 'full' : consumedQty === halfQty ? 'half' : 'custom';
 
-  const remaining = Math.max(0, item.quantity - consumedQty);
-  const isFullyConsumed = consumedQty >= item.quantity;
+  const remaining = Math.max(0, (item?.quantity ?? 0) - consumedQty);
+  const isFullyConsumed = item ? consumedQty >= item.quantity : true;
 
   const inventoryNote = useMemo(() => {
+    if (!item) return '';
     return isFullyConsumed
       ? `This will remove ${item.name} from your active pantry.`
       : `${formatAmount(remaining)} ${item.unit} will remain in your active pantry.`;
-  }, [isFullyConsumed, item.name, item.unit, remaining]);
+  }, [isFullyConsumed, item, remaining]);
 
-  const clamp = (value: number) => Math.min(item.quantity, Math.max(0, Math.round(value * 2) / 2));
+  // Item may still be null here (loading/error hasn't been checked yet -- that
+  // happens further down, AFTER all hooks including the useMemo above, since
+  // hooks must run unconditionally on every render regardless of loading state).
+  const clamp = (value: number) => {
+    const max = item?.quantity ?? 0;
+    return Math.min(max, Math.max(0, Math.round(value * 2) / 2));
+  };
 
   const handleConfirm = async () => {
+    if (!item || consumedQty <= 0) return;
     setSaveError(null);
     setSaving(true);
     try {
@@ -66,6 +69,11 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
       setSaving(false);
     }
   };
+
+  if (loading) return <LoadingState />;
+  if (!item) return <ErrorState message={error ?? 'Item not found.'} />;
+
+  const Icon = foodIconFor(item.name, item.category);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

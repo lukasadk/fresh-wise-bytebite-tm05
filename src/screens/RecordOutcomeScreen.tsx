@@ -5,8 +5,7 @@ import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { foodIconFor } from '../icons/FoodIcons';
-import { formatQuantity, getExpiryInfo } from '../data/pantryItems';
-import { usePantryItem } from '../hooks/usePantryItem';
+import { usePantryItem, formatQuantity, getExpiryInfo } from '../data/pantryItems';
 import { LoadingState, ErrorState } from '../components/ScreenState';
 
 export default function RecordOutcomeScreen({ navigation, route }: any) {
@@ -16,7 +15,7 @@ export default function RecordOutcomeScreen({ navigation, route }: any) {
   if (!item) return <ErrorState message={error ?? 'Item not found.'} />;
 
   const Icon = foodIconFor(item.name, item.category);
-  const expiry = getExpiryInfo(item.purchasedDate, item.expiryDate);
+  const expiry = getExpiryInfo(item);
 
   const handleMarkWasted = () => {
     navigation.navigate('MarkWasted', { id: item.id });

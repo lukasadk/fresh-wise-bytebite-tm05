@@ -1,16 +1,70 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { foodIconFor } from '../icons/FoodIcons';
-import { Refrigerator, Sparkles, ArrowRight } from '../icons/NavIcons';
-import { formatQuantity, getExpiryInfo, deletePantryItem } from '../data/pantryItems';
-import { usePantryItem } from '../hooks/usePantryItem';
-import { useFoodkeeperGuidance } from '../hooks/useFoodkeeperGuidance';
+import { Refrigerator, Snowflake, Sun, Sparkles, ArrowRight } from '../icons/NavIcons';
+import { usePantryItem, formatQuantity, getExpiryInfo, formatDisplayDate } from '../data/pantryItems';
+import { deletePantryItem, lookupStorage } from '../api/freshwise';
+import { ApiError } from '../api/client';
+import type { FoodkeeperStorage } from '../api/types';
 import { LoadingState, ErrorState } from '../components/ScreenState';
-import { ApiError } from '../data/api';
+
+type IconComponent = typeof Refrigerator;
+
+// The user's own storage choice, rendered back in human words. Separate from
+// the FoodKeeper *guidance* below -- this is where they said they put it.
+const STORAGE_LABELS: Record<string, string> = {
+  refrigerated: 'Refrigerated',
+  frozen: 'Frozen',
+  room_temp: 'Room temperature',
+};
+
+type StorageGuidance = {
+  Icon: IconComponent;
+  title: string;
+  body: string;
+  // AC 2.3.3: refrigerate = Slate Teal snowflake, freeze = dark Slate Teal
+  // ice-crystal, room temperature = Amber Gold sun.
+  color: string;
+};
+
+// Reference lookup only -- see the Epic 2.3 note: this is the "recommended
+// storage guidance" ACs 2.3.1-2.3.3 actually describe (FoodKeeper data,
+// joined via canonical_food_name), not the user's own Refrigerated/Frozen/
+// Room-temp pick from AddFoodScreen, which is a separate, already-persisted field
+// (see "Stored in" below).
+function pickGuidance(rows: FoodkeeperStorage[]): StorageGuidance | null {
+  const row = rows[0];
+  if (!row) return null;
+  if (row.refrigerate_tips || row.refrigerate_min != null) {
+    return {
+      Icon: Snowflake,
+      title: 'Refrigerate',
+      body: row.refrigerate_tips || 'Keep refrigerated.',
+      color: colors.slateTeal,
+    };
+  }
+  if (row.freeze_tips || row.freeze_min != null) {
+    return {
+      Icon: Refrigerator,
+      title: 'Freeze',
+      body: row.freeze_tips || 'Suitable for freezing.',
+      color: colors.slateTealDark,
+    };
+  }
+  if (row.pantry_tips || row.pantry_min != null) {
+    return {
+      Icon: Sun,
+      title: 'Room temperature',
+      body: row.pantry_tips || 'Store at room temperature.',
+      color: colors.statusSoon,
+    };
+  }
+  return null;
+}
 
 export default function FoodDetailScreen({ navigation, route }: any) {
   const { item, loading, error } = usePantryItem(route?.params?.id);
@@ -18,11 +72,27 @@ export default function FoodDetailScreen({ navigation, route }: any) {
   const justEdited = !!route?.params?.justEdited;
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  const [confirmRemoveVisible, setConfirmRemoveVisible] = useState(false);
 
-  // Storage guidance isn't stored on the item at all -- it's looked up live from the
-  // FoodKeeper reference dataset by name/category (see backend/db/erd-schema.sql;
-  // food_item has no storage columns).
-  const { guidance, loading: guidanceLoading } = useFoodkeeperGuidance(item?.name, item?.category);
+  const [guidance, setGuidance] = useState<StorageGuidance | null>(null);
+  const [guidanceChecked, setGuidanceChecked] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    setGuidance(null);
+    setGuidanceChecked(false);
+    if (!item?.canonicalFoodName) {
+      setGuidanceChecked(true);
+      return;
+    }
+    lookupStorage(item.canonicalFoodName)
+      .then((rows) => alive && setGuidance(pickGuidance(rows)))
+      .catch(() => alive && setGuidance(null))
+      .finally(() => alive && setGuidanceChecked(true));
+    return () => {
+      alive = false;
+    };
+  }, [item?.canonicalFoodName]);
 
   const handleBack = () => {
     // Landed here straight from Add Food, or straight back from editing -- either
@@ -41,8 +111,6 @@ export default function FoodDetailScreen({ navigation, route }: any) {
       navigation.goBack();
     }
   };
-
-  const [confirmRemoveVisible, setConfirmRemoveVisible] = useState(false);
 
   const confirmRemove = async () => {
     if (!item) return;
@@ -63,12 +131,7 @@ export default function FoodDetailScreen({ navigation, route }: any) {
   if (!item) return <ErrorState message={error ?? 'Item not found.'} />;
 
   const Icon = foodIconFor(item.name, item.category);
-  const expiry = getExpiryInfo(item.purchasedDate, item.expiryDate);
-
-  // Prefer refrigeration guidance since that's the most common case shown elsewhere
-  // in the app; fall back to pantry tips if that's all FoodKeeper has for this food.
-  const guidanceTitle = guidance?.categoryName ?? guidance?.name ?? 'Storage guidance';
-  const guidanceBody = guidance?.refrigerateTips ?? guidance?.pantryTips ?? guidance?.freezeTips ?? null;
+  const expiry = getExpiryInfo(item);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -105,44 +168,40 @@ export default function FoodDetailScreen({ navigation, route }: any) {
         <View style={styles.detailsCard}>
           <DetailRow label="Quantity" value={formatQuantity(item)} />
           <View style={styles.divider} />
-          <DetailRow label="Purchased" value={item.purchasedDate} />
+          <DetailRow label="Purchased" value={formatDisplayDate(item.purchaseDate)} />
           <View style={styles.divider} />
-          <DetailRow label="Expires" value={item.expiryDate} />
+          <DetailRow label="Expires" value={formatDisplayDate(item.expiryDate)} />
+          <View style={styles.divider} />
+          <DetailRow
+            label="Stored in"
+            value={item.storage ? STORAGE_LABELS[item.storage] ?? item.storage : 'Not specified'}
+          />
         </View>
 
-        {!guidanceLoading && guidanceBody ? (
-          <>
-            <Text style={styles.sectionTitle}>Storage guidance</Text>
-            <View style={styles.guidanceCard}>
-              <>
-                <View style={styles.guidanceRow}>
-                  <View style={styles.guidanceIcon}>
-                    <Refrigerator size={20} color={colors.primary} strokeWidth={2} />
-                  </View>
-                  <View style={styles.guidanceText}>
-                    <Text style={styles.guidanceTitle}>{guidanceTitle}</Text>
-                    <Text style={styles.guidanceBody}>{guidanceBody}</Text>
-                  </View>
-                </View>
-
-                {guidance?.pantryTips && guidance.refrigerateTips ? (
-                  <>
-                    <View style={styles.guidanceDivider} />
-                    <View style={styles.tipRow}>
-                      <View style={styles.tipIcon}>
-                        <Sparkles size={12} color={colors.primary} />
-                      </View>
-                      <Text style={styles.tipText}>
-                        <Text style={styles.tipLabel}>Tip: </Text>
-                        {guidance.pantryTips}
-                      </Text>
-                    </View>
-                  </>
-                ) : null}
-              </>
+        <Text style={styles.sectionTitle}>Storage guidance</Text>
+        <View style={styles.guidanceCard}>
+          <View style={styles.guidanceRow}>
+            <View style={styles.guidanceIcon}>
+              {guidance ? (
+                <guidance.Icon size={20} color={guidance.color} strokeWidth={2} />
+              ) : (
+                <Sparkles size={16} color={colors.primary} />
+              )}
             </View>
-          </>
-        ) : null}
+            <View style={styles.guidanceText}>
+              <Text style={[styles.guidanceTitle, guidance ? { color: guidance.color } : null]}>
+                {guidance ? guidance.title : guidanceChecked ? 'No guidance on file yet' : 'Looking up guidance…'}
+              </Text>
+              <Text style={styles.guidanceBody}>
+                {guidance
+                  ? guidance.body
+                  : item.canonicalFoodName
+                    ? "We don't have storage guidance for this item yet."
+                    : "This item has no reference food name set, so guidance can't be looked up."}
+              </Text>
+            </View>
+          </View>
+        </View>
 
         <Pressable
           style={({ pressed }) => [styles.outcomeLink, pressed && { opacity: 0.7 }]}
@@ -322,10 +381,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     lineHeight: 18,
   },
-  guidanceDivider: {
-    height: 1,
-    backgroundColor: colors.borderSoft,
-  },
   outcomeLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -353,29 +408,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.errorText,
     textAlign: 'center',
-  },
-  tipRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  tipIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-  },
-  tipText: {
-    flex: 1,
-    fontFamily: fonts.regular,
-    fontSize: 13,
-    color: colors.textPrimary,
-    lineHeight: 18,
-  },
-  tipLabel: {
-    fontFamily: fonts.bold,
   },
 });
