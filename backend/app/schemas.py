@@ -25,6 +25,10 @@ class UserProfileOut(BaseModel):
     location: str | None
     risk_score: RiskLevel
     created_at: datetime
+    # Included so the client can confirm whether a token is already
+    # registered without needing a separate endpoint -- never surfaced in the
+    # UI itself.
+    push_token: str | None = None
 
 
 class UserProfileCreate(BaseModel):
@@ -43,6 +47,10 @@ class UserProfileCreate(BaseModel):
 class UserProfileUpdate(BaseModel):
     household_size: int | None = Field(gt=0, default=None)
     location: str | None = Field(default=None, max_length=50)
+    # Set by the client once it has permission + a real Expo push token.
+    # Passing an empty string clears it (e.g. user disables notifications) --
+    # None (the default, field omitted) leaves the stored value untouched.
+    push_token: str | None = Field(default=None, max_length=200)
 
 
 # --- Pantry / food_item --------------------------------------------------
@@ -152,6 +160,15 @@ class ConsumptionWasteLogOut(BaseModel):
     waste_reason: WasteReason | None
     notes: str | None
     logged_at: datetime
+    # Denormalised from FoodItem for the Activity history list -- the log
+    # itself only stores item_id, and showing a raw UUID there would be
+    # useless. Populated by list_logs()'s join; None if ever constructed
+    # without it (e.g. record_outcome's own response, which returns the log
+    # ORM object directly and doesn't set these -- fine, since that response
+    # is only ever used right after a save, when the screen already has the
+    # item's name in hand from its own separate fetch).
+    item_name: str | None = None
+    item_unit: str | None = None
 
 
 # --- Dashboard -------------------------------------------------------------

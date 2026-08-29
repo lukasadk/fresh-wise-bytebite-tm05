@@ -37,31 +37,40 @@ type StorageGuidance = {
 // Room-temp pick from AddFoodScreen, which is a separate, already-persisted field
 // (see "Stored in" below).
 function pickGuidance(rows: FoodkeeperStorage[]): StorageGuidance | null {
-  const row = rows[0];
-  if (!row) return null;
-  if (row.refrigerate_tips || row.refrigerate_min != null) {
-    return {
-      Icon: Snowflake,
-      title: 'Refrigerate',
-      body: row.refrigerate_tips || 'Keep refrigerated.',
-      color: colors.slateTeal,
-    };
-  }
-  if (row.freeze_tips || row.freeze_min != null) {
-    return {
-      Icon: Refrigerator,
-      title: 'Freeze',
-      body: row.freeze_tips || 'Suitable for freezing.',
-      color: colors.slateTealDark,
-    };
-  }
-  if (row.pantry_tips || row.pantry_min != null) {
-    return {
-      Icon: Sun,
-      title: 'Room temperature',
-      body: row.pantry_tips || 'Store at room temperature.',
-      color: colors.statusSoon,
-    };
+  // The lookup can return several rows for one food (e.g. "milk plain or
+  // flavored" vs a more specific variant) -- some entries only carry a
+  // *_metric field (like "Package use-by date") with no actual tips/min
+  // values at all, which used to make this function give up on the very
+  // first row even when a later one in the same response has real data.
+  for (const row of rows) {
+    if (row.refrigerate_tips || row.refrigerate_min != null) {
+      return {
+        Icon: Snowflake,
+        title: 'Refrigerate',
+        body: row.refrigerate_tips || 'Keep refrigerated.',
+        color: colors.slateTeal,
+      };
+    }
+    if (row.freeze_tips || row.freeze_min != null) {
+      return {
+        // Lucide has no distinct "ice crystal" icon separate from Snowflake --
+        // reusing it here (in dark Slate Teal, vs plain Slate Teal for
+        // refrigerate) rather than a Refrigerator icon, which read as
+        // confusingly generic next to a section that's already about storage.
+        Icon: Snowflake,
+        title: 'Freeze',
+        body: row.freeze_tips || 'Suitable for freezing.',
+        color: colors.slateTealDark,
+      };
+    }
+    if (row.pantry_tips || row.pantry_min != null) {
+      return {
+        Icon: Sun,
+        title: 'Room temperature',
+        body: row.pantry_tips || 'Store at room temperature.',
+        color: colors.statusSoon,
+      };
+    }
   }
   return null;
 }

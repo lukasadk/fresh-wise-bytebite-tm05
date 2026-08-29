@@ -23,6 +23,7 @@ export type UserProfile = {
   location: string | null;
   risk_score: 'low' | 'med' | 'high';
   created_at: string;
+  push_token: string | null;
 };
 
 export type FoodItem = {
@@ -54,6 +55,8 @@ export type ConsumptionWasteLog = {
   waste_reason: WasteReason | null;
   notes: string | null;
   logged_at: string;
+  item_name: string | null;
+  item_unit: string | null;
 };
 
 export type DashboardSummary = {

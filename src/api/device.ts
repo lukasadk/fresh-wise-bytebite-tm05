@@ -17,6 +17,15 @@ import * as Crypto from 'expo-crypto';
 
 const STORAGE_KEY = 'freshwise.deviceId';
 
+// One-time migration: an earlier version of this app (before merging the two
+// teams' work) stored the device UUID under this different key. Without this,
+// anyone who used the app before the merge would silently get issued a BRAND
+// NEW device UUID on first launch post-merge -- and since the backend scopes
+// every pantry item to a device UUID, their existing items would still exist
+// in Postgres but become permanently unreachable, looking exactly like data
+// loss even though nothing was actually deleted.
+const LEGACY_STORAGE_KEY = 'freshwise:deviceId';
+
 let cached: string | null = null;
 
 /** Returns this device's UUID, generating and persisting one on first call. */
@@ -24,6 +33,19 @@ export async function getDeviceId(): Promise<string> {
   if (cached) return cached;
 
   const stored = await AsyncStorage.getItem(STORAGE_KEY);
+  const legacy = await AsyncStorage.getItem(LEGACY_STORAGE_KEY);
+
+  // Self-healing, not just a first-run check: if the legacy key holds an id
+  // that differs from (or is missing from) the current key, adopt the legacy
+  // one. Covers both "never migrated yet" AND "already opened the app once
+  // post-merge, so a new UUID got generated before this fix existed" -- either
+  // way, the legacy id (and its pantry items) wins over a freshly-generated one.
+  if (legacy && legacy !== stored) {
+    await AsyncStorage.setItem(STORAGE_KEY, legacy);
+    cached = legacy;
+    return legacy;
+  }
+
   if (stored) {
     cached = stored;
     return stored;

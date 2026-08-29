@@ -6,8 +6,7 @@ import Button from '../components/Button';
 import StatCard from '../components/StatCard';
 import QuickAction from '../components/QuickAction';
 import { LayoutGrid, Plus, Sparkles, Sun, CloudSun, Moon } from '../icons/NavIcons';
-import { getExpiryInfo } from '../data/pantryItems';
-import { usePantryItems } from '../hooks/usePantryItems';
+import { usePantry, getExpiryInfo } from '../data/pantryItems';
 
 // Three buckets, matching the icons available: a rising/full sun for morning, a
 // sun-behind-cloud for afternoon, a moon for night. Re-evaluated on every render,
@@ -20,19 +19,19 @@ function getGreeting() {
 }
 
 export default function HomeScreen({ navigation }: any) {
-  const { items } = usePantryItems();
+  const { items } = usePantry();
 
   // Same "needs attention" definition PantryScreen's banner uses -- anything not
   // safely >3 days out.
   const itemsWithExpiry = items.map((item) => ({
     item,
-    expiry: getExpiryInfo(item.purchasedDate, item.expiryDate),
+    expiry: getExpiryInfo(item),
   }));
   const expiringSoonCount = itemsWithExpiry.filter((x) => x.expiry.expiryLevel !== 'safe').length;
 
   const soonestItem =
     itemsWithExpiry.length > 0
-      ? [...itemsWithExpiry].sort((a, b) => a.expiry.daysLeft - b.expiry.daysLeft)[0]
+      ? [...itemsWithExpiry].sort((a, b) => (a.expiry.daysLeft ?? Infinity) - (b.expiry.daysLeft ?? Infinity))[0]
       : null;
 
   const { text: greetingText, Icon: GreetingIcon } = getGreeting();
@@ -109,6 +108,11 @@ export default function HomeScreen({ navigation }: any) {
           <QuickAction
             icon={<Sparkles size={20} color={colors.primary} />}
             label="Record Outcome"
+            onPress={() =>
+              soonestItem
+                ? navigation.navigate('RecordOutcome', { id: soonestItem.item.id })
+                : navigation.navigate('Main', { screen: 'Pantry' })
+            }
           />
         </View>
       </ScrollView>

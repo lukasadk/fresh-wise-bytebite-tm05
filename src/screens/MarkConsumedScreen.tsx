@@ -62,7 +62,12 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
     setSaving(true);
     try {
       await recordOutcome({ itemId: item.id, status: 'consumed', quantity: consumedQty });
-      navigation.popToTop();
+      // Explicit target rather than navigation.popToTop() -- Food Detail (and
+      // this screen) can be reached from Home, Pantry, or Use First, and
+      // popToTop() only returns to whichever tab happened to be active when
+      // that chain started, not necessarily Pantry. The AC requires landing
+      // on My Pantry specifically.
+      navigation.navigate('Main', { screen: 'Pantry' });
     } catch (err) {
       setSaveError(err instanceof ApiError ? err.message : "Couldn't save this — check your connection and try again.");
     } finally {

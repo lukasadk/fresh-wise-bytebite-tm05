@@ -125,6 +125,15 @@ export default function AddFoodScreen({ navigation, route }: any) {
         const newItem = await addPantryItem({
           name: name.trim(),
           category,
+          // Best-effort default so storage guidance (FoodDetailScreen) and
+          // recipe matching (RecipesScreen) have something to match against
+          // at all -- both are keyed on this field, and it can ONLY be set
+          // here at creation (updatePantryItem's patch type deliberately
+          // excludes it). Won't always line up with FoodKeeper's/the recipe
+          // dataset's exact naming (e.g. "chicken breast" vs "boneless
+          // skinless chicken breast"), but leaving it null guarantees zero
+          // matches instead of just imperfect ones.
+          canonical_food_name: name.trim().toLowerCase(),
           quantity: parsedQuantity,
           unit: unit.trim(),
           purchase_date: toIsoDate(purchaseDate ?? new Date()),

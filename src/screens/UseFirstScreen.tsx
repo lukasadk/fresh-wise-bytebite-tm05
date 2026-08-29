@@ -4,8 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
 import FoodRow from '../components/FoodRow';
+import SwipeToManage from '../components/SwipeToManage';
 import { foodIconFor } from '../icons/FoodIcons';
-import { usePantry, getExpiryInfo, PantryItem } from '../data/pantryItems';
+import { usePantry, getExpiryInfo, formatDisplayDate, PantryItem } from '../data/pantryItems';
 
 // AC 2.2.4 -- the three bands, in priority order. Boundaries match
 // getExpiryInfo()/ExpiryPill exactly (Coral Red is 0-days/expired only), so a
@@ -62,6 +63,8 @@ export default function UseFirstScreen({ navigation }: any) {
   const heroExpiry = priority ? getExpiryInfo(priority) : null;
   const HeroIcon = priority ? foodIconFor(priority.name, priority.category) : null;
 
+  const goToDetail = (id: string) => navigation.navigate('FoodDetail', { id });
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -83,23 +86,28 @@ export default function UseFirstScreen({ navigation }: any) {
             </Text>
           </View>
         ) : (
-          <View style={styles.hero}>
-            <View style={styles.heroTopRow}>
-              <Text style={styles.heroEyebrow}>TODAY'S PRIORITY</Text>
-              <View style={styles.heroIcon}>
-                <HeroIcon size={58} />
+          <SwipeToManage onManage={() => goToDetail(priority.id)} borderRadius={radii.xl + 2}>
+            <View style={styles.hero}>
+              <View style={styles.heroTopRow}>
+                <View style={styles.heroTextBlock}>
+                  <Text style={styles.heroEyebrow}>TODAY'S PRIORITY</Text>
+                  <Text style={styles.heroTitle}>{priority.name}</Text>
+                  <Text style={styles.heroSubtitle}>{heroExpiry?.detailExpiryTitle}</Text>
+                </View>
+                <View style={styles.heroIcon}>
+                  <HeroIcon size={104} />
+                </View>
+              </View>
+              <View style={styles.heroBottomRow}>
+                <Button
+                  label="See recipe"
+                  variant="onDark"
+                  onPress={() => navigation.navigate('Recipes')}
+                />
+                <Text style={styles.swipeHint}>Swipe to manage →</Text>
               </View>
             </View>
-            <Text style={styles.heroTitle}>{priority.name}</Text>
-            <Text style={styles.heroSubtitle}>{heroExpiry?.detailExpiryTitle}</Text>
-            <View style={styles.heroBottomRow}>
-              <Button
-                label="View details"
-                variant="onDark"
-                onPress={() => navigation.navigate('FoodDetail', { id: priority.id })}
-              />
-            </View>
-          </View>
+          </SwipeToManage>
         )}
 
         {buckets.map((section) =>
@@ -116,16 +124,18 @@ export default function UseFirstScreen({ navigation }: any) {
                 {section.items.map((item) => {
                   const expiry = getExpiryInfo(item);
                   return (
-                    <FoodRow
-                      key={item.id}
-                      name={item.name}
-                      category={item.category}
-                      subtitle={item.category}
-                      expiryLabel={expiry.rowExpiryLabel}
-                      expiryLevel={expiry.expiryLevel}
-                      source={item.source}
-                      onPress={() => navigation.navigate('FoodDetail', { id: item.id })}
-                    />
+                    <SwipeToManage key={item.id} onManage={() => goToDetail(item.id)}>
+                      <FoodRow
+                        name={item.name}
+                        category={item.category}
+                        subtitle={item.category}
+                        expiryDate={formatDisplayDate(item.expiryDate)}
+                        expiryLabel={expiry.rowExpiryLabel}
+                        expiryLevel={expiry.expiryLevel}
+                        source={item.source}
+                        onPress={() => goToDetail(item.id)}
+                      />
+                    </SwipeToManage>
                   );
                 })}
               </View>
@@ -161,12 +171,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderRadius: radii.xl + 2,
     padding: spacing.xl,
-    gap: spacing.sm,
+    gap: spacing.lg,
   },
   heroTopRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  heroTextBlock: {
+    flex: 1,
+    gap: 4,
   },
   heroEyebrow: {
     fontFamily: fonts.bold,
@@ -175,23 +190,28 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   heroIcon: {
-    marginTop: -spacing.sm,
+    // Deliberately oversized relative to the old 58px version -- the empty
+    // space to the right of the title was the actual "too much space" issue.
   },
   heroTitle: {
     fontFamily: fonts.serif,
-    fontSize: 34,
+    fontSize: 32,
     color: colors.white,
   },
   heroSubtitle: {
     fontFamily: fonts.semibold,
-    fontSize: 18,
+    fontSize: 17,
     color: colors.white,
   },
   heroBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: spacing.sm,
+  },
+  swipeHint: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    color: colors.primaryPale,
   },
   messageCard: {
     backgroundColor: colors.card,

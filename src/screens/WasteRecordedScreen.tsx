@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
@@ -17,6 +17,16 @@ export default function WasteRecordedScreen({ navigation, route }: any) {
   const wastedQty: number = route?.params?.wastedQty ?? 0;
   const reason: string = route?.params?.reason ?? 'Other';
 
+  // Coral Red confirmation toast, neutral wording ("Recorded: 200g rice
+  // wasted", not "You wasted 200g of rice") -- matches the design guardrail
+  // against shaming language, and the same "Added" toast pattern PantryScreen
+  // already uses for the create flow, just recoloured for this one.
+  const [toastVisible, setToastVisible] = useState(true);
+  useEffect(() => {
+    const timeout = setTimeout(() => setToastVisible(false), 3000);
+    return () => clearTimeout(timeout);
+  }, []);
+
   if (loading) return <LoadingState />;
   if (!item) return <ErrorState message={error ?? 'Item not found.'} />;
 
@@ -26,8 +36,18 @@ export default function WasteRecordedScreen({ navigation, route }: any) {
   // No local subtraction (item.quantity - wastedQty) needed here.
   const remaining = item.quantity;
 
+  const quantityText = item.unit ? `${formatAmount(wastedQty)} ${item.unit}` : formatAmount(wastedQty);
+  const toastMessage = `Recorded: ${quantityText} ${item.name} wasted`;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      {toastVisible ? (
+        <View style={styles.toast}>
+          <View style={styles.toastPill}>
+            <Text style={styles.toastText} numberOfLines={2}>{toastMessage}</Text>
+          </View>
+        </View>
+      ) : null}
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <BackButton onPress={() => navigation.goBack()} />
@@ -59,7 +79,7 @@ export default function WasteRecordedScreen({ navigation, route }: any) {
 
         <Button
           label="Back to My Pantry"
-          onPress={() => navigation.popToTop()}
+          onPress={() => navigation.navigate('Main', { screen: 'Pantry' })}
           style={styles.fullWidthButton}
         />
       </ScrollView>
@@ -71,6 +91,32 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  toast: {
+    position: 'absolute',
+    top: spacing.lg,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    alignItems: 'center',
+    paddingHorizontal: spacing.xxl,
+  },
+  toastPill: {
+    backgroundColor: colors.errorText, // Coral Red #D9603B
+    borderRadius: radii.pill,
+    paddingVertical: spacing.md - 2,
+    paddingHorizontal: spacing.xl,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  toastText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.white,
+    textAlign: 'center',
   },
   content: {
     padding: spacing.xxl,

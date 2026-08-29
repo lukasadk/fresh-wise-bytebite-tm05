@@ -2,13 +2,14 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { colors, fonts, radii, spacing } from '../theme/theme';
-import { Home, LayoutGrid, Zap, Sparkles } from '../icons/NavIcons';
+import { Home, LayoutGrid, Zap, Sparkles, BarChart3 } from '../icons/NavIcons';
 
 const ICONS: Record<string, typeof Home> = {
   Home: Home,
   Pantry: LayoutGrid,
   UseFirst: Zap,
   Recipes: Sparkles,
+  Activity: BarChart3,
 };
 
 const LABELS: Record<string, string> = {
@@ -16,6 +17,7 @@ const LABELS: Record<string, string> = {
   Pantry: 'Pantry',
   UseFirst: 'Use First',
   Recipes: 'Recipes',
+  Activity: 'Activity',
 };
 
 // Custom tab bar so it visually matches the Figma "pill" nav exactly,

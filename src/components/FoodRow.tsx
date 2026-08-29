@@ -10,6 +10,7 @@ type Props = {
   name: string;
   category?: string; // used as a fallback icon signal when name doesn't match a keyword
   subtitle: string; // e.g. "Dairy · 1 carton" or "Refrigerated"
+  expiryDate?: string; // display-formatted date, e.g. "2 Sep 2026" -- own line, kept separate from subtitle so it never truncates
   expiryLabel: string; // e.g. "Tomorrow", "3 days"
   expiryLevel?: ExpiryLevel;
   source?: PantryItem['source']; // raw backend value ('manual' | 'barcode' | 'photo') -- see Epic 1 AC4
@@ -30,6 +31,7 @@ export default function FoodRow({
   name,
   category,
   subtitle,
+  expiryDate,
   expiryLabel,
   expiryLevel,
   source,
@@ -71,6 +73,7 @@ export default function FoodRow({
           ) : null}
         </View>
         <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
+        {expiryDate ? <Text style={styles.expiryDateText} numberOfLines={1}>Exp {expiryDate}</Text> : null}
       </View>
       <View style={styles.expiryCol}>
         {expiryLevel ? <View style={[styles.dot, { backgroundColor: borderColor }]} /> : null}
@@ -141,6 +144,11 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: fonts.regular,
     fontSize: 12,
+    color: colors.textSecondary,
+  },
+  expiryDateText: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
     color: colors.textSecondary,
   },
   expiryCol: {
