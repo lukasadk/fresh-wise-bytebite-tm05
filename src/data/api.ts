@@ -4,25 +4,18 @@
 // the API is running on the same physical device as the app, which it usually isn't.
 import { getDeviceId } from './device';
 
-// Set per-developer in a gitignored .env at the repo ROOT (see .env.example), so
-// nobody has to edit this file to point at their own backend -- and two people
-// doing so no longer collide in git. Falls back to the shared Tailscale host
-// when no .env is present, so existing setups keep working untouched.
-export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://freshwise-api-production.up.railway.app';
-
-// Every authenticated route needs this -- see backend/README.md's "Identity model".
-const DEVICE_ID_HEADER = 'X-Device-Id';
-
-// Shared key for a publicly-hosted API; must match API_KEY in the server's
-// environment. Empty is fine locally -- the backend only enforces it when its
-// own API_KEY is set, so leaving this unset changes nothing on the tailnet.
+// URL and key come from src/api/config.ts -- imported, not redeclared. Two
+// modules each holding their own base URL is exactly what let the app request
+// "https://your-production-host" from one wrapper while the other was correctly
+// pointed at Railway. One definition, one place to change it.
 //
-// NOT a secret. EXPO_PUBLIC_ values are compiled into the JS bundle and can be
-// read out of the built app. Keeping it in .env keeps it off GitHub, which is
-// worth doing, but treat it as a scanner filter and a kill switch -- the rate
-// limiter is what actually caps abuse.
-const API_KEY = process.env.EXPO_PUBLIC_API_KEY ?? '';
+// The key is NOT a secret: EXPO_PUBLIC_ values are compiled into the bundle and
+// can be read out of the built app. It filters bots and acts as a kill switch;
+// the server's rate limiter is what actually caps abuse.
+import { API_BASE_URL, API_KEY, API_KEY_HEADER, DEVICE_ID_HEADER } from '../api/config';
+
+// Re-exported so existing importers of `API_BASE_URL` from this module keep working.
+export { API_BASE_URL };
 
 // fetch() has no timeout of its own, so an unreachable host hangs until the
 // platform's default (often a minute or more). That reads as a frozen app
@@ -57,7 +50,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       headers: {
         'Content-Type': 'application/json',
         [DEVICE_ID_HEADER]: deviceId,
-        ...(API_KEY ? { 'X-API-Key': API_KEY } : {}),
+        ...(API_KEY ? { [API_KEY_HEADER]: API_KEY } : {}),
         ...(options?.headers as Record<string, string> | undefined),
       },
     });

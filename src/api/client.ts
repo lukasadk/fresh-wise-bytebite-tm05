@@ -4,7 +4,13 @@
 // Everything in src/api/ goes through this, so retry/auth/logging changes
 // happen in one place.
 
-import { API_BASE_URL, DEVICE_ID_HEADER, REQUEST_TIMEOUT_MS } from './config';
+import {
+  API_BASE_URL,
+  API_KEY,
+  API_KEY_HEADER,
+  DEVICE_ID_HEADER,
+  REQUEST_TIMEOUT_MS,
+} from './config';
 import { getDeviceId } from './device';
 
 export class ApiError extends Error {
@@ -52,6 +58,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (!anonymous) headers[DEVICE_ID_HEADER] = await getDeviceId();
+  // Sent on EVERY request, including the anonymous reference lookups -- the
+  // server checks the key as middleware, ahead of any per-route logic.
+  if (API_KEY) headers[API_KEY_HEADER] = API_KEY;
 
   // Abort on timeout, but respect a caller-supplied signal too (screens pass
   // one on unmount so a slow request can't set state after teardown).

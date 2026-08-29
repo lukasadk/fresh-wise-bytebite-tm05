@@ -17,11 +17,27 @@
 // are reached over Tailscale, not local Wi-Fi. Confirm this is still correct
 // with `tailscale ip -4` on the machine running uvicorn before assuming it's stale.
 
-const LAN_IP = '100.108.18.20'; // <-- CHANGE THIS to your machine's IP
+const LAN_IP = '100.108.18.20'; // only used if no EXPO_PUBLIC_API_BASE_URL is set
 
-export const API_BASE_URL = __DEV__
-  ? `http://${LAN_IP}:8000`
-  : 'https://your-production-host'; // set when the NAS/host is decided
+// Read from a gitignored .env at the repo ROOT (see .env.example), so each
+// developer points at their own backend without editing this shared file.
+//
+// The __DEV__ split that used to live here was a trap: a production bundle
+// (which is what `eas build` and `eas update` produce) took the else-branch and
+// requested the literal string "https://your-production-host". It worked in
+// Expo Go via `expo start` -- where __DEV__ is true -- and failed everywhere
+// else. One value for both modes removes that whole class of bug.
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://freshwise-api-production.up.railway.app';
+
+// Shared key for the hosted API; must match API_KEY in the server's environment.
+// Empty is fine against a local backend that has no API_KEY set.
+//
+// NOT a secret: EXPO_PUBLIC_ values are compiled into the bundle and can be read
+// out of the built app. It filters bots and acts as a kill switch; the server's
+// rate limiter is what actually caps abuse.
+export const API_KEY = process.env.EXPO_PUBLIC_API_KEY ?? '';
+export const API_KEY_HEADER = 'X-API-Key';
 
 // Header carrying the client-generated device UUID. Must match DEVICE_ID_HEADER
 // in the backend's .env (default X-Device-Id). There is no login anywhere in
