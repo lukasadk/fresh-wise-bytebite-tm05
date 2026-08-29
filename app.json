@@ -15,7 +15,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo/freshwise-logo.png",
         "backgroundColor": "#FCF9F2"
-      }
+      },
+      "package": "com.bytebite.freshwise"
     },
     "plugins": [
       "expo-asset",
@@ -28,6 +29,19 @@
           "backgroundColor": "#FCF9F2"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6bc0972b-c6bd-42b0-a69b-ac5f603a0954"
+      }
+    },
+    "owner": "lukasadk",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6bc0972b-c6bd-42b0-a69b-ac5f603a0954"
+    },
+    "ios": {}
   }
 }
