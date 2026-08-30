@@ -141,7 +141,18 @@ export default function AddFoodScreen({ navigation, route }: any) {
           source: 'manual',
           storage: toStorage(storage),
         });
-        navigation.navigate('FoodDetail', { id: newItem.item_id, justAdded: true });
+        // replace(), not navigate(). This screen and FoodDetail are both in the
+        // presentation:'modal' group, and on a NEW item FoodDetail isn't in the
+        // stack yet -- so navigate() PUSHES it and leaves this half-filled form
+        // sitting underneath. On iOS that shows as modal cards piling up, and
+        // dismissing FoodDetail drops you back onto the Add Food form instead of
+        // the pantry. replace() swaps this screen for FoodDetail: one modal.
+        //
+        // The edit branch above deliberately still uses navigate(): there
+        // FoodDetail IS already in the stack (you came from it), so navigate()
+        // pops back to it and updates its params. replace() there would create a
+        // second copy.
+        navigation.replace('FoodDetail', { id: newItem.item_id, justAdded: true });
       }
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.message : "Couldn't save this item — check your connection and try again.");

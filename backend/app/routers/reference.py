@@ -10,7 +10,7 @@ No user data is involved, so these endpoints don't require the device-id header.
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
@@ -42,17 +42,48 @@ async def lookup_foodkeeper(
     name-only form, which is broader but may return several variants.
     """
     key = canonical_food_name.lower().strip()
-    result = await db.execute(
+    if not key:
+        return []
+
+    exact = (
+        await db.execute(
+            select(RefFoodkeeperStorage)
+            .where(
+                or_(
+                    RefFoodkeeperStorage.canonical_food_name == key,
+                    RefFoodkeeperStorage.canonical_name_base == key,
+                )
+            )
+            .order_by(RefFoodkeeperStorage.foodkeeper_id)
+        )
+    ).scalars().all()
+    if exact:
+        return list(exact)
+
+    # Nothing exact. Users type free text, and FoodKeeper's names are fixed and
+    # often plural -- "Egg", "Tomato" and "Banana" all miss while "Eggs",
+    # "Tomatoes" and "Bananas" hit, which reads as the feature being broken.
+    # Fall back to a substring match on the name and on `keywords` (populated on
+    # 660 of 661 rows and built for exactly this). Ordered so shorter, more
+    # general names win over long specific variants, and capped because a short
+    # query like "oil" legitimately matches dozens.
+    pattern = f"%{key}%"
+    fuzzy = await db.execute(
         select(RefFoodkeeperStorage)
         .where(
             or_(
-                RefFoodkeeperStorage.canonical_food_name == key,
-                RefFoodkeeperStorage.canonical_name_base == key,
+                RefFoodkeeperStorage.canonical_name_base.ilike(pattern),
+                RefFoodkeeperStorage.canonical_food_name.ilike(pattern),
+                RefFoodkeeperStorage.keywords.ilike(pattern),
             )
         )
-        .order_by(RefFoodkeeperStorage.foodkeeper_id)
+        .order_by(
+            func.length(RefFoodkeeperStorage.canonical_name_base),
+            RefFoodkeeperStorage.foodkeeper_id,
+        )
+        .limit(10)
     )
-    return list(result.scalars().all())
+    return list(fuzzy.scalars().all())
 
 
 @router.get("/price", response_model=list[PriceReferenceOut])

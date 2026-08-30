@@ -36,18 +36,77 @@ type StorageGuidance = {
 // joined via canonical_food_name), not the user's own Refrigerated/Frozen/
 // Room-temp pick from AddFoodScreen, which is a separate, already-persisted field
 // (see "Stored in" below).
+/** "1" not "1.0", "1-3" when it's a range. */
+function fmtRange(min: number | null, max: number | null, metric: string | null): string | null {
+  if (min == null && max == null) return null;
+  // Some rows carry only a metric like "Package use-by date" with no numbers --
+  // there's no duration to state, so say nothing rather than something odd.
+  if (!metric) return null;
+  const n = (v: number) => (Number.isInteger(v) ? String(v) : String(v));
+  const unit = metric.toLowerCase();
+  if (min != null && max != null && min !== max) return `${n(min)}-${n(max)} ${unit}`;
+  const only = min ?? max;
+  return only == null ? null : `${n(only)} ${unit}`;
+}
+
+/** Build readable guidance from whatever the row actually has.
+ *
+ *  Only ~20% of FoodKeeper rows carry any tips TEXT, but ~56% carry a duration
+ *  window (min/max + metric). Rendering only the tips meant four out of five
+ *  matched items showed generic filler like "Keep refrigerated." while the real
+ *  answer -- e.g. milk: 1-3 months, 7-10 days once opened -- sat unused in the
+ *  same response. Prefer the tips when present, fall back to the durations, and
+ *  only then to the generic line. */
+function bodyFor(
+  tips: string | null,
+  min: number | null,
+  max: number | null,
+  metric: string | null,
+  openedMin: number | null,
+  openedMax: number | null,
+  openedMetric: string | null,
+  fallback: string,
+): string {
+  const parts: string[] = [];
+  if (tips) parts.push(tips);
+  const keeps = fmtRange(min, max, metric);
+  if (keeps) parts.push(`Keeps ${keeps}.`);
+  const opened = fmtRange(openedMin, openedMax, openedMetric);
+  if (opened) parts.push(`${opened.charAt(0).toUpperCase()}${opened.slice(1)} once opened.`);
+  return parts.length ? parts.join(' ') : fallback;
+}
+
+/** How much usable information a row carries -- used to pick the best of several
+ *  matches rather than whichever happens to come first. The lookup returns one
+ *  row per product variant ("milk plain or flavored", "milk ultra-pasteurized"),
+ *  and the lowest id is often the emptiest. */
+function score(row: FoodkeeperStorage): number {
+  return [
+    row.refrigerate_tips, row.freeze_tips, row.pantry_tips,
+    row.refrigerate_min, row.freeze_min, row.pantry_min,
+    row.refrigerate_after_opening_min,
+  ].filter((v) => v != null && v !== '').length;
+}
+
+// Reference lookup only -- see the Epic 2.3 note: this is the "recommended
+// storage guidance" ACs 2.3.1-2.3.3 actually describe (FoodKeeper data,
+// joined via canonical_food_name), not the user's own Refrigerated/Frozen/
+// Room-temp pick from AddFoodScreen, which is a separate, already-persisted field
+// (see "Stored in" below).
 function pickGuidance(rows: FoodkeeperStorage[]): StorageGuidance | null {
-  // The lookup can return several rows for one food (e.g. "milk plain or
-  // flavored" vs a more specific variant) -- some entries only carry a
-  // *_metric field (like "Package use-by date") with no actual tips/min
-  // values at all, which used to make this function give up on the very
-  // first row even when a later one in the same response has real data.
-  for (const row of rows) {
-    if (row.refrigerate_tips || row.refrigerate_min != null) {
+  // Richest row first, so a variant with real durations beats an empty one.
+  const ranked = [...rows].sort((a, b) => score(b) - score(a));
+
+  for (const row of ranked) {
+    if (row.refrigerate_tips || row.refrigerate_min != null || row.refrigerate_after_opening_min != null) {
       return {
         Icon: Snowflake,
         title: 'Refrigerate',
-        body: row.refrigerate_tips || 'Keep refrigerated.',
+        body: bodyFor(
+          row.refrigerate_tips, row.refrigerate_min, row.refrigerate_max, row.refrigerate_metric,
+          row.refrigerate_after_opening_min, row.refrigerate_after_opening_max,
+          row.refrigerate_after_opening_metric, 'Keep refrigerated.',
+        ),
         color: colors.slateTeal,
       };
     }
@@ -59,7 +118,8 @@ function pickGuidance(rows: FoodkeeperStorage[]): StorageGuidance | null {
         // confusingly generic next to a section that's already about storage.
         Icon: Snowflake,
         title: 'Freeze',
-        body: row.freeze_tips || 'Suitable for freezing.',
+        body: bodyFor(row.freeze_tips, row.freeze_min, row.freeze_max, row.freeze_metric,
+                      null, null, null, 'Suitable for freezing.'),
         color: colors.slateTealDark,
       };
     }
@@ -67,7 +127,8 @@ function pickGuidance(rows: FoodkeeperStorage[]): StorageGuidance | null {
       return {
         Icon: Sun,
         title: 'Room temperature',
-        body: row.pantry_tips || 'Store at room temperature.',
+        body: bodyFor(row.pantry_tips, row.pantry_min, row.pantry_max, row.pantry_metric,
+                      null, null, null, 'Store at room temperature.'),
         color: colors.statusSoon,
       };
     }
