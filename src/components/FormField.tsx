@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -119,6 +119,13 @@ type DateFieldProps = {
   error?: boolean;
 };
 
+/** An Invalid Date is still `instanceof Date`; only getTime() gives it away.
+ *  Handing one to the native picker silently coerces it to the Unix epoch,
+ *  which is exactly how the field ended up reading "01 Jan 1970". */
+function isValidDate(d: Date | null | undefined): d is Date {
+  return d instanceof Date && !Number.isNaN(d.getTime());
+}
+
 /** Strip the time component. Every date in this app is a calendar day, but
  *  `new Date()` carries the current clock time -- which made "today" compare as
  *  LATER than a minimumDate of "today", the kind of off-by-a-few-hours that
@@ -148,13 +155,21 @@ function clampToRange(d: Date, min?: Date, max?: Date): Date {
 // component API is the right one.
 export function DateField({ value, onChange, placeholder = 'Select date', maximumDate, minimumDate, error }: DateFieldProps) {
   const [open, setOpen] = useState(false);
-  const [draftDate, setDraftDate] = useState(value ?? new Date());
+  const [draftDate, setDraftDate] = useState(() =>
+    startOfDay(isValidDate(value) ? value : new Date()),
+  );
 
-  const min = minimumDate ? startOfDay(minimumDate) : undefined;
-  const max = maximumDate ? startOfDay(maximumDate) : undefined;
+  // Callers pass literals -- AddFoodScreen writes maximumDate={new Date()} -- so a
+  // fresh Date object arrives on EVERY render. Keying the memo on the timestamp
+  // rather than the object gives the native picker a stable prop, instead of a
+  // "bounds changed" signal on every keystroke elsewhere in the form.
+  const minTime = isValidDate(minimumDate) ? startOfDay(minimumDate).getTime() : null;
+  const maxTime = isValidDate(maximumDate) ? startOfDay(maximumDate).getTime() : null;
+  const min = useMemo(() => (minTime === null ? undefined : new Date(minTime)), [minTime]);
+  const max = useMemo(() => (maxTime === null ? undefined : new Date(maxTime)), [maxTime]);
 
   const openPicker = () => {
-    const initial = clampToRange(startOfDay(value ?? new Date()), min, max);
+    const initial = clampToRange(startOfDay(isValidDate(value) ? value : new Date()), min, max);
 
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
@@ -177,8 +192,8 @@ export function DateField({ value, onChange, placeholder = 'Select date', maximu
   return (
     <>
       <Pressable style={[styles.input, styles.selectInput, error && styles.inputError]} onPress={openPicker}>
-        <Text style={value ? styles.inputText : styles.placeholderText}>
-          {value ? formatDate(value) : placeholder}
+        <Text style={isValidDate(value) ? styles.inputText : styles.placeholderText}>
+          {isValidDate(value) ? formatDate(value) : placeholder}
         </Text>
         <Calendar size={18} color={colors.textSecondary} />
       </Pressable>
@@ -197,13 +212,23 @@ export function DateField({ value, onChange, placeholder = 'Select date', maximu
           calendar, which looks closer to the Figma design. */}
       {open && Platform.OS === 'ios' && (
         <View style={styles.iosPickerCard}>
+          {/* themeVariant/textColor are the fix for "the dates are invisible".
+              The iOS spinner is a native view that follows the SYSTEM appearance,
+              so on a phone in dark mode it draws near-white numerals -- onto our
+              white card, since iosPickerCard is colors.card. Pinning the variant
+              to light keeps it consistent with the rest of the app, which has no
+              dark theme, and textColor forces legible text on older iOS too. */}
           <DateTimePicker
             value={draftDate}
             mode="date"
             display="spinner"
+            themeVariant="light"
+            textColor={colors.textPrimary}
             maximumDate={max}
             minimumDate={min}
-            onChange={(_, selected) => selected && setDraftDate(selected)}
+            onChange={(_, selected) => {
+              if (isValidDate(selected)) setDraftDate(startOfDay(selected));
+            }}
             style={styles.iosPicker}
           />
           <View style={styles.iosPickerActions}>
@@ -213,7 +238,8 @@ export function DateField({ value, onChange, placeholder = 'Select date', maximu
             <Pressable
               style={styles.doneButton}
               onPress={() => {
-                onChange(draftDate);
+                // Never let an epoch/Invalid Date escape into the form state.
+                if (isValidDate(draftDate)) onChange(draftDate);
                 setOpen(false);
               }}
             >
