@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/logo/freshwise-logo.png",
     "backgroundColor": "#FCF9F2",
-    "splash": {
-      "image": "./assets/logo/freshwise-logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FCF9F2"
-    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo/freshwise-logo.png",
@@ -28,7 +23,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#FCF9F2"
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {
