@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
@@ -10,19 +10,26 @@ import { usePantryItem } from '../data/pantryItems';
 import { recordOutcome } from '../api/freshwise';
 import { ApiError } from '../api/client';
 import { LoadingState, ErrorState } from '../components/ScreenState';
+import { clampQuantity, formatAmount, formatWithUnit, parseQuantityDraft, stepFor } from '../data/quantity';
 
-// How much the +/- steppers move per tap. Matches the 1 -> 0.5 step shown in the Figma frames.
-const STEP = 0.5;
 
-type QuickOption = 'full' | 'half' | 'custom';
+// AC 3.2.1: "Custom" is gone. It was a pill that highlighted whenever the
+// amount happened to match neither Full nor Half, and tapping it did nothing --
+// three controls for one number, with no clue how they related. The stepper IS
+// the custom input, so a pill that "activates" a control already on screen only
+// added confusion. Full and Half remain as what they always were: shortcuts
+// that set the amount.
+type QuickOption = 'full' | 'half' | 'other';
 
-function formatAmount(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
-}
 
 export default function MarkConsumedScreen({ navigation, route }: any) {
   const { item, loading, error } = usePantryItem(route?.params?.id);
   const [consumedQty, setConsumedQty] = useState(0);
+  // The typed draft is held separately from the number: mid-edit a field can be
+  // "" or "1." , neither of which is a quantity, and forcing it through Number()
+  // on every keystroke would fight the user's typing (clearing the box would
+  // snap it back to 0). Null means "not being typed -- show the real value".
+  const [draft, setDraft] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -30,13 +37,14 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
   // quantity before then.
   useEffect(() => {
     if (item) setConsumedQty(item.quantity);
+    setDraft(null);
   }, [item?.id]);
 
   const halfQty = (item?.quantity ?? 0) / 2;
   // Derived rather than a separate piece of state, so the pill selection always matches
   // wherever the stepper currently sits.
   const selection: QuickOption =
-    !item ? 'full' : consumedQty === item.quantity ? 'full' : consumedQty === halfQty ? 'half' : 'custom';
+    !item ? 'full' : consumedQty === item.quantity ? 'full' : consumedQty === halfQty ? 'half' : 'other';
 
   const remaining = Math.max(0, (item?.quantity ?? 0) - consumedQty);
   const isFullyConsumed = item ? consumedQty >= item.quantity : true;
@@ -45,15 +53,26 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
     if (!item) return '';
     return isFullyConsumed
       ? `This will remove ${item.name} from your active pantry.`
-      : `${formatAmount(remaining)} ${item.unit} will remain in your active pantry.`;
+      : `${formatWithUnit(remaining, item.unit)} will remain in your active pantry.`;
   }, [isFullyConsumed, item, remaining]);
 
   // Item may still be null here (loading/error hasn't been checked yet -- that
   // happens further down, AFTER all hooks including the useMemo above, since
   // hooks must run unconditionally on every render regardless of loading state).
-  const clamp = (value: number) => {
-    const max = item?.quantity ?? 0;
-    return Math.min(max, Math.max(0, Math.round(value * 2) / 2));
+  const clamp = (value: number) => clampQuantity(value, item?.quantity ?? 0);
+  // Scaled to the item: 0.5 for a carton, 10 for a 100 g pack. A fixed step
+  // would mean 200 taps to consume 100 g.
+  const step = stepFor(item?.quantity ?? 0);
+
+  /** Accept what was typed, or fall back to the last good value.
+   *
+   *  Runs on blur rather than per keystroke so the field doesn't rewrite itself
+   *  while being typed. An empty or nonsense entry reverts instead of silently
+   *  becoming 0, which would otherwise turn a mistyped amount into a no-op save. */
+  const commitDraft = () => {
+    if (draft === null) return;
+    setConsumedQty(parseQuantityDraft(draft, consumedQty, item?.quantity ?? 0));
+    setDraft(null);
   };
 
   const handleConfirm = async () => {
@@ -96,7 +115,7 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
             <View style={styles.identityText}>
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.subtitle}>
-                {item.category} · {formatAmount(item.quantity)} {item.unit} available
+                {item.category} · {formatWithUnit(item.quantity, item.unit)} available
               </Text>
             </View>
           </View>
@@ -106,31 +125,60 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
           <View style={styles.stepperRow}>
             <Pressable
               style={({ pressed }) => [styles.stepperButton, pressed && { opacity: 0.85 }]}
-              onPress={() => setConsumedQty((q) => clamp(q - STEP))}
+              onPress={() => {
+                setDraft(null);
+                setConsumedQty((q) => clamp(q - step));
+              }}
             >
               <Minus size={18} color={colors.white} />
             </Pressable>
-            <Text style={styles.stepperValue}>{formatAmount(consumedQty)}</Text>
+            <TextInput
+              style={styles.stepperValue}
+              value={draft ?? formatAmount(consumedQty)}
+              onChangeText={setDraft}
+              onBlur={commitDraft}
+              onSubmitEditing={commitDraft}
+              keyboardType="decimal-pad"
+              returnKeyType="done"
+              selectTextOnFocus
+              accessibilityLabel="Consumed quantity"
+            />
             <Pressable
               style={({ pressed }) => [styles.stepperButton, pressed && { opacity: 0.85 }]}
-              onPress={() => setConsumedQty((q) => clamp(q + STEP))}
+              onPress={() => {
+                setDraft(null);
+                setConsumedQty((q) => clamp(q + step));
+              }}
             >
               <Plus size={18} color={colors.white} />
             </Pressable>
           </View>
 
-          <View style={styles.unitPill}>
-            <Text style={styles.unitPillText}>{item.unit}</Text>
-          </View>
+          {/* No unit means no badge -- an empty capsule under the number reads
+              as a broken control, not as "no unit". */}
+          {item.unit?.trim() ? (
+            <View style={styles.unitPill}>
+              <Text style={styles.unitPillText}>{item.unit.trim()}</Text>
+            </View>
+          ) : null}
 
           <View style={styles.quickRow}>
             <QuickOptionPill
               label="Full item"
               active={selection === 'full'}
-              onPress={() => setConsumedQty(item.quantity)}
+              onPress={() => {
+                setDraft(null);
+                setConsumedQty(item.quantity);
+              }}
             />
-            <QuickOptionPill label="Half" active={selection === 'half'} onPress={() => setConsumedQty(halfQty)} />
-            <QuickOptionPill label="Custom" active={selection === 'custom'} onPress={() => {}} />
+            <QuickOptionPill
+              label="Half"
+              active={selection === 'half'}
+              onPress={() => {
+                setDraft(null);
+                setConsumedQty(clamp(halfQty));
+              }}
+            />
           </View>
         </View>
 
@@ -237,8 +285,15 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 32,
     color: colors.textPrimary,
-    minWidth: 64,
+    minWidth: 80,
     textAlign: 'center',
+    // A bare number between two buttons reads as a display, not a field, so the
+    // underline is what tells the user they can type the amount rather than tap
+    // to it. padding:0 keeps Android's default TextInput padding from shifting
+    // the row's height relative to the +/- buttons beside it.
+    padding: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   unitPill: {
     alignSelf: 'center',

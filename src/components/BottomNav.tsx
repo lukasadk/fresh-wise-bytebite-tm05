@@ -12,9 +12,13 @@ const ICONS: Record<string, typeof Home> = {
   Activity: BarChart3,
 };
 
+// Labels are what the user reads; the KEYS are React Navigation route names and
+// must stay as they are -- every navigate('Main', { screen: 'Pantry' }) in the
+// app resolves against them, so renaming a key silently breaks navigation.
+// AC 1.1.4: the surface is called "My Pantry" everywhere it is named.
 const LABELS: Record<string, string> = {
   Home: 'Home',
-  Pantry: 'Pantry',
+  Pantry: 'My Pantry',
   UseFirst: 'Use First',
   Recipes: 'Recipes',
   Activity: 'Activity',

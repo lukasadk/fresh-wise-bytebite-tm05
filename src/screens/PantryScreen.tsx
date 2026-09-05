@@ -3,6 +3,7 @@ import { View, Text, FlatList, Pressable, StyleSheet, Platform, useWindowDimensi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
+import { ALL_FILTER, categoryForFilter, deriveFilters, isFilterStillValid } from '../data/pantryFilters';
 import { SearchBar, FilterPill } from '../components/PantryControls';
 import AlertBanner from '../components/AlertBanner';
 import FoodRow from '../components/FoodRow';
@@ -17,14 +18,7 @@ import { ApiError } from '../api/client';
 
 type WasteReasonLabel = keyof typeof WASTE_REASON_BY_LABEL;
 
-const FILTERS = ['All', 'Dairy', 'Protein', 'Veggies'] as const;
-// The "Veggies" pill filters by the category AddFoodScreen actually saves
-// ('Vegetables', from its CATEGORIES list) -- the pill label is just shorter.
-const FILTER_TO_CATEGORY: Record<string, string> = {
-  Dairy: 'Dairy',
-  Protein: 'Protein',
-  Veggies: 'Vegetables',
-};
+
 type ViewMode = 'list' | 'grid';
 
 // Grid is the default on web/tablet, list on mobile -- width is the practical proxy
@@ -33,7 +27,7 @@ const TABLET_WIDTH_BREAKPOINT = 768;
 
 export default function PantryScreen({ navigation, route }: any) {
   const [query, setQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<(typeof FILTERS)[number]>('All');
+  const [activeFilter, setActiveFilter] = useState<string>(ALL_FILTER);
   const { items, loading: itemsLoading, error: itemsError, refresh } = usePantry();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
@@ -117,13 +111,26 @@ export default function PantryScreen({ navigation, route }: any) {
     [items]
   );
 
+  // Alphabetical after "All", so pills don't reshuffle as items are added and
+  // removed -- a filter row that reorders under the user is hard to hit twice.
+  const filters = useMemo(
+    () => deriveFilters(itemsWithExpiry.map(({ item }) => item.category)),
+    [itemsWithExpiry]
+  );
+
+  // Consuming the last Dairy item would otherwise leave "Dairy" selected with
+  // its pill gone, showing an empty pantry that looks like data loss.
+  useEffect(() => {
+    if (!isFilterStillValid(activeFilter, filters)) setActiveFilter(ALL_FILTER);
+  }, [filters, activeFilter]);
+
   const sortedItems = useMemo(() => {
     // Search + category filter first, then sort -- the attention banner below
     // deliberately uses the full unfiltered itemsWithExpiry, since "N items need
     // attention" should reflect the whole pantry even while the user is filtering
     // the visible list down to one category.
     const trimmedQuery = query.trim().toLowerCase();
-    const wantedCategory = activeFilter === 'All' ? null : FILTER_TO_CATEGORY[activeFilter];
+    const wantedCategory = categoryForFilter(activeFilter);
 
     const filtered = itemsWithExpiry.filter(({ item }) => {
       const matchesQuery = !trimmedQuery || item.name.toLowerCase().includes(trimmedQuery);
@@ -152,7 +159,7 @@ export default function PantryScreen({ navigation, route }: any) {
       ? [...attentionItems].sort((a, b) => (a.expiry.daysLeft ?? Infinity) - (b.expiry.daysLeft ?? Infinity))[0].expiry.rowExpiryLabel.toLowerCase()
       : null;
 
-  const hasActiveFilter = query.trim().length > 0 || activeFilter !== 'All';
+  const hasActiveFilter = query.trim().length > 0 || activeFilter !== ALL_FILTER;
 
   // --- Bulk actions ---------------------------------------------------------
 
@@ -234,16 +241,20 @@ export default function PantryScreen({ navigation, route }: any) {
 
             <SearchBar value={query} onChangeText={setQuery} />
 
-            <View style={styles.filterRow}>
-              {FILTERS.map((filter) => (
-                <FilterPill
-                  key={filter}
-                  label={filter}
-                  active={activeFilter === filter}
-                  onPress={() => setActiveFilter(filter)}
-                />
-              ))}
-            </View>
+            {/* One pill would just be "All", which filters nothing -- the row
+                only earns its space once there is a choice to make. */}
+            {filters.length > 1 ? (
+              <View style={styles.filterRow}>
+                {filters.map((filter) => (
+                  <FilterPill
+                    key={filter}
+                    label={filter}
+                    active={activeFilter === filter}
+                    onPress={() => setActiveFilter(filter)}
+                  />
+                ))}
+              </View>
+            ) : null}
 
             {hasActiveFilter ? (
               <View style={styles.chipRow}>

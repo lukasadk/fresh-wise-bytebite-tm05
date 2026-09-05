@@ -7,10 +7,8 @@ import Button from '../components/Button';
 import { Check } from '../icons/NavIcons';
 import { usePantryItem } from '../data/pantryItems';
 import { LoadingState, ErrorState } from '../components/ScreenState';
+import { formatAmount, formatWithUnit } from '../data/quantity';
 
-function formatAmount(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
-}
 
 export default function WasteRecordedScreen({ navigation, route }: any) {
   const { item, loading, error } = usePantryItem(route?.params?.id);
@@ -36,7 +34,7 @@ export default function WasteRecordedScreen({ navigation, route }: any) {
   // No local subtraction (item.quantity - wastedQty) needed here.
   const remaining = item.quantity;
 
-  const quantityText = item.unit ? `${formatAmount(wastedQty)} ${item.unit}` : formatAmount(wastedQty);
+  const quantityText = formatWithUnit(wastedQty, item.unit);
   const toastMessage = `Recorded: ${quantityText} ${item.name} wasted`;
 
   return (
@@ -65,14 +63,14 @@ export default function WasteRecordedScreen({ navigation, route }: any) {
           <Text style={styles.itemName}>{item.name}</Text>
           <Text style={styles.cardLabel}>Remaining in pantry</Text>
           <Text style={styles.cardValue}>
-            {formatAmount(remaining)} {item.unit}
+            {formatWithUnit(remaining, item.unit)}
           </Text>
         </View>
 
         <View style={styles.wastedCard}>
           <Text style={styles.cardLabel}>Waste recorded</Text>
           <Text style={styles.cardValue}>
-            {formatAmount(wastedQty)} {item.unit}
+            {formatWithUnit(wastedQty, item.unit)}
           </Text>
           <Text style={styles.reasonText}>Reason: {reason}</Text>
         </View>

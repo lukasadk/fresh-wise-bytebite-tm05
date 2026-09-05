@@ -8,6 +8,7 @@ import { usePantryItem } from '../data/pantryItems';
 import { recordOutcome, WASTE_REASON_BY_LABEL } from '../api/freshwise';
 import { ApiError } from '../api/client';
 import { LoadingState, ErrorState } from '../components/ScreenState';
+import { formatAmount } from '../data/quantity';
 
 // Same reason set the bulk-select waste picker on PantryScreen uses -- derived
 // from the API's own mapping so this screen can never drift out of sync with it
@@ -15,9 +16,6 @@ import { LoadingState, ErrorState } from '../components/ScreenState';
 type WasteReasonLabel = keyof typeof WASTE_REASON_BY_LABEL;
 const WASTE_REASONS = Object.keys(WASTE_REASON_BY_LABEL) as WasteReasonLabel[];
 
-function formatAmount(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
-}
 
 export default function MarkWastedScreen({ navigation, route }: any) {
   const { item, loading, error } = usePantryItem(route?.params?.id);
@@ -95,7 +93,7 @@ export default function MarkWastedScreen({ navigation, route }: any) {
               keyboardType="decimal-pad"
               style={styles.quantityInput}
             />
-            <Text style={styles.quantityUnit}>{item.unit}</Text>
+            {item.unit?.trim() ? <Text style={styles.quantityUnit}>{item.unit.trim()}</Text> : null}
           </View>
         </View>
 
