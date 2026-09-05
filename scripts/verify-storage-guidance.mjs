@@ -54,6 +54,7 @@ const check = (name, cond, detail = '') => {
 };
 const byName = (n) => rows.filter((r) => r.canonical_food_name === n);
 const g = (n) => buildGuidance(byName(n));
+const cand = (n) => toCandidate(byName(n)[0]);
 const keys = (n) => g(n).methods.map((m) => m.key);
 const body_ = (n, k) => (g(n).methods.find((m) => m.key === k) || {}).body || '';
 
@@ -133,8 +134,32 @@ check(`all ${indef.length} "Indefinitely" rows yield guidance`,
 check('an "Indefinitely" row says so in words',
   indef.some((r) => buildGuidance([r]).methods.some((m) => /indefinitely/i.test(m.body))));
 
+console.log('\n== FoodKeeper answers that are a RULE, not a number ==');
+// Fresh milk is the case that exposed this: its fridge answer is "Package
+// use-by date" with no min/max, so rendering only numeric durations produced a
+// card reading solely "Freeze: Keeps 3 months" -- read as "milk lasts 3 months".
+const milk = g('milk plain or flavored');
+check('milk offers a Refrigerate option at all', milk.methods.some((m) => m.key === 'refrigerate'),
+  `got [${milk.methods.map((m) => m.key)}]`);
+check('milk is not freezer-only', milk.methods.length > 1, `got ${milk.methods.length} method(s)`);
+check('milk points at the date on the package',
+  /date on the package/.test(body_('milk plain or flavored', 'refrigerate')),
+  body_('milk plain or flavored', 'refrigerate'));
+check('sour cream yields guidance (previously nothing at all)', g('sour cream').methods.length > 0);
+check('"When Ripe" renders as a rule', /until ripe/.test(body_('bananas', 'pantry')),
+  body_('bananas', 'pantry'));
+
+const PHRASE = /package use-by date|when ripe/i;
+const phraseRows = rows.filter((r) => [r.pantry_metric, r.refrigerate_metric, r.freeze_metric,
+  r.dop_pantry_metric, r.dop_refrigerate_metric, r.dop_freeze_metric].some((m) => PHRASE.test(m || '')));
+check(`all ${phraseRows.length} rule-answer rows yield guidance`,
+  phraseRows.every((r) => buildGuidance([r]).methods.length > 0));
+check('a rule answer still reaches the picker summary',
+  /date on the package/.test(cand('milk plain or flavored').summary),
+  cand('milk plain or flavored').summary);
+console.log(`   milk -> ${milk.methods.map((m) => `${m.title}: ${m.body}`).join('  |  ')}`);
+
 console.log('\n== the "not this food?" picker: candidate rows ==');
-const cand = (n) => toCandidate(byName(n)[0]);
 check('a candidate leads with the guidance, not just the name',
   cand('beef steaks').summary === 'Freeze 4-12 months · Refrigerate 3-5 days',
   cand('beef steaks').summary);
@@ -143,9 +168,13 @@ check('candidates use FoodKeeper display names, not lookup keys',
 check('a do-not-freeze food says so in its summary',
   cand('ham pre-packaged luncheon deli meat').summary.includes('Do not freeze'),
   cand('ham pre-packaged luncheon deli meat').summary);
+// No real row is empty any more (all 661 yield something), so the fallback is
+// exercised against a synthetic bare row -- it still has to be right if the
+// reference data is ever refreshed with a sparser product.
 check('a row with nothing on file says so rather than looking empty',
-  cand('capers in jar').summary === 'No storage details on file',
-  cand('capers in jar').summary);
+  toCandidate({ canonical_food_name: 'x', name: 'X', name_subtitle: null, category_name: null })
+    .summary === 'No storage details on file',
+  toCandidate({ canonical_food_name: 'x', name: 'X', name_subtitle: null, category_name: null }).summary);
 check('a duration-less method is dropped when a timed one exists',
   cand('canned chicken').summary === 'Room temperature 5 years',
   cand('canned chicken').summary);

@@ -96,7 +96,13 @@ async def lookup_foodkeeper(
     )
 
     tokens = [t for t in key.split() if len(t) > 2]
-    head = tokens[0] if tokens else key
+    # The HEAD NOUN is the last word, not the first: English noun phrases are
+    # head-final, so "fresh milk" is a milk and "low fat milk" is a milk. Taking
+    # the first token instead sent "fresh milk" to `fresh pasta`, because
+    # "fresh" also begins `fresh lobster tails`, `fresh clams ...` and, being
+    # the shortest of them, `fresh pasta` won the length tiebreak. The food the
+    # user means is almost never the adjective they opened with.
+    head = tokens[-1] if tokens else key
 
     def matches(token: str):
         return or_(
@@ -127,12 +133,25 @@ async def lookup_foodkeeper(
         literal_column("0"),
     )
 
+    # WHERE casts wide, ORDER BY decides: match the whole phrase OR any single
+    # word the user typed, then let the ranking sort it out. Searching only the
+    # head noun made "fish fillet" return nothing at all, since no FoodKeeper row
+    # says "fillet" -- recall belongs here, precision belongs in the ordering.
     fuzzy = await db.execute(
         select(RefFoodkeeperStorage)
-        .where(or_(matches(key), matches(head)))
+        .where(or_(matches(key), *[matches(t) for t in tokens]) if tokens else matches(key))
         .order_by(
             tokens_matched.desc(),
+            # Named by the head noun -- "milk plain or flavored" for "fresh milk".
             case((RefFoodkeeperStorage.canonical_name_base.ilike(f"{head}%"), 0), else_=1),
+            # Failing that, named by ANY word the user typed. This is what
+            # separates "chicken parts breast halves" from "stuffed raw chicken
+            # breasts": both contain both words, but only one is *about* a word
+            # the user typed. It also covers head-initial phrasing, which the
+            # head-final rule above gets wrong.
+            case((or_(*[RefFoodkeeperStorage.canonical_name_base.ilike(f"{t}%") for t in tokens]), 0), else_=1)
+            if tokens
+            else case((has_data, 0), else_=1),
             case((has_data, 0), else_=1),
             func.length(RefFoodkeeperStorage.canonical_name_base),
             RefFoodkeeperStorage.foodkeeper_id,

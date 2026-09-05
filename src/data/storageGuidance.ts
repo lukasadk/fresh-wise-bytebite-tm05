@@ -40,7 +40,8 @@ export type Guidance = {
 function fmtRange(min: number | null, max: number | null, metric: string | null): string | null {
   // "Indefinitely" is a real answer with no number attached (honey, salt, hard
   // liquor), so it has to be checked before the min/max guard rejects it.
-  if (metricIs(metric, INDEFINITE)) return INDEFINITE;
+  const phrase = phraseFor(metric);
+  if (phrase) return phrase;
   if (min == null && max == null) return null;
   // Some rows carry only a metric like "Package use-by date" with no numbers --
   // there's no duration to state, so say nothing rather than something odd.
@@ -70,8 +71,34 @@ const METRIC_DAYS: Record<string, number> = {
 const INDEFINITE = 'indefinitely';
 const NOT_RECOMMENDED = 'not recommended';
 
+/** FoodKeeper answers some foods with a rule instead of a number, and those are
+ *  real answers that have to be rendered, not dropped.
+ *
+ *  Fresh milk is the case that exposed this: its row carries
+ *  `refrigerate_metric = "Package use-by date"` with no min/max, meaning "go by
+ *  the date on the carton", plus a 3-month FREEZER figure. Rendering only what
+ *  had numbers produced a card reading solely "Freeze: Keeps 3 months" -- which
+ *  a reader takes as "milk lasts 3 months". 46 rows carry one of these,
+ *  including sour cream, cut fruit, and most tropical fruit ("When Ripe"). */
+const PHRASE_METRICS: Record<string, string> = {
+  indefinitely: 'indefinitely',
+  'package use-by date': 'until the date on the package',
+  'when ripe': 'until ripe',
+};
+
+function phraseFor(metric: string | null): string | null {
+  if (!metric) return null;
+  return PHRASE_METRICS[metric.trim().toLowerCase()] ?? null;
+}
+
 function metricIs(metric: string | null, value: string): boolean {
   return (metric ?? '').trim().toLowerCase() === value;
+}
+
+/** Whether this duration says anything at all -- a number, or one of the
+ *  phrase answers above. */
+function hasAnswer(d: Duration): boolean {
+  return d.min != null || d.max != null || phraseFor(d.metric) != null;
 }
 
 /** Normalise a FoodKeeper duration to days so "12 months" can be compared with
@@ -79,6 +106,9 @@ function metricIs(metric: string | null, value: string): boolean {
  *  return null and simply don't take part in the ranking. */
 function toDays(value: number | null, metric: string | null): number | null {
   if (metricIs(metric, INDEFINITE)) return Number.POSITIVE_INFINITY;
+  // 'until the date on the package' / 'until ripe' have no comparable length,
+  // so they rank last rather than pretending to a duration.
+  if (phraseFor(metric)) return null;
   if (value == null || !metric) return null;
   const factor = METRIC_DAYS[metric.trim().toLowerCase()];
   return factor == null ? null : value * factor;
@@ -101,7 +131,7 @@ function mergeDuration(
   // "Indefinitely" counts as a populated plain duration even though it has no
   // number -- without this, sugar/salt/vinegar fall through to their empty dop
   // columns and lose the only answer they had.
-  if (min != null || max != null || metricIs(metric, INDEFINITE)) return { min, max, metric };
+  if (min != null || max != null || phraseFor(metric)) return { min, max, metric };
   return { min: dopMin, max: dopMax, metric: dopMetric };
 }
 
@@ -202,7 +232,7 @@ export function buildGuidance(rows: FoodkeeperStorage[]): Guidance {
     max: row.refrigerate_after_opening_max,
     metric: row.refrigerate_after_opening_metric,
   };
-  if (row.refrigerate_tips || fridge.min != null || opened.min != null || metricIs(fridge.metric, INDEFINITE)) {
+  if (row.refrigerate_tips || hasAnswer(fridge) || hasAnswer(opened)) {
     methods.push({
       key: 'refrigerate',
       title: 'Refrigerate',
@@ -230,7 +260,7 @@ export function buildGuidance(rows: FoodkeeperStorage[]): Guidance {
       title: 'Freezing not advised',
       body: noFreeze.reason ?? 'FoodKeeper does not recommend freezing this — keep it refrigerated instead.',
     };
-  } else if (row.freeze_tips || freezer.min != null || metricIs(freezer.metric, INDEFINITE)) {
+  } else if (row.freeze_tips || hasAnswer(freezer)) {
     methods.push({
       key: 'freeze',
       title: 'Freeze',
@@ -249,7 +279,7 @@ export function buildGuidance(rows: FoodkeeperStorage[]): Guidance {
     max: row.pantry_after_opening_max,
     metric: row.pantry_after_opening_metric,
   };
-  if (row.pantry_tips || pantry.min != null || pantryOpened.min != null || metricIs(pantry.metric, INDEFINITE)) {
+  if (row.pantry_tips || hasAnswer(pantry) || hasAnswer(pantryOpened)) {
     methods.push({
       key: 'pantry',
       title: 'Room temperature',

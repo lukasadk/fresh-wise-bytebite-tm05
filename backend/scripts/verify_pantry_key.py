@@ -100,12 +100,21 @@ async def main():
             return await update_pantry_item(item_id, FoodItemUpdate(**kw), user=user, db=s)
 
         print("== rename still repairs a typo ==")
-        typo = await new_item(name="Chiken breast")
-        check("typo yields no guidance", await guidance_count(typo.item_id) == 0)
-        await patch(typo.item_id, name="Chicken breast")
-        check("rename re-derives the key", await key_of(typo.item_id) == "chicken breast",
+        # A SINGLE-word typo is the case that genuinely dead-ends: there is no
+        # second word left to match on, so the lookup returns nothing until the
+        # name is corrected. (A typo in a two-word name like "Chiken breast" now
+        # recovers by itself via "breast" -- asserted below.)
+        typo = await new_item(name="Mlik")
+        check("a single-word typo yields no guidance", await guidance_count(typo.item_id) == 0)
+        await patch(typo.item_id, name="Milk")
+        check("rename re-derives the key", await key_of(typo.item_id) == "milk",
               await key_of(typo.item_id))
         check("rename now yields guidance", await guidance_count(typo.item_id) > 0)
+
+        print("\n== a typo in ONE word of a phrase recovers on its own ==")
+        half = await new_item(name="Chiken breast")
+        check("'Chiken breast' still matches, via 'breast'",
+              await guidance_count(half.item_id) > 0)
 
         print("\n== the picker's choice is stored ==")
         ikan = await new_item(name="Ikan")
