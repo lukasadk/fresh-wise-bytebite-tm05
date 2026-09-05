@@ -10,7 +10,7 @@ No user data is involved, so these endpoints don't require the device-id header.
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, literal_column, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
@@ -37,9 +37,28 @@ async def lookup_foodkeeper(
 ):
     """Storage guidance for a food.
 
-    Matches the full canonical name (which includes the product subtitle, so
-    "ham canned" and "ham fully cooked" are distinct) and falls back to the
-    name-only form, which is broader but may return several variants.
+    An exact pass, then -- only if it finds nothing -- one ranked fuzzy pass:
+
+    1. EXACT on the full canonical name (which includes the product subtitle,
+       so "ham canned" and "ham fully cooked" stay distinct) or on the
+       name-only base form.
+    2. FUZZY, which is a substring match and an all-tokens match evaluated
+       together. Substring handles plural-vs-singular ("Egg" -> "Eggs",
+       "Tomato" -> "Tomatoes"). All-tokens handles the fact that FoodKeeper's
+       names are catalogue-shaped, not shopping-list-shaped: "chicken breast"
+       substring-matches only "stuffed raw chicken breasts" -- a stuffed
+       convenience product -- while the row actually wanted, "chicken parts
+       breast halves boneless", never contains that literal phrase.
+
+    Ranking the fuzzy pass matters as much as the matching, because the client
+    shows the best row it can use:
+
+    * A row whose base name STARTS with the user's first token outranks one
+      that merely contains it, so "chicken ..." beats "stuffed raw chicken ...".
+      The head noun of what someone typed should be the head noun of the match.
+    * Rows carrying actual storage data outrank empty ones -- 'canned chicken'
+      has no durations at all and would otherwise win on brevity.
+    * Then shortest name, so general entries beat long specific variants.
     """
     key = canonical_food_name.lower().strip()
     if not key:
@@ -60,24 +79,61 @@ async def lookup_foodkeeper(
     if exact:
         return list(exact)
 
-    # Nothing exact. Users type free text, and FoodKeeper's names are fixed and
-    # often plural -- "Egg", "Tomato" and "Banana" all miss while "Eggs",
-    # "Tomatoes" and "Bananas" hit, which reads as the feature being broken.
-    # Fall back to a substring match on the name and on `keywords` (populated on
-    # 660 of 661 rows and built for exactly this). Ordered so shorter, more
-    # general names win over long specific variants, and capped because a short
-    # query like "oil" legitimately matches dozens.
+    # Any duration in EITHER family, or any tip, counts as "this row can
+    # actually answer the question". dop_* is included deliberately: fresh meat,
+    # poultry and fish populate only those, so scoring on the plain columns
+    # alone ranks every fresh product as empty.
+    has_data = or_(
+        RefFoodkeeperStorage.pantry_min.isnot(None),
+        RefFoodkeeperStorage.refrigerate_min.isnot(None),
+        RefFoodkeeperStorage.freeze_min.isnot(None),
+        RefFoodkeeperStorage.dop_pantry_min.isnot(None),
+        RefFoodkeeperStorage.dop_refrigerate_min.isnot(None),
+        RefFoodkeeperStorage.dop_freeze_min.isnot(None),
+        RefFoodkeeperStorage.pantry_tips.isnot(None),
+        RefFoodkeeperStorage.refrigerate_tips.isnot(None),
+        RefFoodkeeperStorage.freeze_tips.isnot(None),
+    )
+
+    tokens = [t for t in key.split() if len(t) > 2]
+    head = tokens[0] if tokens else key
+
+    def matches(token: str):
+        return or_(
+            RefFoodkeeperStorage.canonical_name_base.ilike(f"%{token}%"),
+            RefFoodkeeperStorage.canonical_food_name.ilike(f"%{token}%"),
+            RefFoodkeeperStorage.keywords.ilike(f"%{token}%"),
+        )
+
+    # One ranked query rather than a cascade of passes. Run in sequence, a
+    # whole-phrase pass would return "stuffed raw chicken breasts" for "chicken
+    # breast" and short-circuit, so the pass that finds the right row would
+    # never execute -- and an all-tokens pass would return nothing at all for
+    # "fish fillet", because no FoodKeeper row says "fillet".
+    #
+    # So: match broadly (the whole phrase, OR anything sharing the head noun),
+    # then let the ordering decide. Ranking, in order:
+    #   1. how many of the user's words the row matched -- "chicken parts breast
+    #      halves" matches both words of "chicken breast", "chicken whole" one
+    #   2. whether the row's name STARTS with the head noun, so "chicken ..."
+    #      beats "stuffed raw chicken ..."; the head noun of what someone typed
+    #      should be the head noun of the match
+    #   3. whether the row carries any storage data at all -- "canned chicken"
+    #      has no durations and would otherwise win on brevity
+    #   4. shortest name, so general entries beat long specific variants
     pattern = f"%{key}%"
+    tokens_matched = sum(
+        (case((matches(t), 1), else_=0) for t in tokens),
+        literal_column("0"),
+    )
+
     fuzzy = await db.execute(
         select(RefFoodkeeperStorage)
-        .where(
-            or_(
-                RefFoodkeeperStorage.canonical_name_base.ilike(pattern),
-                RefFoodkeeperStorage.canonical_food_name.ilike(pattern),
-                RefFoodkeeperStorage.keywords.ilike(pattern),
-            )
-        )
+        .where(or_(matches(key), matches(head)))
         .order_by(
+            tokens_matched.desc(),
+            case((RefFoodkeeperStorage.canonical_name_base.ilike(f"{head}%"), 0), else_=1),
+            case((has_data, 0), else_=1),
             func.length(RefFoodkeeperStorage.canonical_name_base),
             RefFoodkeeperStorage.foodkeeper_id,
         )

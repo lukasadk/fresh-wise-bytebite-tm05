@@ -86,6 +86,11 @@ class FoodItemCreate(BaseModel):
 class FoodItemUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=100)
     category: str | None = Field(default=None, max_length=50)
+    # Set by the "not this food?" picker on the storage-guidance card, where the
+    # user chooses which FoodKeeper product their item actually is. This is the
+    # ONE case where the key is a real decision rather than a normalised copy of
+    # `name` -- see _canonical()/_user_chose_key() in routers/pantry.py.
+    canonical_food_name: str | None = Field(default=None, max_length=200)
     quantity: float | None = Field(default=None, gt=0)
     unit: str | None = Field(default=None, max_length=20)
     expiry_date: date | None = None
@@ -259,21 +264,51 @@ class FoodkeeperStorageOut(BaseModel):
     category_name: str | None
     name: str | None
     name_subtitle: str | None
+    # FoodKeeper splits every duration into two families and a row usually
+    # populates only ONE of them:
+    #   * plain `pantry_/refrigerate_/freeze_`  -- measured from the date on
+    #     the package (shelf-stable and processed goods)
+    #   * `dop_*` ("date of purchase")          -- measured from when you
+    #     bought it, which is how FRESH food is dated
+    # Fresh meat, poultry and fish are dop-only: "beef steaks" and "chicken
+    # whole" have NULL in every plain column and carry their real 3-5 days /
+    # 4-12 months in dop_refrigerate_*/dop_freeze_*. Serving only the plain
+    # columns therefore returned an all-null payload for exactly the foods
+    # where storage advice matters most, and the client fell back to whatever
+    # loosely-matched processed product did have plain columns. Coverage across
+    # the 661 rows: dop_refrigerate 36%, dop_pantry 30%, dop_freeze 30%, vs
+    # refrigerate 20%, freeze 22%, pantry 15%. Both families are served; the
+    # client merges them per method.
     pantry_min: float | None
     pantry_max: float | None
     pantry_metric: str | None
     pantry_tips: str | None
+    dop_pantry_min: float | None
+    dop_pantry_max: float | None
+    dop_pantry_metric: str | None
+    pantry_after_opening_min: float | None
+    pantry_after_opening_max: float | None
+    pantry_after_opening_metric: str | None
     refrigerate_min: float | None
     refrigerate_max: float | None
     refrigerate_metric: str | None
     refrigerate_tips: str | None
+    dop_refrigerate_min: float | None
+    dop_refrigerate_max: float | None
+    dop_refrigerate_metric: str | None
     refrigerate_after_opening_min: float | None
     refrigerate_after_opening_max: float | None
     refrigerate_after_opening_metric: str | None
+    refrigerate_after_thawing_min: float | None
+    refrigerate_after_thawing_max: float | None
+    refrigerate_after_thawing_metric: str | None
     freeze_min: float | None
     freeze_max: float | None
     freeze_metric: str | None
     freeze_tips: str | None
+    dop_freeze_min: float | None
+    dop_freeze_max: float | None
+    dop_freeze_metric: str | None
     source_url: str | None
     license: str | None
 

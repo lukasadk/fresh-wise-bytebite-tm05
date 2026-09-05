@@ -94,7 +94,16 @@ export const addPantryItem = (item: NewFoodItem) =>
  *  writes the log row the insights dashboard reads. */
 export const updatePantryItem = (
   itemId: string,
-  patch: Partial<Pick<NewFoodItem, 'name' | 'category' | 'quantity' | 'unit' | 'expiry_date' | 'storage'>> & {
+  patch: Partial<
+    Pick<
+      NewFoodItem,
+      // canonical_food_name is patchable so the storage-guidance picker can
+      // record which FoodKeeper product this item actually is. The backend
+      // keeps an explicit choice through later renames; without one it keeps
+      // deriving the key from `name`.
+      'name' | 'category' | 'quantity' | 'unit' | 'expiry_date' | 'storage' | 'canonical_food_name'
+    >
+  > & {
     status?: 'active' | 'partially_used';
   },
 ) => request<FoodItem>(`/v1/pantry/${itemId}`, { method: 'PATCH', body: patch });

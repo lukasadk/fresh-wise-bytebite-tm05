@@ -83,21 +83,44 @@ export type FoodkeeperStorage = {
   category_name: string | null;
   name: string | null;
   name_subtitle: string | null;
+  // FoodKeeper writes each duration into ONE of two column families, and a
+  // row almost never populates both:
+  //   plain `pantry_/refrigerate_/freeze_` -> counted from the package date
+  //   `dop_*` ("date of purchase")         -> counted from when you bought it
+  // Fresh food is dop-only. "beef steaks" and "chicken whole" have NULL in
+  // every plain column and carry 3-5 days / 4-12 months in dop_*. Read both
+  // per method (see mergeDuration in FoodDetailScreen) or fresh meat, poultry
+  // and fish appear to have no guidance at all.
   pantry_min: number | null;
   pantry_max: number | null;
   pantry_metric: string | null;
   pantry_tips: string | null;
+  dop_pantry_min: number | null;
+  dop_pantry_max: number | null;
+  dop_pantry_metric: string | null;
+  pantry_after_opening_min: number | null;
+  pantry_after_opening_max: number | null;
+  pantry_after_opening_metric: string | null;
   refrigerate_min: number | null;
   refrigerate_max: number | null;
   refrigerate_metric: string | null;
   refrigerate_tips: string | null;
+  dop_refrigerate_min: number | null;
+  dop_refrigerate_max: number | null;
+  dop_refrigerate_metric: string | null;
   refrigerate_after_opening_min: number | null;
   refrigerate_after_opening_max: number | null;
   refrigerate_after_opening_metric: string | null;
+  refrigerate_after_thawing_min: number | null;
+  refrigerate_after_thawing_max: number | null;
+  refrigerate_after_thawing_metric: string | null;
   freeze_min: number | null;
   freeze_max: number | null;
   freeze_metric: string | null;
   freeze_tips: string | null;
+  dop_freeze_min: number | null;
+  dop_freeze_max: number | null;
+  dop_freeze_metric: string | null;
   source_url: string | null;
   license: string | null;
 };

@@ -48,3 +48,6 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+
+# Scratch output from scripts/verify-storage-guidance.mjs
+.verify-tmp/

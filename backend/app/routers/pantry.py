@@ -14,6 +14,45 @@ from app.schemas import FoodItemCreate, FoodItemOut, FoodItemStatus, FoodItemUpd
 router = APIRouter(prefix="/v1/pantry", tags=["pantry"])
 
 
+def _canonical(name: str | None) -> str | None:
+    """The reference-lookup key derived from the display name.
+
+    `canonical_food_name` is what /v1/reference/foodkeeper and recipe matching
+    join on. It has never been anything BUT a normalised copy of `name` -- there
+    is no curation UI and nothing else writes it -- so it is derived here rather
+    than trusted from the client. That matters on PATCH: it used to be settable
+    only at creation, so a user who typed "Chiken breast", got no storage
+    guidance, and edited the name to fix the typo still got no guidance, with
+    nothing on screen explaining why. Deriving it server-side means the key can
+    never drift from the name the user can see and correct.
+    """
+    if name is None:
+        return None
+    cleaned = name.strip().lower()
+    return cleaned or None
+
+
+def _user_chose_key(item: FoodItem) -> bool:
+    """Whether this item's lookup key was picked deliberately, not derived.
+
+    The key is normally just `name` normalised, so a rename should re-point it.
+    But the storage-guidance picker lets a user say "this is actually FoodKeeper's
+    `lean fish cod flounder haddock ...`" for an item they called "Ikan" -- and a
+    later rename must not silently throw that away.
+
+    Rather than carry a `canonical_is_user_choice` column (a schema change, and a
+    migration against the NAS), the state is inferred: if the stored key differs
+    from what `name` would produce, only the picker can have set it, because
+    nothing else ever writes the field. The one ambiguous case is a user picking
+    the product whose name already equals what they typed -- and there the pick
+    and the derivation agree, so re-deriving on rename changes nothing.
+    """
+    return (
+        item.canonical_food_name is not None
+        and item.canonical_food_name != _canonical(item.name)
+    )
+
+
 def _to_out(item: FoodItem) -> FoodItemOut:
     out = FoodItemOut.model_validate(item)
     if item.expiry_date is not None:
@@ -64,7 +103,12 @@ async def create_pantry_item(
     user: UserProfile = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    item = FoodItem(user_id=user.user_id, **body.model_dump(exclude_unset=True))
+    fields = body.model_dump(exclude_unset=True)
+    # The client sends this too, identically; deriving it here as well means a
+    # client that omits it still gets working guidance rather than silently none.
+    if not fields.get("canonical_food_name"):
+        fields["canonical_food_name"] = _canonical(fields.get("name"))
+    item = FoodItem(user_id=user.user_id, **fields)
     db.add(item)
     await db.commit()
     await db.refresh(item)
@@ -87,8 +131,21 @@ async def update_pantry_item(
     db: AsyncSession = Depends(get_db),
 ):
     item = await _get_owned_item(item_id, user, db)
-    for field, value in body.model_dump(exclude_unset=True).items():
+    fields = body.model_dump(exclude_unset=True)
+    chosen_before = _user_chose_key(item)
+    for field, value in fields.items():
         setattr(item, field, value)
+
+    if fields.get("canonical_food_name"):
+        # An explicit pick from the guidance picker. Normalise it so it matches
+        # the reference table the same way a derived key does, then leave it be.
+        item.canonical_food_name = _canonical(fields["canonical_food_name"])
+    elif "name" in fields and not chosen_before:
+        # Renaming re-points the lookup, so Edit is the repair path for an item
+        # that matched nothing or matched the wrong food -- but only while the
+        # key is still auto-derived. Once the user has chosen a food explicitly,
+        # their choice outranks whatever the new name would derive to.
+        item.canonical_food_name = _canonical(fields["name"])
     await db.commit()
     await db.refresh(item)
     return _to_out(item)

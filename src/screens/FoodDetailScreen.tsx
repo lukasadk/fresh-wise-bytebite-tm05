@@ -7,10 +7,12 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { foodIconFor } from '../icons/FoodIcons';
 import { Refrigerator, Snowflake, Sun, Sparkles, ArrowRight } from '../icons/NavIcons';
 import { usePantryItem, formatQuantity, getExpiryInfo, formatDisplayDate } from '../data/pantryItems';
-import { deletePantryItem, lookupStorage } from '../api/freshwise';
+import { deletePantryItem, lookupStorage, updatePantryItem } from '../api/freshwise';
 import { ApiError } from '../api/client';
-import type { FoodkeeperStorage } from '../api/types';
+import { buildGuidance } from '../data/storageGuidance';
+import type { Guidance, StorageMethodKey } from '../data/storageGuidance';
 import { LoadingState, ErrorState } from '../components/ScreenState';
+import FoodMatchPicker from '../components/FoodMatchPicker';
 
 type IconComponent = typeof Refrigerator;
 
@@ -22,119 +24,15 @@ const STORAGE_LABELS: Record<string, string> = {
   room_temp: 'Room temperature',
 };
 
-type StorageGuidance = {
-  Icon: IconComponent;
-  title: string;
-  body: string;
-  // AC 2.3.3: refrigerate = Slate Teal snowflake, freeze = dark Slate Teal
-  // ice-crystal, room temperature = Amber Gold sun.
-  color: string;
+// AC 2.3.3: refrigerate = Slate Teal, freeze = dark Slate Teal, room
+// temperature = Amber Gold. The refrigerate icon is a Refrigerator rather than
+// the AC's snowflake because refrigerate and freeze can now appear together and
+// two snowflakes side by side is unreadable; the colours still follow the AC.
+const METHOD_STYLE: Record<StorageMethodKey, { Icon: IconComponent; color: string }> = {
+  refrigerate: { Icon: Refrigerator, color: colors.slateTeal },
+  freeze: { Icon: Snowflake, color: colors.slateTealDark },
+  pantry: { Icon: Sun, color: colors.statusSoon },
 };
-
-// Reference lookup only -- see the Epic 2.3 note: this is the "recommended
-// storage guidance" ACs 2.3.1-2.3.3 actually describe (FoodKeeper data,
-// joined via canonical_food_name), not the user's own Refrigerated/Frozen/
-// Room-temp pick from AddFoodScreen, which is a separate, already-persisted field
-// (see "Stored in" below).
-/** "1" not "1.0", "1-3" when it's a range. */
-function fmtRange(min: number | null, max: number | null, metric: string | null): string | null {
-  if (min == null && max == null) return null;
-  // Some rows carry only a metric like "Package use-by date" with no numbers --
-  // there's no duration to state, so say nothing rather than something odd.
-  if (!metric) return null;
-  const n = (v: number) => (Number.isInteger(v) ? String(v) : String(v));
-  const unit = metric.toLowerCase();
-  if (min != null && max != null && min !== max) return `${n(min)}-${n(max)} ${unit}`;
-  const only = min ?? max;
-  return only == null ? null : `${n(only)} ${unit}`;
-}
-
-/** Build readable guidance from whatever the row actually has.
- *
- *  Only ~20% of FoodKeeper rows carry any tips TEXT, but ~56% carry a duration
- *  window (min/max + metric). Rendering only the tips meant four out of five
- *  matched items showed generic filler like "Keep refrigerated." while the real
- *  answer -- e.g. milk: 1-3 months, 7-10 days once opened -- sat unused in the
- *  same response. Prefer the tips when present, fall back to the durations, and
- *  only then to the generic line. */
-function bodyFor(
-  tips: string | null,
-  min: number | null,
-  max: number | null,
-  metric: string | null,
-  openedMin: number | null,
-  openedMax: number | null,
-  openedMetric: string | null,
-  fallback: string,
-): string {
-  const parts: string[] = [];
-  if (tips) parts.push(tips);
-  const keeps = fmtRange(min, max, metric);
-  if (keeps) parts.push(`Keeps ${keeps}.`);
-  const opened = fmtRange(openedMin, openedMax, openedMetric);
-  if (opened) parts.push(`${opened.charAt(0).toUpperCase()}${opened.slice(1)} once opened.`);
-  return parts.length ? parts.join(' ') : fallback;
-}
-
-/** How much usable information a row carries -- used to pick the best of several
- *  matches rather than whichever happens to come first. The lookup returns one
- *  row per product variant ("milk plain or flavored", "milk ultra-pasteurized"),
- *  and the lowest id is often the emptiest. */
-function score(row: FoodkeeperStorage): number {
-  return [
-    row.refrigerate_tips, row.freeze_tips, row.pantry_tips,
-    row.refrigerate_min, row.freeze_min, row.pantry_min,
-    row.refrigerate_after_opening_min,
-  ].filter((v) => v != null && v !== '').length;
-}
-
-// Reference lookup only -- see the Epic 2.3 note: this is the "recommended
-// storage guidance" ACs 2.3.1-2.3.3 actually describe (FoodKeeper data,
-// joined via canonical_food_name), not the user's own Refrigerated/Frozen/
-// Room-temp pick from AddFoodScreen, which is a separate, already-persisted field
-// (see "Stored in" below).
-function pickGuidance(rows: FoodkeeperStorage[]): StorageGuidance | null {
-  // Richest row first, so a variant with real durations beats an empty one.
-  const ranked = [...rows].sort((a, b) => score(b) - score(a));
-
-  for (const row of ranked) {
-    if (row.refrigerate_tips || row.refrigerate_min != null || row.refrigerate_after_opening_min != null) {
-      return {
-        Icon: Snowflake,
-        title: 'Refrigerate',
-        body: bodyFor(
-          row.refrigerate_tips, row.refrigerate_min, row.refrigerate_max, row.refrigerate_metric,
-          row.refrigerate_after_opening_min, row.refrigerate_after_opening_max,
-          row.refrigerate_after_opening_metric, 'Keep refrigerated.',
-        ),
-        color: colors.slateTeal,
-      };
-    }
-    if (row.freeze_tips || row.freeze_min != null) {
-      return {
-        // Lucide has no distinct "ice crystal" icon separate from Snowflake --
-        // reusing it here (in dark Slate Teal, vs plain Slate Teal for
-        // refrigerate) rather than a Refrigerator icon, which read as
-        // confusingly generic next to a section that's already about storage.
-        Icon: Snowflake,
-        title: 'Freeze',
-        body: bodyFor(row.freeze_tips, row.freeze_min, row.freeze_max, row.freeze_metric,
-                      null, null, null, 'Suitable for freezing.'),
-        color: colors.slateTealDark,
-      };
-    }
-    if (row.pantry_tips || row.pantry_min != null) {
-      return {
-        Icon: Sun,
-        title: 'Room temperature',
-        body: bodyFor(row.pantry_tips, row.pantry_min, row.pantry_max, row.pantry_metric,
-                      null, null, null, 'Store at room temperature.'),
-        color: colors.statusSoon,
-      };
-    }
-  }
-  return null;
-}
 
 export default function FoodDetailScreen({ navigation, route }: any) {
   const { item, loading, error } = usePantryItem(route?.params?.id);
@@ -144,25 +42,51 @@ export default function FoodDetailScreen({ navigation, route }: any) {
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [confirmRemoveVisible, setConfirmRemoveVisible] = useState(false);
 
-  const [guidance, setGuidance] = useState<StorageGuidance | null>(null);
+  const [guidance, setGuidance] = useState<Guidance>({ methods: [], avoid: null, matched: null });
   const [guidanceChecked, setGuidanceChecked] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  // usePantryItem only refetches on screen focus, so a pick made in the sheet
+  // wouldn't show until the user navigated away and back. Holding the chosen
+  // key here lets the guidance re-resolve immediately; the PATCH has already
+  // persisted it, so this is a display shortcut, not a second source of truth.
+  const [chosenKey, setChosenKey] = useState<string | null>(null);
+  const [pickError, setPickError] = useState<string | null>(null);
+
+  const lookupKey = chosenKey ?? item?.canonicalFoodName ?? null;
 
   useEffect(() => {
     let alive = true;
-    setGuidance(null);
+    setGuidance({ methods: [], avoid: null, matched: null });
     setGuidanceChecked(false);
-    if (!item?.canonicalFoodName) {
+    if (!lookupKey) {
       setGuidanceChecked(true);
       return;
     }
-    lookupStorage(item.canonicalFoodName)
-      .then((rows) => alive && setGuidance(pickGuidance(rows)))
-      .catch(() => alive && setGuidance(null))
+    lookupStorage(lookupKey)
+      .then((rows) => alive && setGuidance(buildGuidance(rows)))
+      .catch(() => alive && setGuidance({ methods: [], avoid: null, matched: null }))
       .finally(() => alive && setGuidanceChecked(true));
     return () => {
       alive = false;
     };
-  }, [item?.canonicalFoodName]);
+  }, [lookupKey]);
+
+  const handleChooseFood = async (canonicalFoodName: string) => {
+    if (!item) return;
+    setPickerVisible(false);
+    setPickError(null);
+    // Optimistic: the guidance effect re-runs off chosenKey straight away, and
+    // the PATCH below is what makes it stick. On failure the key is rolled back
+    // so the card never shows guidance the server didn't accept.
+    const previous = chosenKey;
+    setChosenKey(canonicalFoodName);
+    try {
+      await updatePantryItem(item.id, { canonical_food_name: canonicalFoodName });
+    } catch (err) {
+      setChosenKey(previous);
+      setPickError(err instanceof ApiError ? err.message : "Couldn't save that choice — try again.");
+    }
+  };
 
   const handleBack = () => {
     // Landed here straight from Add Food, or straight back from editing -- either
@@ -250,28 +174,97 @@ export default function FoodDetailScreen({ navigation, route }: any) {
 
         <Text style={styles.sectionTitle}>Storage guidance</Text>
         <View style={styles.guidanceCard}>
-          <View style={styles.guidanceRow}>
-            <View style={styles.guidanceIcon}>
-              {guidance ? (
-                <guidance.Icon size={20} color={guidance.color} strokeWidth={2} />
-              ) : (
+          {guidance.methods.length > 0 ? (
+            <>
+              {guidance.methods.map((method, index) => {
+                const { Icon, color } = METHOD_STYLE[method.key];
+                return (
+                <View key={method.key} style={styles.guidanceRow}>
+                  <View style={styles.guidanceIcon}>
+                    <Icon size={20} color={color} strokeWidth={2} />
+                  </View>
+                  <View style={styles.guidanceText}>
+                    <View style={styles.guidanceTitleRow}>
+                      <Text style={[styles.guidanceTitle, { color }]}>{method.title}</Text>
+                      {/* Only worth flagging when there's an alternative to lose
+                          to -- a single method is trivially the longest. */}
+                      {index === 0 && guidance.methods.length > 1 && method.keepsDays != null ? (
+                        <Text style={styles.guidanceBadge}>KEEPS LONGEST</Text>
+                      ) : null}
+                    </View>
+                    <Text style={styles.guidanceBody}>{method.body}</Text>
+                  </View>
+                </View>
+                );
+              })}
+              {guidance.avoid ? (
+                <View style={styles.guidanceRow}>
+                  <View style={[styles.guidanceIcon, styles.guidanceIconMuted]}>
+                    <Snowflake size={20} color={colors.textSecondary} strokeWidth={2} />
+                  </View>
+                  <View style={styles.guidanceText}>
+                    <Text style={[styles.guidanceTitle, { color: colors.textSecondary }]}>
+                      {guidance.avoid.title}
+                    </Text>
+                    <Text style={styles.guidanceBody}>{guidance.avoid.body}</Text>
+                  </View>
+                </View>
+              ) : null}
+              {/* Answers the question this screen otherwise invites -- "won't
+                  freezing ruin it?". The months FoodKeeper quotes are quality
+                  windows, not safety limits: food held at -18C stays safe past
+                  them, it just stops tasting its best. Only shown when there's
+                  a freezer option on screen to qualify. */}
+              {guidance.methods.some((m) => m.key === 'freeze') ? (
+                <Text style={styles.guidanceSource}>
+                  Freezer times are for best quality — frozen food stays safe beyond them.
+                </Text>
+              ) : null}
+              {guidance.matched ? (
+                <Pressable
+                  onPress={() => setPickerVisible(true)}
+                  style={({ pressed }) => pressed && { opacity: 0.7 }}
+                >
+                  <Text style={styles.guidanceSource}>
+                    Based on FoodKeeper: {guidance.matched}
+                  </Text>
+                  {/* The match is a guess against a fixed USDA catalogue, so it
+                      is named rather than hidden, and correcting it is one tap
+                      from where the doubt occurs. */}
+                  <Text style={styles.guidanceAction}>Not this food? Choose the right one</Text>
+                </Pressable>
+              ) : null}
+            </>
+          ) : (
+            <View style={styles.guidanceRow}>
+              <View style={styles.guidanceIcon}>
                 <Sparkles size={16} color={colors.primary} />
-              )}
-            </View>
-            <View style={styles.guidanceText}>
-              <Text style={[styles.guidanceTitle, guidance ? { color: guidance.color } : null]}>
-                {guidance ? guidance.title : guidanceChecked ? 'No guidance on file yet' : 'Looking up guidance…'}
-              </Text>
-              <Text style={styles.guidanceBody}>
-                {guidance
-                  ? guidance.body
-                  : item.canonicalFoodName
+              </View>
+              <View style={styles.guidanceText}>
+                <Text style={styles.guidanceTitle}>
+                  {guidanceChecked ? 'No guidance on file yet' : 'Looking up guidance…'}
+                </Text>
+                <Text style={styles.guidanceBody}>
+                  {lookupKey
                     ? "We don't have storage guidance for this item yet."
                     : "This item has no reference food name set, so guidance can't be looked up."}
-              </Text>
+                </Text>
+                {/* An empty card is precisely when the user needs the picker,
+                    so it can't only appear once guidance already resolved. */}
+                {guidanceChecked ? (
+                  <Pressable
+                    onPress={() => setPickerVisible(true)}
+                    style={({ pressed }) => pressed && { opacity: 0.7 }}
+                  >
+                    <Text style={styles.guidanceAction}>Choose the right food</Text>
+                  </Pressable>
+                ) : null}
+              </View>
             </View>
-          </View>
+          )}
         </View>
+
+        {pickError ? <Text style={styles.removeError}>{pickError}</Text> : null}
 
         <Pressable
           style={({ pressed }) => [styles.outcomeLink, pressed && { opacity: 0.7 }]}
@@ -289,6 +282,14 @@ export default function FoodDetailScreen({ navigation, route }: any) {
           <Text style={styles.removeLinkText}>{removing ? 'Removing…' : 'Remove item'}</Text>
         </Pressable>
       </ScrollView>
+
+      <FoodMatchPicker
+        visible={pickerVisible}
+        itemName={item.name}
+        selectedKey={lookupKey}
+        onSelect={handleChooseFood}
+        onClose={() => setPickerVisible(false)}
+      />
 
       <ConfirmDialog
         visible={confirmRemoveVisible}
@@ -436,14 +437,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  guidanceIconMuted: {
+    opacity: 0.7,
+  },
   guidanceText: {
     flex: 1,
     gap: 2,
+  },
+  guidanceTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   guidanceTitle: {
     fontFamily: fonts.bold,
     fontSize: 15,
     color: colors.primary,
+  },
+  guidanceBadge: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    letterSpacing: 0.6,
+    color: colors.card,
+    backgroundColor: colors.slateTealDark,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
+  guidanceAction: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.primary,
+    marginTop: 2,
+  },
+  guidanceSource: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: colors.textSecondary,
   },
   guidanceBody: {
     fontFamily: fonts.regular,
