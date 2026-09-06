@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, Animated, Easing, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -26,7 +26,7 @@ import MarkConsumedScreen from './src/screens/MarkConsumedScreen';
 import MarkWastedScreen from './src/screens/MarkWastedScreen';
 import WasteRecordedScreen from './src/screens/WasteRecordedScreen';
 import BottomNav from './src/components/BottomNav';
-import AnimatedLoadingScreen from './src/components/AnimatedLoadingScreen';
+import LandingScreen from './src/components/LandingScreen';
 import ConfirmDialog from './src/components/ConfirmDialog';
 import { colors, fonts, radii, spacing } from './src/theme/theme';
 import { registerDevice } from './src/api/freshwise';
@@ -132,63 +132,105 @@ export default function App() {
 
   const appReady = fontsLoaded && deviceReady;
 
-  // Safety net for the (rare) case fonts + registration both resolve before this
-  // component's very first paint -- then AnimatedLoadingScreen below is skipped
-  // entirely, so its own onLayout never fires to hide the native splash.
+  // The landing overlay is unmounted only once ITS OWN exit-fade animation
+  // finishes (see onExitComplete below) -- not the instant "Get Started" is
+  // tapped. This is what lets its fade-out play in full instead of being cut
+  // short by the overlay disappearing mid-animation.
+  const [landingDismissed, setLandingDismissed] = useState(false);
+
+  // Starts at 0 and fades to 1 -- but critically, the main app tree below is
+  // mounted (at opacity 0, not interactive) as soon as appReady is true,
+  // WELL BEFORE "Get Started" is ever tapped. That's the actual fix: the
+  // previous version only started building the whole navigation tree (plus
+  // Home's first data fetch) at the moment of the tap, and that mount+fetch
+  // cost was slow enough to finish AFTER the fade-in's opacity had already
+  // reached 1, making the fade invisible in practice even though the
+  // animation itself was running correctly. Pre-mounting in the background
+  // means by the time the tap happens, there's nothing left to wait for --
+  // the fade is a pure, already-loaded crossfade.
+  const mainAppFade = useRef(new Animated.Value(0)).current;
+  const startMainAppFadeIn = useCallback(() => {
+    Animated.timing(mainAppFade, {
+      toValue: 1,
+      duration: 400,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [mainAppFade]);
+
+  // Safety net for the (rare) case this fires before the fade above has
+  // visibly started -- harmless either way, native splash hiding is a no-op
+  // once already hidden.
   const onLayoutRootView = useCallback(async () => {
     if (appReady) {
       await SplashScreen.hideAsync();
     }
   }, [appReady]);
 
-  if (!appReady) {
-    if (restorePromptId) {
-      // Rendered in place of the loading screen, not alongside it -- startup
-      // is genuinely paused here until the user answers.
-      return (
-        <View style={styles.restorePromptBackdrop}>
-          <ConfirmDialog
-            visible
-            title="Restore your pantry?"
-            message="We found a device ID in your clipboard from a previous install. Restore it to get your old pantry back, or start fresh instead."
-            confirmLabel="Restore"
-            confirmColor={colors.primary}
-            onConfirm={handleRestoreConfirm}
-            onCancel={handleRestoreDecline}
-          />
-        </View>
-      );
-    }
-    // Hides the native (static, un-animatable) splash as soon as this screen has
-    // painted its first frame, so what the user actually sees while fonts/device
-    // registration finish is the pulsing logo animation, not a frozen image.
-    return <AnimatedLoadingScreen onLayout={() => SplashScreen.hideAsync()} />;
-  }
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-          {copyToast ? (
-            <View style={styles.toast} pointerEvents="none">
-              <View style={styles.toastPill}>
-                <Text style={styles.toastText}>Device ID copied</Text>
-              </View>
+        <View style={{ flex: 1 }}>
+          {/* Main app tree -- pre-mounted in the background the moment
+              appReady is true, regardless of whether the landing overlay is
+              still showing on top. Starts fully transparent and
+              non-interactive (pointerEvents "none") so it can't be tapped
+              through the overlay while hidden. */}
+          {appReady && (
+            <Animated.View
+              style={[StyleSheet.absoluteFill, { opacity: mainAppFade }]}
+              onLayout={onLayoutRootView}
+              pointerEvents={landingDismissed ? 'auto' : 'none'}
+            >
+              {copyToast ? (
+                <View style={styles.toast} pointerEvents="none">
+                  <View style={styles.toastPill}>
+                    <Text style={styles.toastText}>Device ID copied</Text>
+                  </View>
+                </View>
+              ) : null}
+              <NavigationContainer>
+                <Stack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="Main" component={MainTabs} />
+                  <Stack.Group screenOptions={{ presentation: 'modal' }}>
+                    <Stack.Screen name="AddFood" component={AddFoodScreen} />
+                    <Stack.Screen name="FoodDetail" component={FoodDetailScreen} />
+                    <Stack.Screen name="RecordOutcome" component={RecordOutcomeScreen} />
+                    <Stack.Screen name="MarkConsumed" component={MarkConsumedScreen} />
+                    <Stack.Screen name="MarkWasted" component={MarkWastedScreen} />
+                    <Stack.Screen name="WasteRecorded" component={WasteRecordedScreen} />
+                  </Stack.Group>
+                </Stack.Navigator>
+              </NavigationContainer>
+            </Animated.View>
+          )}
+
+          {/* Landing / restore-prompt overlay -- sits on top until its own
+              exit animation reports completion. */}
+          {!landingDismissed && (
+            <View style={StyleSheet.absoluteFill}>
+              {restorePromptId ? (
+                <View style={styles.restorePromptBackdrop}>
+                  <ConfirmDialog
+                    visible
+                    title="Restore your pantry?"
+                    message="We found a device ID in your clipboard from a previous install. Restore it to get your old pantry back, or start fresh instead."
+                    confirmLabel="Restore"
+                    confirmColor={colors.primary}
+                    onConfirm={handleRestoreConfirm}
+                    onCancel={handleRestoreDecline}
+                  />
+                </View>
+              ) : (
+                <LandingScreen
+                  appReady={appReady}
+                  onGetStarted={startMainAppFadeIn}
+                  onExitComplete={() => setLandingDismissed(true)}
+                  onFirstPaint={() => SplashScreen.hideAsync()}
+                />
+              )}
             </View>
-          ) : null}
-          <NavigationContainer>
-            <Stack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="Main" component={MainTabs} />
-              <Stack.Group screenOptions={{ presentation: 'modal' }}>
-                <Stack.Screen name="AddFood" component={AddFoodScreen} />
-                <Stack.Screen name="FoodDetail" component={FoodDetailScreen} />
-                <Stack.Screen name="RecordOutcome" component={RecordOutcomeScreen} />
-                <Stack.Screen name="MarkConsumed" component={MarkConsumedScreen} />
-                <Stack.Screen name="MarkWasted" component={MarkWastedScreen} />
-                <Stack.Screen name="WasteRecorded" component={WasteRecordedScreen} />
-              </Stack.Group>
-            </Stack.Navigator>
-          </NavigationContainer>
+          )}
         </View>
       </SafeAreaProvider>
     </GestureHandlerRootView>

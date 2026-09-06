@@ -11,6 +11,7 @@ import FoodCard from '../components/FoodCard';
 import Button from '../components/Button';
 import ConfirmDialog from '../components/ConfirmDialog';
 import WasteReasonPicker from '../components/WasteReasonPicker';
+import SwipeToManage from '../components/SwipeToManage';
 import { Plus, ChevronDown, ChevronUp, List, LayoutGrid, PackageOpen, X, Check } from '../icons/NavIcons';
 import { formatQuantity, getExpiryInfo, formatDisplayDate, usePantry, PantryItem } from '../data/pantryItems';
 import { recordOutcome, deletePantryItem, WASTE_REASON_BY_LABEL } from '../api/freshwise';
@@ -230,7 +231,10 @@ export default function PantryScreen({ navigation, route }: any) {
             <View style={styles.headerRow}>
               <Text style={styles.title}>My Pantry</Text>
               <View style={styles.headerButtons}>
-                <Pressable onPress={() => (selectMode ? exitSelectMode() : setSelectMode(true))}>
+                <Pressable
+                  style={styles.selectToggleButton}
+                  onPress={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+                >
                   <Text style={styles.selectToggleText}>{selectMode ? 'Cancel' : 'Select'}</Text>
                 </Pressable>
                 <Pressable style={styles.addButton} onPress={() => navigation.navigate('AddFood')}>
@@ -359,7 +363,7 @@ export default function PantryScreen({ navigation, route }: any) {
               </View>
             );
           }
-          return (
+          const row = (
             <FoodRow
               name={item.name}
               category={item.category}
@@ -374,6 +378,10 @@ export default function PantryScreen({ navigation, route }: any) {
               onPress={handlePress}
             />
           );
+          // Swipe-to-manage is disabled during bulk select -- a tap there
+          // already means "select this item", so a swipe revealing "Manage"
+          // would be a second, conflicting interpretation of the same gesture.
+          return selectMode ? row : <SwipeToManage onManage={() => openItem(item)}>{row}</SwipeToManage>;
         }}
         ItemSeparatorComponent={viewMode === 'list' ? () => <View style={{ height: spacing.md }} /> : undefined}
       />
@@ -488,6 +496,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+  },
+  selectToggleButton: {
+    height: 39,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   selectToggleText: {
     fontFamily: fonts.bold,
