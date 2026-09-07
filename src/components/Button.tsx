@@ -1,12 +1,12 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet, ViewStyle } from 'react-native';
+import { Pressable, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 
 type Props = {
   label: string;
   onPress?: () => void;
   variant?: 'primary' | 'onDark' | 'danger'; // primary = green bg/white text, onDark = white bg/green text (used inside green hero cards), danger = destructive actions e.g. Cancel
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 export default function Button({ label, onPress, variant = 'primary', style }: Props) {

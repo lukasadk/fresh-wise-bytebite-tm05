@@ -17,6 +17,15 @@ export default function RecordOutcomeScreen({ navigation, route }: any) {
   const Icon = foodIconFor(item.name, item.category);
   const expiry = getExpiryInfo(item);
 
+  // Strictly PAST the expiry date -- same threshold as rowExpiryLabel's own
+  // "Expired" text and the backend's auto-waste job (expiry_date < today).
+  // An item expiring exactly today is NOT counted as expired here, matching
+  // that it gets its own distinct "Today" label rather than "Expired".
+  // No expiry date set at all (daysLeft === null) is also treated as not
+  // expired, since there's nothing to judge it against -- Mark Consumed
+  // stays the enabled option in that case.
+  const isExpired = expiry.daysLeft !== null && expiry.daysLeft < 0;
+
   const handleMarkWasted = () => {
     navigation.navigate('MarkWasted', { id: item.id });
   };
@@ -51,15 +60,20 @@ export default function RecordOutcomeScreen({ navigation, route }: any) {
         <View style={styles.actions}>
           <Button
             label="Mark Consumed"
-            onPress={() => navigation.navigate('MarkConsumed', { id: item.id })}
-            style={styles.fullWidthButton}
+            onPress={isExpired ? undefined : () => navigation.navigate('MarkConsumed', { id: item.id })}
+            style={[styles.fullWidthButton, isExpired && styles.disabledButton]}
           />
           <Button
             label="Mark Wasted"
             variant="danger"
-            onPress={handleMarkWasted}
-            style={styles.fullWidthButton}
+            onPress={isExpired ? handleMarkWasted : undefined}
+            style={[styles.fullWidthButton, !isExpired && styles.disabledButton]}
           />
+          <Text style={styles.disabledNote}>
+            {isExpired
+              ? 'This item is past its expiry date, so only Mark Wasted is available.'
+              : "This item hasn't expired yet, so only Mark Consumed is available."}
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -140,6 +154,15 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: spacing.md,
+  },
+  disabledButton: {
+    opacity: 0.4,
+  },
+  disabledNote: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   fullWidthButton: {
     alignSelf: 'stretch',

@@ -5,24 +5,12 @@ import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { Field, TextField, SelectField, DateField } from '../components/FormField';
-import { FilterPill } from '../components/PantryControls';
-import { addPantryItem, updatePantryItem, toStorage } from '../api/freshwise';
+import { addPantryItem, updatePantryItem, lookupStorage } from '../api/freshwise';
 import { usePantryItem } from '../data/pantryItems';
 import { ApiError } from '../api/client';
 import { LoadingState, ErrorState } from '../components/ScreenState';
 
 const CATEGORIES = ['Dairy', 'Protein', 'Vegetables', 'Fruit', 'Pantry', 'Frozen', 'Beverages', 'Other'];
-const STORAGE_OPTIONS = ['Refrigerated', 'Frozen', 'Room temp'] as const;
-type StorageLabel = (typeof STORAGE_OPTIONS)[number];
-
-// Reverse of api/freshwise.ts's STORAGE_BY_LABEL -- needed to seed the picker's
-// selected pill when editing an existing item (the API returns the backend enum
-// value, not the UI label).
-const STORAGE_LABEL_BY_VALUE: Record<string, StorageLabel> = {
-  refrigerated: 'Refrigerated',
-  frozen: 'Frozen',
-  room_temp: 'Room temp',
-};
 
 // ISO ("2026-08-27") is what the API expects -- new Date(str) parsing is
 // implementation-defined across engines, so build/parse the string by hand
@@ -40,6 +28,33 @@ function parseIsoDate(iso: string): Date {
   return new Date(y, m - 1, d);
 }
 
+// The user no longer chooses storage -- they might not actually know it, and
+// guessing wrong is worse than the app just looking it up. Same priority
+// order as FoodDetailScreen's pickGuidance() (refrigerate, then freeze, then
+// room temp), checking every returned row rather than stopping at the first
+// -- a food can match several FoodKeeper entries where an earlier one only
+// has e.g. a use-by-date field populated and a later one has real tips.
+//
+// Falls back to 'refrigerated' when there's no FoodKeeper match at all (an
+// unrecognised name) or the lookup itself fails (offline, etc.) -- picked as
+// the safer default of the three, since most everyday groceries that would
+// go unmatched (a homemade dish, a less common item) are more often
+// fridge items than freezer or pantry ones. This can always be corrected
+// later via Edit once a specific item's real answer is known.
+async function determineStorage(canonicalFoodName: string): Promise<'refrigerated' | 'frozen' | 'room_temp'> {
+  try {
+    const rows = await lookupStorage(canonicalFoodName);
+    for (const row of rows) {
+      if (row.refrigerate_tips || row.refrigerate_min != null) return 'refrigerated';
+      if (row.freeze_tips || row.freeze_min != null) return 'frozen';
+      if (row.pantry_tips || row.pantry_min != null) return 'room_temp';
+    }
+  } catch {
+    // No match, or the request itself failed -- either way, fall through to the default.
+  }
+  return 'refrigerated';
+}
+
 export default function AddFoodScreen({ navigation, route }: any) {
   // Edit mode when opened with an id (see FoodDetailScreen's "Edit" button) --
   // create mode otherwise.
@@ -53,7 +68,6 @@ export default function AddFoodScreen({ navigation, route }: any) {
   const [unit, setUnit] = useState('');
   const [purchaseDate, setPurchaseDate] = useState<Date | null>(null);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
-  const [storage, setStorage] = useState<StorageLabel>('Refrigerated');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -62,8 +76,9 @@ export default function AddFoodScreen({ navigation, route }: any) {
   // Prefill once the existing item loads (edit mode only). Purchase date is
   // deliberately NOT seeded/shown in edit mode -- the backend's FoodItemUpdate
   // doesn't accept it, so showing a field that silently can't be changed would
-  // be misleading. Storage CAN be edited (FoodItemUpdate.storage exists), so
-  // that one carries over.
+  // be misleading. Storage isn't prefilled either now -- there's no picker to
+  // seed, and editing preserves whatever storage value already exists rather
+  // than re-running the automatic lookup (see handleSave's edit branch).
   useEffect(() => {
     if (!existingItem) return;
     setName(existingItem.name);
@@ -71,7 +86,6 @@ export default function AddFoodScreen({ navigation, route }: any) {
     setQuantity(String(existingItem.quantity));
     setUnit(existingItem.unit);
     if (existingItem.expiryDate) setExpiryDate(parseIsoDate(existingItem.expiryDate));
-    if (existingItem.storage) setStorage(STORAGE_LABEL_BY_VALUE[existingItem.storage] ?? 'Refrigerated');
   }, [existingItem?.id]);
 
   if (isEditing && loadingExisting) return null;
@@ -118,10 +132,14 @@ export default function AddFoodScreen({ navigation, route }: any) {
           quantity: parsedQuantity,
           unit: unit.trim(),
           expiry_date: toIsoDate(expiryDate as Date),
-          storage: toStorage(storage),
+          // storage deliberately omitted -- PATCH only touches fields that are
+          // present, so whatever storage value this item already has (set
+          // automatically at creation) is left untouched here.
         });
         navigation.navigate('FoodDetail', { id: editId, justEdited: true });
       } else {
+        const canonicalFoodName = name.trim().toLowerCase();
+        const autoStorage = await determineStorage(canonicalFoodName);
         const newItem = await addPantryItem({
           name: name.trim(),
           category,
@@ -136,13 +154,13 @@ export default function AddFoodScreen({ navigation, route }: any) {
           // guidance card can replace it with a food the user chose -- which
           // then outranks later renames. The backend derives the same value
           // from `name` if this is omitted, so sending it is belt-and-braces.
-          canonical_food_name: name.trim().toLowerCase(),
+          canonical_food_name: canonicalFoodName,
           quantity: parsedQuantity,
           unit: unit.trim(),
           purchase_date: toIsoDate(purchaseDate ?? new Date()),
           expiry_date: toIsoDate(expiryDate as Date),
           source: 'manual',
-          storage: toStorage(storage),
+          storage: autoStorage,
         });
         // replace(), not navigate(). This screen and FoodDetail are both in the
         // presentation:'modal' group, and on a NEW item FoodDetail isn't in the
@@ -248,19 +266,6 @@ export default function AddFoodScreen({ navigation, route }: any) {
           />
         </Field>
 
-        <Field label="Storage">
-          <View style={styles.storageRow}>
-            {STORAGE_OPTIONS.map((option) => (
-              <FilterPill
-                key={option}
-                label={option}
-                active={storage === option}
-                onPress={() => setStorage(option)}
-              />
-            ))}
-          </View>
-        </Field>
-
         <View style={styles.actions}>
           {submitError ? <Text style={styles.submitError}>{submitError}</Text> : null}
           <Button
@@ -296,10 +301,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 14,
     color: colors.textSecondary,
-  },
-  storageRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
   },
   actions: {
     gap: spacing.md,

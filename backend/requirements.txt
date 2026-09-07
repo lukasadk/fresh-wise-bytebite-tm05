@@ -8,6 +8,7 @@ pydantic==2.10.3
 pydantic-settings==2.6.1
 python-dotenv==1.0.1
 alembic==1.14.0
+apscheduler==3.10.4
 
 # reference-data ingestion scripts
 pandas==2.2.3
