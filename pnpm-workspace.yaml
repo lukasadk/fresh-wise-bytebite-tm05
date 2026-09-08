@@ -1,0 +1,6 @@
+packages:
+  - .
+
+# Keep pnpm's physical package paths short enough for Android CMake/Ninja on
+# Windows. This resolves one directory above the checkout (for example D:\pv).
+virtualStoreDir: ../pv

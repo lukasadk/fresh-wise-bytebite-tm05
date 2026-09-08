@@ -180,3 +180,37 @@ curl http://YOUR_IP:8000/health
 
 If that fails from your laptop, the API isn't running. If it works on the laptop but
 the app still errors, it's the `localhost`/LAN_IP problem in step 2.
+## Offline grocery VLM integration
+
+The Android photo-entry flow is wired directly into this checkout:
+
+`Add Food` → `Photo grocery entry` → bundled MNN VLM + bundled OCR → validated candidates → explicit user confirmation → `POST /v1/pantry`.
+
+Recognition is fully local and does not call the Python demo currently exposed
+at `http://127.0.0.1:8012`. Do not use that URL as `EXPO_PUBLIC_API_BASE_URL`:
+it is the VLM test service and does not implement the FreshWise inventory API.
+
+The final confirmation still uses the existing FreshWise FastAPI/Postgres
+service. Configure its URL and matching client key in the Git-ignored root
+`.env` before building:
+
+```dotenv
+EXPO_PUBLIC_API_BASE_URL=https://freshwise-api-production.up.railway.app
+EXPO_PUBLIC_API_KEY=<same value as Railway API_KEY>
+```
+
+The hosted URL was observed healthy on 2026-09-08, but its business endpoints
+return HTTP 401 when the key is omitted. A Release APK built without this value
+is therefore recognition-only: confirmed candidates cannot enter Active
+Inventory. The key is compiled into the application and is not a secret; the
+server must continue to enforce rate limiting and must not treat it as user
+authentication.
+
+Build the standalone local test APK after setting `.env`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\package-offline-model.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\build-offline-android.ps1 -Variant Release -MaxWorkers 8
+```
+
+The model assets and generated APKs are Git-ignored and must remain local.

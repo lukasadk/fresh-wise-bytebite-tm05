@@ -59,6 +59,31 @@ npx expo start
 
 Scan the QR code with Expo Go (iOS/Android), or press `i` / `a` for a simulator.
 
+### Experimental offline grocery recognition (Android arm64)
+
+The photo-entry screen can run the distilled Qwen3-VL 2B MNN export entirely
+on device. It combines the VLM with bundled ML Kit OCR, validates model JSON,
+and requires the user to edit/confirm every candidate before pantry insertion.
+Packaging claims such as brand, variant, net content, and printed expiry are
+discarded unless independent OCR text supports them. The current 2B export did
+not pass the project quality gate, so this build is for device testing only.
+
+The model files are intentionally local-only and must never be pushed. After
+placing the seven exported MNN files under the versioned Android asset folder:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\package-offline-model.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\build-offline-android.ps1 -Variant Debug -MaxWorkers 8
+powershell -ExecutionPolicy Bypass -File .\scripts\build-offline-android.ps1 -Variant Release -MaxWorkers 8
+```
+
+The first recognition copies and SHA-256-verifies about 1.4 GB of model assets
+into app-private storage before loading MNN. Allow roughly twice the packaged
+model size as free device storage. Only `arm64-v8a` Android devices are supported
+by this experimental APK. The repository's current Release configuration uses
+the Android debug keystore, so that artifact is suitable for local sideloading
+only; configure a protected production keystore before distribution.
+
 ### Backend
 
 ```bash

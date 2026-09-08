@@ -1,4 +1,11 @@
 {
-  "compilerOptions": {},
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "react": ["./node_modules/@types/react/index.d.ts"],
+      "react/*": ["./node_modules/@types/react/*"]
+    },
+    "types": ["react", "node"]
+  },
   "extends": "expo/tsconfig.base"
 }

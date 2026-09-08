@@ -20,6 +20,7 @@ import ActivityScreen from './src/screens/ActivityScreen';
 import PantryScreen from './src/screens/PantryScreen';
 import UseFirstScreen from './src/screens/UseFirstScreen';
 import AddFoodScreen from './src/screens/AddFoodScreen';
+import PhotoGroceryScreen from './src/screens/PhotoGroceryScreen';
 import FoodDetailScreen from './src/screens/FoodDetailScreen';
 import RecordOutcomeScreen from './src/screens/RecordOutcomeScreen';
 import MarkConsumedScreen from './src/screens/MarkConsumedScreen';
@@ -194,6 +195,7 @@ export default function App() {
                   <Stack.Screen name="Main" component={MainTabs} />
                   <Stack.Group screenOptions={{ presentation: 'modal' }}>
                     <Stack.Screen name="AddFood" component={AddFoodScreen} />
+                    <Stack.Screen name="PhotoGrocery" component={PhotoGroceryScreen} />
                     <Stack.Screen name="FoodDetail" component={FoodDetailScreen} />
                     <Stack.Screen name="RecordOutcome" component={RecordOutcomeScreen} />
                     <Stack.Screen name="MarkConsumed" component={MarkConsumedScreen} />

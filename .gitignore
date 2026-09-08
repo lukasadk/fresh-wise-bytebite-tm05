@@ -11,7 +11,16 @@ node_modules/
 .expo-shared/
 dist/
 web-build/
+android/.gradle/
+android/build/
+android/app/build/
+modules/*/android/.cxx/
+modules/*/android/build/
+modules/*/android/src/main/jniLibs/
+android/app/src/main/assets/wastewise-vlm/
+artifacts/
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key

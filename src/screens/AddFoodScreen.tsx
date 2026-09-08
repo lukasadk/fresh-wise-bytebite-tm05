@@ -222,6 +222,22 @@ export default function AddFoodScreen({ navigation, route }: any) {
           </Text>
         </View>
 
+        {!isEditing ? (
+          <View style={styles.photoEntryCard}>
+            <View style={styles.photoEntryCopy}>
+              <Text style={styles.photoEntryTitle}>Add a whole grocery photo</Text>
+              <Text style={styles.photoEntryText}>
+                Recognise multiple products offline, then edit and confirm every item before it enters your pantry.
+              </Text>
+            </View>
+            <Button
+              label="Scan grocery photo"
+              onPress={() => navigation.navigate('PhotoGrocery')}
+              style={styles.fullWidthButton}
+            />
+          </View>
+        ) : null}
+
         <Field label="Food name" required error={errors.name}>
           <TextField value={name} onChangeText={setName} placeholder="e.g. Milk" error={!!errors.name} />
         </Field>
@@ -304,6 +320,28 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: fonts.regular,
     fontSize: 14,
+    color: colors.textSecondary,
+  },
+  photoEntryCard: {
+    padding: spacing.lg,
+    gap: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.primaryPale,
+    backgroundColor: colors.primaryTint,
+  },
+  photoEntryCopy: {
+    gap: spacing.xs,
+  },
+  photoEntryTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.textPrimary,
+  },
+  photoEntryText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 19,
     color: colors.textSecondary,
   },
   actions: {
