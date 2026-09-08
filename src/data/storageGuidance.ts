@@ -29,6 +29,9 @@ export type Guidance = {
   /** Which FoodKeeper product this came from, shown so a loose match is
    *  visible rather than silently presented as advice about the exact item. */
   matched: string | null;
+  /** The matched product's FoodKeeper category, e.g. "Food Purchased Frozen" --
+   *  a signal the methods alone don't carry (see suggestStorage). */
+  category: string | null;
 };
 
 // Reference lookup only -- see the Epic 2.3 note: this is the "recommended
@@ -219,7 +222,7 @@ function freezeAdvice(row: FoodkeeperStorage): { discouraged: boolean; reason: s
 export function buildGuidance(rows: FoodkeeperStorage[]): Guidance {
   const ranked = [...rows].sort((a, b) => score(b) - score(a));
   const row = ranked.find((r) => score(r) > 0) ?? ranked[0];
-  if (!row) return { methods: [], avoid: null, matched: null };
+  if (!row) return { methods: [], avoid: null, matched: null, category: null };
 
   const methods: StorageMethod[] = [];
 
@@ -293,7 +296,7 @@ export function buildGuidance(rows: FoodkeeperStorage[]): Guidance {
   // sorts last rather than being dropped -- it's still real advice.
   methods.sort((a, b) => (b.keepsDays ?? -1) - (a.keepsDays ?? -1));
 
-  return { methods, avoid, matched: labelFor(row) };
+  return { methods, avoid, matched: labelFor(row), category: row.category_name };
 }
 
 /** FoodKeeper's own display name for a row: "Beef (steaks)" rather than the
@@ -330,4 +333,49 @@ export function toCandidate(row: FoodkeeperStorage): FoodCandidate {
     category: row.category_name,
     summary: parts.length ? parts.join(' · ') : 'No storage details on file',
   };
+}
+
+export type StorageChoice = 'refrigerated' | 'frozen' | 'room_temp';
+
+const METHOD_TO_STORAGE: Record<StorageMethodKey, StorageChoice> = {
+  refrigerate: 'refrigerated',
+  freeze: 'frozen',
+  pantry: 'room_temp',
+};
+
+/** Where to put this food, for the Add Food screen's automatic storage choice.
+ *
+ *  Distinct from buildGuidance()'s ordering, which ranks by how long each method
+ *  keeps the food. That is the right answer to "how do I make this last?" and the
+ *  wrong one to "where does this go?" -- ranking by keeping time would send every
+ *  cut of fresh beef to the freezer, when the household almost certainly put it
+ *  in the fridge. So: the everyday method first, fridge before pantry before
+ *  freezer, with one exception.
+ *
+ *  The exception is FoodKeeper's "Food Purchased Frozen" category -- ice cream,
+ *  frozen pizza, juice concentrate. Those rows also carry a fridge duration (how
+ *  long they last once thawed), so everyday-first would file ice cream in the
+ *  fridge. The category is the only thing that distinguishes them.
+ *
+ *  Returns null when nothing matched at all, leaving the fallback to the caller
+ *  rather than inventing a confident answer here. */
+export function suggestStorage(rows: FoodkeeperStorage[]): {
+  storage: StorageChoice;
+  summary: string;
+  matched: string | null;
+} | null {
+  const { methods, category, matched } = buildGuidance(rows);
+  if (methods.length === 0) return null;
+
+  const keys = methods.map((m) => m.key);
+  const frozenAisle = /purchased frozen/i.test(category ?? '');
+  const chosen: StorageMethodKey | undefined = frozenAisle && keys.includes('freeze')
+    ? 'freeze'
+    : (['refrigerate', 'pantry', 'freeze'] as const).find((k) => keys.includes(k));
+  if (!chosen) return null;
+
+  const summary = methods
+    .map((m) => (m.keeps ? `${m.title} ${m.keeps}` : m.title))
+    .join(' · ');
+  return { storage: METHOD_TO_STORAGE[chosen], summary, matched };
 }

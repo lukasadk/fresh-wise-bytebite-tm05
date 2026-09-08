@@ -42,7 +42,7 @@ export default function FoodDetailScreen({ navigation, route }: any) {
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [confirmRemoveVisible, setConfirmRemoveVisible] = useState(false);
 
-  const [guidance, setGuidance] = useState<Guidance>({ methods: [], avoid: null, matched: null });
+  const [guidance, setGuidance] = useState<Guidance>({ methods: [], avoid: null, matched: null, category: null });
   const [guidanceChecked, setGuidanceChecked] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
   // usePantryItem only refetches on screen focus, so a pick made in the sheet
@@ -56,7 +56,7 @@ export default function FoodDetailScreen({ navigation, route }: any) {
 
   useEffect(() => {
     let alive = true;
-    setGuidance({ methods: [], avoid: null, matched: null });
+    setGuidance({ methods: [], avoid: null, matched: null, category: null });
     setGuidanceChecked(false);
     if (!lookupKey) {
       setGuidanceChecked(true);
@@ -64,7 +64,7 @@ export default function FoodDetailScreen({ navigation, route }: any) {
     }
     lookupStorage(lookupKey)
       .then((rows) => alive && setGuidance(buildGuidance(rows)))
-      .catch(() => alive && setGuidance({ methods: [], avoid: null, matched: null }))
+      .catch(() => alive && setGuidance({ methods: [], avoid: null, matched: null, category: null }))
       .finally(() => alive && setGuidanceChecked(true));
     return () => {
       alive = false;

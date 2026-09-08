@@ -20,7 +20,7 @@ if (!csvPath) { console.error('usage: node scripts/verify-storage-guidance.mjs <
 mkdirSync('.verify-tmp', { recursive: true });
 execSync('npx tsc src/data/storageGuidance.ts --outDir .verify-tmp --ignoreConfig --module es2022 --target es2022 --moduleResolution bundler --skipLibCheck', { stdio: 'inherit' });
 writeFileSync('.verify-tmp/package.json', '{"type":"module"}');
-const { buildGuidance, toCandidate, labelFor } = await import(pathToFileURL(resolve('.verify-tmp/data/storageGuidance.js')).href);
+const { buildGuidance, toCandidate, labelFor, suggestStorage } = await import(pathToFileURL(resolve('.verify-tmp/data/storageGuidance.js')).href);
 
 // --- minimal CSV reader (quoted fields, embedded commas/newlines) ---
 function parseCsv(text) {
@@ -205,6 +205,51 @@ check('the two are told apart by their guidance, not their names',
   fresh.summary !== smoked.summary);
 console.log(`   fresh:  ${fresh.label} -> ${fresh.summary}`);
 console.log(`   smoked: ${smoked.label} -> ${smoked.summary}`);
+
+console.log('\n== Add Food picks where the item actually goes ==');
+// Add Food has no storage picker and Edit never touches storage, so whatever is
+// decided at creation is permanent. The old logic read only FoodKeeper's plain
+// columns, so 355 of 661 rows fell through to a blind 'refrigerated'.
+const where = (n) => (suggestStorage(byName(n)) || {}).storage;
+for (const [food, want] of [
+  ['beef steaks', 'refrigerated'],      // fridge is the everyday choice, not the freezer
+  ['chicken whole', 'refrigerated'],
+  ['milk plain or flavored', 'refrigerated'],
+  ['butter', 'refrigerated'],
+  ['yogurt', 'refrigerated'],
+  ['baking powder', 'room_temp'],       // was filed in the fridge
+  ['baking soda', 'room_temp'],
+  ['cookies crispy', 'room_temp'],
+  ['ice cream', 'frozen'],              // was filed in the fridge
+  ['ice pops', 'frozen'],
+  ['juice concentrates', 'frozen'],
+]) {
+  check(`${food} -> ${want}`, where(food) === want, `got ${where(food)}`);
+}
+check('a food with no match gets no invented answer', suggestStorage([]) === null);
+
+// Ranking by keeping time answers "how do I make this last?"; Add Food asks
+// "where does this go?" -- beef must not be filed in the freezer just because
+// the freezer keeps it longest.
+check('the everyday method wins over the longest-keeping one',
+  g('beef steaks').methods[0].key === 'freeze' && where('beef steaks') === 'refrigerated');
+// ...except for the frozen aisle. 13 of those rows carry a 3-4 day fridge
+// duration -- how long they keep ONCE THAWED -- which everyday-first would
+// wrongly read as "put it in the fridge". Frozen pizza is the clearest case.
+check('a frozen-aisle item with a fridge duration still goes in the freezer',
+  g('pizza frozen').methods.some((m) => m.key === 'refrigerate') && where('pizza frozen') === 'frozen',
+  `methods [${g('pizza frozen').methods.map((m) => m.key)}], got ${where('pizza frozen')}`);
+check('frozen pretzels too', where('frozen pretzels') === 'frozen', `got ${where('frozen pretzels')}`);
+check('frozen shrimp too', where('shrimp shellfish') === 'frozen', `got ${where('shrimp shellfish')}`);
+const frozenAisle = rows.filter((r) => /purchased frozen/i.test(r.category_name || ''));
+check(`all ${frozenAisle.length} frozen-aisle rows are placed in the freezer`,
+  frozenAisle.every((r) => (suggestStorage([r]) || {}).storage === 'frozen'),
+  frozenAisle.filter((r) => (suggestStorage([r]) || {}).storage !== 'frozen').map((r) => r.canonical_food_name).join(', '));
+
+let placed = 0;
+for (const r of rows) if (suggestStorage([r])) placed++;
+console.log(`   rows Add Food can now place: ${placed}/${rows.length}`);
+check('every row yields a real placement, not a fallback', placed === rows.length);
 
 console.log('\n== dataset-wide: how many rows can now answer at all ==');
 const withGuidance = rows.filter((r) => buildGuidance([r]).methods.length > 0).length;

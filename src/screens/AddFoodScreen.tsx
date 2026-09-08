@@ -9,6 +9,8 @@ import { addPantryItem, updatePantryItem, lookupStorage } from '../api/freshwise
 import { usePantryItem } from '../data/pantryItems';
 import { ApiError } from '../api/client';
 import { LoadingState, ErrorState } from '../components/ScreenState';
+import { suggestStorage } from '../data/storageGuidance';
+import type { StorageChoice } from '../data/storageGuidance';
 
 const CATEGORIES = ['Dairy', 'Protein', 'Vegetables', 'Fruit', 'Pantry', 'Frozen', 'Beverages', 'Other'];
 
@@ -28,29 +30,31 @@ function parseIsoDate(iso: string): Date {
   return new Date(y, m - 1, d);
 }
 
-// The user no longer chooses storage -- they might not actually know it, and
-// guessing wrong is worse than the app just looking it up. Same priority
-// order as FoodDetailScreen's pickGuidance() (refrigerate, then freeze, then
-// room temp), checking every returned row rather than stopping at the first
-// -- a food can match several FoodKeeper entries where an earlier one only
-// has e.g. a use-by-date field populated and a later one has real tips.
+// The user no longer chooses storage -- they might not know it, and guessing
+// wrong is worse than the app looking it up. Since there is no picker, and Edit
+// deliberately leaves storage alone, whatever is decided here is permanent for
+// that item -- so it has to come from the same logic the guidance card uses.
 //
-// Falls back to 'refrigerated' when there's no FoodKeeper match at all (an
-// unrecognised name) or the lookup itself fails (offline, etc.) -- picked as
-// the safer default of the three, since most everyday groceries that would
-// go unmatched (a homemade dish, a less common item) are more often
-// fridge items than freezer or pantry ones. This can always be corrected
-// later via Edit once a specific item's real answer is known.
-async function determineStorage(canonicalFoodName: string): Promise<'refrigerated' | 'frozen' | 'room_temp'> {
+// This previously duplicated an older version of that logic, reading only
+// FoodKeeper's plain `refrigerate_min`/`freeze_min`/`pantry_min` columns. Those
+// are NULL for every fresh meat, poultry and fish row (their durations live in
+// the `dop_*` "date of purchase" family), and for a great deal else besides:
+// 355 of 661 rows matched nothing and silently fell through to the
+// 'refrigerated' default. 188 rows ended up in the wrong place outright --
+// ice cream and frozen juice concentrate filed as refrigerated, along with 104
+// shelf-stable items like baking powder and cookies. Routing through
+// suggestStorage() keeps this in step with the card the user then reads.
+//
+// Falls back to 'refrigerated' only when nothing matched at all (an unrecognised
+// name) or the lookup itself failed (offline) -- the safer of the three, since
+// an unmatched everyday item is more often a fridge item than a freezer or
+// pantry one.
+async function determineStorage(canonicalFoodName: string): Promise<StorageChoice> {
   try {
-    const rows = await lookupStorage(canonicalFoodName);
-    for (const row of rows) {
-      if (row.refrigerate_tips || row.refrigerate_min != null) return 'refrigerated';
-      if (row.freeze_tips || row.freeze_min != null) return 'frozen';
-      if (row.pantry_tips || row.pantry_min != null) return 'room_temp';
-    }
+    const suggestion = suggestStorage(await lookupStorage(canonicalFoodName));
+    if (suggestion) return suggestion.storage;
   } catch {
-    // No match, or the request itself failed -- either way, fall through to the default.
+    // No match, or the request itself failed -- fall through to the default.
   }
   return 'refrigerated';
 }
