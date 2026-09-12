@@ -34,8 +34,9 @@ Android / Web
 
 ```json
 {
-  "api_base_url": "http://127.0.0.1:9000/v1",
+  "api_base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
   "api_model": "qwen3-vl-4b-instruct",
+  "api_key_required": true,
   "api_prompt_path": "models/config/api_grocery_prompt.txt",
   "api_receipt_prompt_path": "models/config/api_receipt_prompt.txt",
   "api_timeout_seconds": 120.0,
@@ -48,6 +49,10 @@ Android / Web
 `qwen3-vl-4b-instruct` 是阿里云兼容 API 使用的模型代码。如果你自己的
 vLLM/SGLang 服务把同一基座注册为 `Qwen/Qwen3-VL-4B-Instruct`，只修改
 `api_model`，不要添加任何适配器路径。
+
+上例为海外新加坡区域的公共 DashScope 地址。Key 也必须在同一新加坡区域
+创建；中国北京、美国或其他供应商的 Key 不能跨区域使用。生产环境优先改用
+阿里云控制台显示的 `{WorkspaceId}.ap-southeast-1.maas.aliyuncs.com` 专属地址。
 
 如果模型服务需要密钥，只写入服务端 `D:\WasteWise_Grocery_VLM\.env`：
 
