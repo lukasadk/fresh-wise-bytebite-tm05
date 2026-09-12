@@ -59,30 +59,29 @@ npx expo start
 
 Scan the QR code with Expo Go (iOS/Android), or press `i` / `a` for a simulator.
 
-### Experimental offline grocery recognition (Android arm64)
+### Grocery photo and receipt recognition
 
-The photo-entry screen can run the distilled Qwen3-VL 2B MNN export entirely
-on device. It combines the VLM with bundled ML Kit OCR, validates model JSON,
-and requires the user to edit/confirm every candidate before pantry insertion.
-Packaging claims such as brand, variant, net content, and printed expiry are
-discarded unless independent OCR text supports them. The current 2B export did
-not pass the project quality gate, so this build is for device testing only.
+The photo-entry screen now calls a server-side WasteWise FastAPI gateway. The
+gateway calls the open-source `Qwen3-VL-4B-Instruct` **base model** through an
+OpenAI-compatible endpoint; it does not load the rejected mobile 2B model or a
+WasteWise-trained adapter. The Android package contains no model weights.
 
-The model files are intentionally local-only and must never be pushed. After
-placing the seven exported MNN files under the versioned Android asset folder:
+Recognition supports a multi-product grocery photo and a supermarket receipt.
+Every result stays in an editable review table containing only product name,
+estimated expiry date, and quantity. Nothing enters the pantry until the user
+confirms it. Printed expiry OCR and a rule-based approximate expiry remain
+separate data fields so an estimate cannot masquerade as text read from a pack.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\package-offline-model.ps1
-powershell -ExecutionPolicy Bypass -File .\scripts\build-offline-android.ps1 -Variant Debug -MaxWorkers 8
-powershell -ExecutionPolicy Bypass -File .\scripts\build-offline-android.ps1 -Variant Release -MaxWorkers 8
+Configure the public gateway URL in a local, ignored `.env`:
+
+```dotenv
+EXPO_PUBLIC_GROCERY_AI_API_URL=https://your-wastewise-gateway.example
 ```
 
-The first recognition copies and SHA-256-verifies about 1.4 GB of model assets
-into app-private storage before loading MNN. Allow roughly twice the packaged
-model size as free device storage. Only `arm64-v8a` Android devices are supported
-by this experimental APK. The repository's current Release configuration uses
-the Android debug keystore, so that artifact is suitable for local sideloading
-only; configure a protected production keystore before distribution.
+Never put the upstream model key in `EXPO_PUBLIC_*`, React Native code, Android
+resources, or Git. It belongs only in the gateway server's `WW_API_KEY` secret.
+See [`API_4B_MOBILE_SETUP_ZH.md`](API_4B_MOBILE_SETUP_ZH.md) for setup and
+[`API_SECRET_HANDLING_ZH.md`](API_SECRET_HANDLING_ZH.md) for the security rules.
 
 ### Backend
 

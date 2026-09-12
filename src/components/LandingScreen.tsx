@@ -4,7 +4,7 @@ import { colors, fonts, radii, spacing } from '../theme/theme';
 import { ArrowRight } from '../icons/NavIcons';
 
 type Props = {
-  appReady: boolean; // fonts + device registration done -- gates whether "Get Started" is tappable
+  appReady: boolean; // local startup gates done -- remote registration never blocks this button
   onGetStarted: () => void; // fired IMMEDIATELY on tap -- kicks off the main app's fade-in in parallel
   onExitComplete: () => void; // fired only once this screen's own fade-out has actually finished playing
   onFirstPaint?: () => void; // fired on first layout -- App.tsx uses this to hide the native splash

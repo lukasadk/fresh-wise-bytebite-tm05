@@ -77,6 +77,27 @@ export const colors = {
 
   // Brief highlight on a row after its item was edited
   rowHighlightBg: '#E4EEF1',
+
+  // Exact palette sampled from Smart_Food_Waste_Epics_and_User_Stories.pptx
+  // (slides 2 and 8). These tokens are scoped to presentation-matched screens.
+  storyCanvas: '#F8FCFB',
+  storyNavy: '#102F68',
+  storyInk: '#22344D',
+  storyTeal: '#0FA79D',
+  storyTealDark: '#008B84',
+  storyMint: '#ECF9F6',
+  storyMintStrong: '#DCEAE8',
+  storyPeach: '#FCEAE4',
+  storyBlue: '#EAF4FB',
+  storyLavender: '#F2EEFB',
+  storyPurple: '#7A68B3',
+  storyGreen: '#6AA84F',
+  storyCoral: '#EA7B70',
+  storySky: '#2F86C9',
+  storySoft: '#F1F6F7',
+  storyBorder: '#DDEAE9',
+  storyDivider: '#E2ECEB',
+  storyMuted: '#5F7185',
 } as const;
 
 export const radii = {
@@ -103,6 +124,10 @@ export const fonts = {
   regular: 'Inter_400Regular',
   semibold: 'Inter_600SemiBold',
   bold: 'Inter_700Bold',
+  storyRegular: 'Lato_400Regular',
+  storyItalic: 'Lato_400Regular_Italic',
+  storyBold: 'Lato_700Bold',
+  storyBoldItalic: 'Lato_700Bold_Italic',
 } as const;
 
 export const fontSize = {

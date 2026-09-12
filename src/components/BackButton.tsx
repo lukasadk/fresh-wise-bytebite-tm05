@@ -6,20 +6,29 @@ import { ChevronLeft } from '../icons/NavIcons';
 type Props = {
   onPress?: () => void;
   size?: number;
+  color?: string;
+  borderColor?: string;
+  backgroundColor?: string;
 };
 
 // Bordered circular back button used at the top of pushed screens (Add food, Food detail).
-export default function BackButton({ onPress, size = 39 }: Props) {
+export default function BackButton({
+  onPress,
+  size = 39,
+  color = colors.textPrimary,
+  borderColor = colors.border,
+  backgroundColor = colors.card,
+}: Props) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.circle,
-        { width: size, height: size, borderRadius: size / 2 },
+        { width: size, height: size, borderRadius: size / 2, borderColor, backgroundColor },
         pressed && { opacity: 0.85 },
       ]}
     >
-      <ChevronLeft size={20} color={colors.textPrimary} strokeWidth={2.25} />
+      <ChevronLeft size={20} color={color} strokeWidth={2.25} />
     </Pressable>
   );
 }
@@ -28,8 +37,6 @@ const styles = StyleSheet.create({
   circle: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.border,
   },
 });

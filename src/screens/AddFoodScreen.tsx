@@ -4,15 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
-import { Field, TextField, SelectField, DateField } from '../components/FormField';
+import { Field, TextField, DateField } from '../components/FormField';
 import { addPantryItem, updatePantryItem, lookupStorage } from '../api/freshwise';
 import { usePantryItem } from '../data/pantryItems';
 import { ApiError } from '../api/client';
 import { LoadingState, ErrorState } from '../components/ScreenState';
 import { suggestStorage } from '../data/storageGuidance';
 import type { StorageChoice } from '../data/storageGuidance';
-
-const CATEGORIES = ['Dairy', 'Protein', 'Vegetables', 'Fruit', 'Pantry', 'Frozen', 'Beverages', 'Other'];
+import { estimateExpiryWithApi } from '../vlm/apiRecognitionEngine';
+import { mapToAppCategory } from '../vlm/schema';
 
 // ISO ("2026-08-27") is what the API expects -- new Date(str) parsing is
 // implementation-defined across engines, so build/parse the string by hand
@@ -67,11 +67,10 @@ export default function AddFoodScreen({ navigation, route }: any) {
   const { item: existingItem, loading: loadingExisting, error: loadError } = usePantryItem(editId);
 
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('');
   const [quantity, setQuantity] = useState('1');
-  const [unit, setUnit] = useState('');
-  const [purchaseDate, setPurchaseDate] = useState<Date | null>(null);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
+  const [expiryIsEstimate, setExpiryIsEstimate] = useState(false);
+  const [estimatingExpiry, setEstimatingExpiry] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -86,11 +85,34 @@ export default function AddFoodScreen({ navigation, route }: any) {
   useEffect(() => {
     if (!existingItem) return;
     setName(existingItem.name);
-    setCategory(existingItem.category);
     setQuantity(String(existingItem.quantity));
-    setUnit(existingItem.unit);
     if (existingItem.expiryDate) setExpiryDate(parseIsoDate(existingItem.expiryDate));
   }, [existingItem?.id]);
+
+  // New entries receive the same clearly labelled shelf-life estimate used by
+  // photo and receipt recognition. A user-picked date always wins.
+  useEffect(() => {
+    if (isEditing || expiryDate || name.trim().length < 2) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setEstimatingExpiry(true);
+      try {
+        const estimate = await estimateExpiryWithApi(name.trim(), mapToAppCategory('', name));
+        if (!cancelled) {
+          setExpiryDate(parseIsoDate(estimate.date));
+          setExpiryIsEstimate(true);
+        }
+      } catch {
+        // The date picker remains available when the helper API is offline.
+      } finally {
+        if (!cancelled) setEstimatingExpiry(false);
+      }
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [expiryDate, isEditing, name]);
 
   if (isEditing && loadingExisting) return null;
   if (isEditing && !existingItem) {
@@ -108,17 +130,10 @@ export default function AddFoodScreen({ navigation, route }: any) {
     const parsedQuantity = Number(quantity);
     const nextErrors: Record<string, string> = {};
     if (!name.trim()) nextErrors.name = 'Enter a food name.';
-    if (!category) nextErrors.category = 'Select a category.';
     if (!quantity.trim() || Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
       nextErrors.quantity = 'Enter a valid quantity.';
     }
-    // A bare number here (e.g. "2") reads as a second quantity once combined with
-    // the real quantity -- "3 2" looks like two numbers, not qty + unit. Units
-    // should describe what's being counted (kg, pcs, cartons), not another count.
-    if (unit.trim() && /^\d+(\.\d+)?$/.test(unit.trim())) {
-      nextErrors.unit = "Unit shouldn't be just a number — try something like 'kg' or 'pcs'.";
-    }
-    if (!expiryDate) nextErrors.expiryDate = 'Select an expiry date.';
+    if (!expiryDate) nextErrors.expiryDate = 'Select an estimated expiry date.';
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -132,9 +147,7 @@ export default function AddFoodScreen({ navigation, route }: any) {
       if (isEditing && editId) {
         await updatePantryItem(editId, {
           name: name.trim(),
-          category,
           quantity: parsedQuantity,
-          unit: unit.trim(),
           expiry_date: toIsoDate(expiryDate as Date),
           // storage deliberately omitted -- PATCH only touches fields that are
           // present, so whatever storage value this item already has (set
@@ -144,9 +157,10 @@ export default function AddFoodScreen({ navigation, route }: any) {
       } else {
         const canonicalFoodName = name.trim().toLowerCase();
         const autoStorage = await determineStorage(canonicalFoodName);
+        const autoCategory = mapToAppCategory('', name);
         const newItem = await addPantryItem({
           name: name.trim(),
-          category,
+          category: autoCategory,
           // Best-effort opening guess for the key that storage guidance
           // (FoodDetailScreen) and recipe matching (RecipesScreen) join on.
           // It won't always line up with FoodKeeper's naming (e.g. "chicken
@@ -160,8 +174,8 @@ export default function AddFoodScreen({ navigation, route }: any) {
           // from `name` if this is omitted, so sending it is belt-and-braces.
           canonical_food_name: canonicalFoodName,
           quantity: parsedQuantity,
-          unit: unit.trim(),
-          purchase_date: toIsoDate(purchaseDate ?? new Date()),
+          unit: 'item',
+          purchase_date: toIsoDate(new Date()),
           expiry_date: toIsoDate(expiryDate as Date),
           source: 'manual',
           storage: autoStorage,
@@ -227,11 +241,11 @@ export default function AddFoodScreen({ navigation, route }: any) {
             <View style={styles.photoEntryCopy}>
               <Text style={styles.photoEntryTitle}>Add a whole grocery photo</Text>
               <Text style={styles.photoEntryText}>
-                Recognise multiple products offline, then edit and confirm every item before it enters your pantry.
+                Recognise a grocery photo or scan a receipt with AI, then edit every item before it enters your pantry.
               </Text>
             </View>
             <Button
-              label="Scan grocery photo"
+              label="Open AI recognition"
               onPress={() => navigation.navigate('PhotoGrocery')}
               style={styles.fullWidthButton}
             />
@@ -239,16 +253,17 @@ export default function AddFoodScreen({ navigation, route }: any) {
         ) : null}
 
         <Field label="Food name" required error={errors.name}>
-          <TextField value={name} onChangeText={setName} placeholder="e.g. Milk" error={!!errors.name} />
-        </Field>
-
-        <Field label="Category" required error={errors.category}>
-          <SelectField
-            value={category}
-            options={CATEGORIES}
-            onSelect={setCategory}
-            placeholder="Select category"
-            error={!!errors.category}
+          <TextField
+            value={name}
+            onChangeText={(value) => {
+              setName(value);
+              if (expiryIsEstimate) {
+                setExpiryDate(null);
+                setExpiryIsEstimate(false);
+              }
+            }}
+            placeholder="e.g. Goodday full cream milk"
+            error={!!errors.name}
           />
         </Field>
 
@@ -262,28 +277,23 @@ export default function AddFoodScreen({ navigation, route }: any) {
           />
         </Field>
 
-        <Field label="Unit" error={errors.unit}>
-          <TextField
-            value={unit}
-            onChangeText={setUnit}
-            placeholder="e.g. carton (optional)"
-            error={!!errors.unit}
-          />
-        </Field>
-
-        {!isEditing && (
-          <Field label="Purchase date">
-            <DateField value={purchaseDate} onChange={setPurchaseDate} maximumDate={new Date()} />
-          </Field>
-        )}
-
-        <Field label="Expiry date" required error={errors.expiryDate}>
+        <Field label="Estimated expiry date" required error={errors.expiryDate}>
           <DateField
             value={expiryDate}
-            onChange={setExpiryDate}
-            minimumDate={purchaseDate ?? undefined}
+            onChange={(value) => {
+              setExpiryDate(value);
+              setExpiryIsEstimate(false);
+            }}
+            minimumDate={new Date()}
             error={!!errors.expiryDate}
           />
+          <Text style={styles.estimateHelp}>
+            {estimatingExpiry
+              ? 'Matching a suggested date…'
+              : expiryIsEstimate
+                ? 'Estimated from the food type. Tap the date to edit it.'
+                : 'Choose or edit the approximate date you want to track.'}
+          </Text>
         </Field>
 
         <View style={styles.actions}>
@@ -342,6 +352,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 13,
     lineHeight: 19,
+    color: colors.textSecondary,
+  },
+  estimateHelp: {
+    marginTop: spacing.xs,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    lineHeight: 16,
     color: colors.textSecondary,
   },
   actions: {

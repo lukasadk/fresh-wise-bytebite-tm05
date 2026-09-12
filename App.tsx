@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Animated, Easing, StyleSheet } from 'react-native';
+import { View, Text, Animated, Easing, Platform, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -13,6 +13,12 @@ import {
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
 import { DMSerifDisplay_400Regular } from '@expo-google-fonts/dm-serif-display';
+import {
+  Lato_400Regular,
+  Lato_400Regular_Italic,
+  Lato_700Bold,
+  Lato_700Bold_Italic,
+} from '@expo-google-fonts/lato';
 
 import HomeScreen from './src/screens/HomeScreen';
 import RecipesScreen from './src/screens/RecipesScreen';
@@ -20,7 +26,7 @@ import ActivityScreen from './src/screens/ActivityScreen';
 import PantryScreen from './src/screens/PantryScreen';
 import UseFirstScreen from './src/screens/UseFirstScreen';
 import AddFoodScreen from './src/screens/AddFoodScreen';
-import PhotoGroceryScreen from './src/screens/PhotoGroceryScreen';
+import PhotoGroceryScreen from './src/screens/ApiGroceryScreen';
 import FoodDetailScreen from './src/screens/FoodDetailScreen';
 import RecordOutcomeScreen from './src/screens/RecordOutcomeScreen';
 import MarkConsumedScreen from './src/screens/MarkConsumedScreen';
@@ -32,11 +38,25 @@ import ConfirmDialog from './src/components/ConfirmDialog';
 import { colors, fonts, radii, spacing } from './src/theme/theme';
 import { registerDevice } from './src/api/freshwise';
 import { isFreshInstall, checkClipboardForDeviceId, adoptDeviceId, copyDeviceIdToClipboard } from './src/api/device';
+import {
+  canEnterApp,
+  STARTUP_FONT_FAIL_OPEN_MS,
+  STARTUP_IDENTITY_FAIL_OPEN_MS,
+} from './src/startup/readiness';
 
 SplashScreen.preventAutoHideAsync();
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+const UI_PREVIEW_MODE = Platform.OS === 'web'
+  && __DEV__
+  && (
+    process.env.EXPO_PUBLIC_WASTEWISE_UI_PREVIEW === '1'
+    || (
+      typeof window !== 'undefined'
+      && new URLSearchParams(window.location.search).get('preview') === '1'
+    )
+  );
 
 // The 4 tabs, shown behind the bottom nav bar.
 function MainTabs() {
@@ -56,16 +76,31 @@ function MainTabs() {
 }
 
 export default function App() {
-  const [fontsLoaded] = useInter({
+  const [fontsLoaded, fontLoadError] = useInter({
     Inter_400Regular,
     Inter_600SemiBold,
     Inter_700Bold,
     DMSerifDisplay_400Regular,
+    Lato_400Regular,
+    Lato_400Regular_Italic,
+    Lato_700Bold,
+    Lato_700Bold_Italic,
   });
+  const [fontDeadlineReached, setFontDeadlineReached] = useState(UI_PREVIEW_MODE);
+
+  useEffect(() => {
+    if (UI_PREVIEW_MODE || fontsLoaded || fontLoadError) return;
+    const timeout = setTimeout(
+      () => setFontDeadlineReached(true),
+      STARTUP_FONT_FAIL_OPEN_MS,
+    );
+    return () => clearTimeout(timeout);
+  }, [fontsLoaded, fontLoadError]);
 
   // Every pantry/logs/diet request 404s until this device has a profile -- see
   // src/api/freshwise.ts's registerDevice() and backend/README.md's "Identity model".
-  const [deviceReady, setDeviceReady] = useState(false);
+  const [deviceReady, setDeviceReady] = useState(UI_PREVIEW_MODE);
+  const deviceInitStarted = useRef(UI_PREVIEW_MODE);
 
   // If a clipboard-restore candidate is found (see below), startup pauses here
   // until the user answers this prompt -- neither registerDevice() nor
@@ -82,7 +117,14 @@ export default function App() {
   }, [copyToast]);
 
   const finishDeviceInit = useCallback(() => {
-    registerDevice()
+    if (deviceInitStarted.current) return;
+    deviceInitStarted.current = true;
+
+    // The photo model and the rest of the local UI must remain available when
+    // Railway is sleeping, offline, or blocked. Release the startup gate now;
+    // remote registration continues opportunistically in the background.
+    setDeviceReady(true);
+    void registerDevice()
       .then(() => {
         // Opportunistic, not gated behind any explicit user action: every
         // successful launch leaves a valid id sitting in the clipboard, so
@@ -94,28 +136,44 @@ export default function App() {
           .catch(() => {});
       })
       .catch(() => {
-        // Swallowed deliberately: every request already sends the device header
-        // regardless (see src/api/client.ts), so a later request just 404s and
-        // surfaces its own error rather than blocking app startup forever if the
-        // API happens to be unreachable right at launch.
-      })
-      .finally(() => setDeviceReady(true));
+        // A later online request surfaces its own error; startup and offline
+        // grocery recognition have already been released above.
+      });
   }, []);
 
   useEffect(() => {
+    if (UI_PREVIEW_MODE) return;
+    let cancelled = false;
+    const failOpen = setTimeout(() => {
+      if (!cancelled) finishDeviceInit();
+    }, STARTUP_IDENTITY_FAIL_OPEN_MS);
+
     (async () => {
-      // Only ever checks the clipboard on a genuinely fresh install -- a
-      // normal launch (existing id already in AsyncStorage) skips this
-      // entirely and never touches the clipboard or shows a prompt.
-      if (await isFreshInstall()) {
-        const candidate = await checkClipboardForDeviceId();
-        if (candidate) {
-          setRestorePromptId(candidate); // pauses startup -- see the dialog below
-          return;
+      try {
+        // Only ever checks the clipboard on a genuinely fresh install -- a
+        // normal launch (existing id already in AsyncStorage) skips this.
+        if (await isFreshInstall()) {
+          const candidate = await checkClipboardForDeviceId();
+          if (cancelled || deviceInitStarted.current) return;
+          if (candidate) {
+            clearTimeout(failOpen);
+            setRestorePromptId(candidate);
+            return;
+          }
         }
+      } catch {
+        // Local identity/clipboard failures must not trap the launch screen.
       }
-      finishDeviceInit();
+      if (!cancelled) {
+        clearTimeout(failOpen);
+        finishDeviceInit();
+      }
     })();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(failOpen);
+    };
   }, [finishDeviceInit]);
 
   const handleRestoreConfirm = () => {
@@ -131,13 +189,18 @@ export default function App() {
     finishDeviceInit();
   };
 
-  const appReady = fontsLoaded && deviceReady;
+  const appReady = canEnterApp({
+    fontsLoaded,
+    fontLoadFailed: !!fontLoadError,
+    fontDeadlineReached,
+    deviceReady,
+  });
 
   // The landing overlay is unmounted only once ITS OWN exit-fade animation
   // finishes (see onExitComplete below) -- not the instant "Get Started" is
   // tapped. This is what lets its fade-out play in full instead of being cut
   // short by the overlay disappearing mid-animation.
-  const [landingDismissed, setLandingDismissed] = useState(false);
+  const [landingDismissed, setLandingDismissed] = useState(UI_PREVIEW_MODE);
 
   // Starts at 0 and fades to 1 -- but critically, the main app tree below is
   // mounted (at opacity 0, not interactive) as soon as appReady is true,
@@ -149,7 +212,7 @@ export default function App() {
   // animation itself was running correctly. Pre-mounting in the background
   // means by the time the tap happens, there's nothing left to wait for --
   // the fade is a pure, already-loaded crossfade.
-  const mainAppFade = useRef(new Animated.Value(0)).current;
+  const mainAppFade = useRef(new Animated.Value(UI_PREVIEW_MODE ? 1 : 0)).current;
   const startMainAppFadeIn = useCallback(() => {
     Animated.timing(mainAppFade, {
       toValue: 1,
@@ -191,7 +254,11 @@ export default function App() {
                 </View>
               ) : null}
               <NavigationContainer>
-                <Stack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
+                <Stack.Navigator
+                  id={undefined}
+                  initialRouteName={UI_PREVIEW_MODE ? 'PhotoGrocery' : 'Main'}
+                  screenOptions={{ headerShown: false }}
+                >
                   <Stack.Screen name="Main" component={MainTabs} />
                   <Stack.Group screenOptions={{ presentation: 'modal' }}>
                     <Stack.Screen name="AddFood" component={AddFoodScreen} />

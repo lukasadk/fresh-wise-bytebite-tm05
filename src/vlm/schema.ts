@@ -18,6 +18,9 @@ export const GROCERY_UNITS = [
 
 export type GroceryUnit = (typeof GROCERY_UNITS)[number];
 
+/** Qwen grounding coordinates normalized to the inclusive 0..1000 image plane. */
+export type GroceryBoundingBox = [number, number, number, number];
+
 export type GroceryCandidate = {
   candidateId: string;
   foodName: string;
@@ -28,12 +31,17 @@ export type GroceryCandidate = {
   appCategory: string;
   quantity: number | null;
   unit: GroceryUnit;
+  boundingBox: GroceryBoundingBox | null;
   confidence: number;
   reviewRequired: boolean;
   reviewReasons: string[];
   packagingTextEvidence: string[];
   expiryDateCandidate: string | null;
   expiryTextEvidence: string | null;
+  /** Rule-based editable date from the API; never packaging OCR evidence. */
+  estimatedExpiryDate?: string | null;
+  expiryEstimateDays?: number | null;
+  expiryEstimateBasis?: string | null;
 };
 
 export type ValidatedGroceryResult = {
@@ -47,6 +55,8 @@ export type ValidatedGroceryResult = {
 const NULL_LIKE = new Set(['', 'null', 'none', 'n/a', 'na', 'unknown', 'unreadable']);
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const UNIT_SET = new Set<string>(GROCERY_UNITS);
+const TRUSTED_OCR_EVIDENCE_LIMIT = 80;
+const OCR_ADJACENT_LINE_WINDOW = 3;
 
 function record(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -71,7 +81,21 @@ function requiredText(value: unknown, fallback: string, maxLength = 200): string
 function supportedByEvidence(value: string | null, evidence: string[]): boolean {
   if (!value) return true;
   const needle = compact(value);
-  return needle.length > 0 && evidence.some((fragment) => compact(fragment).includes(needle));
+  if (!needle) return false;
+
+  const fragments = evidence.map(compact).filter(Boolean);
+  for (let start = 0; start < fragments.length; start += 1) {
+    let adjacentText = '';
+    for (
+      let index = start;
+      index < Math.min(fragments.length, start + OCR_ADJACENT_LINE_WINDOW);
+      index += 1
+    ) {
+      adjacentText += fragments[index];
+      if (adjacentText.includes(needle)) return true;
+    }
+  }
+  return false;
 }
 
 function stripBrandPrefix(foodName: string, brand: string | null): string {
@@ -95,9 +119,26 @@ function parseConfidence(value: unknown): number {
   return Math.min(1, Math.max(0, parsed));
 }
 
-function parseEvidence(value: unknown): string[] {
+function parseBoundingBox(value: unknown): GroceryBoundingBox | null {
+  if (!Array.isArray(value) || value.length !== 4) return null;
+  const coordinates = value.map((entry) => Number(entry));
+  if (coordinates.some((entry) => !Number.isFinite(entry))) return null;
+  const [rawX1, rawY1, rawX2, rawY2] = coordinates;
+  const x1 = Math.round(rawX1);
+  const y1 = Math.round(rawY1);
+  const x2 = Math.round(rawX2);
+  const y2 = Math.round(rawY2);
+  if (
+    x1 < 0 || y1 < 0 || x2 > 1000 || y2 > 1000
+    || x2 <= x1 || y2 <= y1
+    || x2 - x1 < 10 || y2 - y1 < 10
+  ) return null;
+  return [x1, y1, x2, y2];
+}
+
+function parseEvidence(value: unknown, limit = 10): string[] {
   if (!Array.isArray(value)) return [];
-  return [...new Set(value.map((entry) => nullableText(entry, 120)).filter((entry): entry is string => !!entry))].slice(0, 10);
+  return [...new Set(value.map((entry) => nullableText(entry, 160)).filter((entry): entry is string => !!entry))].slice(0, limit);
 }
 
 function parseUnit(value: unknown): GroceryUnit {
@@ -148,7 +189,71 @@ function repairCommonModelJson(text: string): string {
     // Small VLMs sometimes emit a closing key quote but omit its opening quote.
     .replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)"\s*:/g, '$1"$2":')
     .replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":')
+    // An observed mobile response ended an otherwise complete row with a
+    // quoted identifier such as `,"expiry_text_evidencenull"}`. It has no
+    // key/value separator, so it cannot carry usable data. Removing only this
+    // invalid standalone member preserves the already complete grocery fields
+    // without inventing a missing key, value, quote, or expiry date.
+    .replace(/,\s*"[A-Za-z_][A-Za-z0-9_]*"\s*(?=[,}])/g, '')
     .replace(/,\s*([}\]])/g, '$1');
+}
+
+/**
+ * Recover only fully closed item objects from a truncated root array. This is
+ * deliberately conservative: an unfinished final item is discarded and no
+ * quote, value, or field is invented.
+ */
+function completeItemsFromTruncatedArray(text: string): unknown[] | null {
+  const itemsKey = /"items"\s*:/.exec(text);
+  if (!itemsKey) return null;
+  const arrayStart = text.indexOf('[', itemsKey.index + itemsKey[0].length);
+  if (arrayStart < 0) return null;
+
+  const items: unknown[] = [];
+  let itemStart = -1;
+  let objectDepth = 0;
+  let inString = false;
+  let escaped = false;
+  let sawArrayEnd = false;
+
+  for (let index = arrayStart + 1; index < text.length; index += 1) {
+    const character = text[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === '\\') escaped = true;
+      else if (character === '"') inString = false;
+      continue;
+    }
+    if (character === '"') {
+      inString = true;
+      continue;
+    }
+    if (character === '{') {
+      if (objectDepth === 0) itemStart = index;
+      objectDepth += 1;
+      continue;
+    }
+    if (character === '}' && objectDepth > 0) {
+      objectDepth -= 1;
+      if (objectDepth === 0 && itemStart >= 0) {
+        const candidate = repairCommonModelJson(text.slice(itemStart, index + 1));
+        try {
+          const parsed = JSON.parse(candidate);
+          if (record(parsed)) items.push(parsed);
+        } catch {
+          // A malformed object is not safe to promote to an inventory candidate.
+        }
+        itemStart = -1;
+      }
+      continue;
+    }
+    if (character === ']' && objectDepth === 0) {
+      sawArrayEnd = true;
+      break;
+    }
+  }
+
+  return items.length > 0 || sawArrayEnd ? items : null;
 }
 
 function extractJson(rawText: string): { payload: unknown; repaired: boolean } {
@@ -159,7 +264,11 @@ function extractJson(rawText: string): { payload: unknown; repaired: boolean } {
     const balanced = firstBalancedObject(trimmed);
     if (balanced) {
       try {
-        return { payload: JSON.parse(balanced), repaired: balanced !== trimmed };
+        const parsed = JSON.parse(balanced);
+        const parsedRecord = record(parsed);
+        if (parsedRecord && Array.isArray(parsedRecord.items)) {
+          return { payload: parsed, repaired: balanced !== trimmed };
+        }
       } catch {
         // Continue to the narrowly scoped syntax repair below.
       }
@@ -167,12 +276,20 @@ function extractJson(rawText: string): { payload: unknown; repaired: boolean } {
     if (!trimmed.includes('items')) throw new Error('The model did not return a JSON object.');
     const repairedText = repairCommonModelJson(trimmed);
     const repairedObject = firstBalancedObject(repairedText);
-    if (!repairedObject) throw new Error('The model did not return a repairable JSON object.');
-    try {
-      return { payload: JSON.parse(repairedObject), repaired: true };
-    } catch {
-      throw new Error('The model did not return a repairable JSON object.');
+    if (repairedObject) {
+      try {
+        const parsed = JSON.parse(repairedObject);
+        const parsedRecord = record(parsed);
+        if (parsedRecord && Array.isArray(parsedRecord.items)) {
+          return { payload: parsed, repaired: true };
+        }
+      } catch {
+        // Try recovering fully closed rows from a truncated items array below.
+      }
     }
+    const completedItems = completeItemsFromTruncatedArray(repairedText);
+    if (completedItems) return { payload: { items: completedItems }, repaired: true };
+    throw new Error('The model did not return a repairable JSON object.');
   }
 }
 
@@ -189,7 +306,10 @@ export function validateGroceryModelOutput(
   const normalizationWarnings: string[] = extracted.repaired
     ? ['Model JSON syntax was repaired; every recovered item requires review.']
     : [];
-  const trustedEvidence = parseEvidence(trustedOcrTextEvidence);
+  // The native OCR pipeline can return up to 80 ordered text fragments. Keep
+  // the complete trusted set for validation: truncating it to ten caused valid
+  // claims on later packages in multi-item photos to be rejected.
+  const trustedEvidence = parseEvidence(trustedOcrTextEvidence, TRUSTED_OCR_EVIDENCE_LIMIT);
   let discardedItems = Math.max(0, payload.items.length - 50);
   let duplicateGroupsMerged = 0;
   const validated: GroceryCandidate[] = [];
@@ -211,11 +331,18 @@ export function validateGroceryModelOutput(
     const usedLegacyNetContent = item.net_content_text == null && item.net_content != null;
     let netContentText = nullableText(item.net_content_text ?? item.net_content, 80);
     let productVariant = nullableText(item.product_variant, 120);
-    let foodName = requiredText(item.food_name, 'Unidentified grocery');
+    const parsedFoodName = nullableText(item.food_name);
+    if (!parsedFoodName) {
+      discardedItems += 1;
+      normalizationWarnings.push(`Item ${index + 1}: an empty or unidentified product row was discarded.`);
+      continue;
+    }
+    let foodName = parsedFoodName;
     foodName = stripBrandPrefix(foodName, brand);
     const category = requiredText(item.category, 'other', 100);
     const quantity = parseQuantity(item.quantity);
     const unit = parseUnit(item.unit);
+    const boundingBox = parseBoundingBox(item.bounding_box ?? item.bbox);
     const confidence = parseConfidence(item.confidence);
 
     if (!supportedByEvidence(brand, trustedEvidence)) {
@@ -240,8 +367,8 @@ export function validateGroceryModelOutput(
     if (extracted.repaired) reasons.push('model_json_syntax_repaired');
     if (quantity === null) reasons.push('quantity_uncertain');
     if (unit === 'unknown') reasons.push('unit_uncertain');
+    if (boundingBox === null) reasons.push('position_uncertain');
     if (confidence < 0.75) reasons.push('low_visual_confidence');
-    if (foodName === 'Unidentified grocery') reasons.push('identity_uncertain');
 
     let expiryDateCandidate = nullableText(item.expiry_date_candidate, 10);
     let expiryTextEvidence = nullableText(item.expiry_text_evidence, 120);
@@ -272,6 +399,7 @@ export function validateGroceryModelOutput(
       appCategory: mapToAppCategory(category, foodName),
       quantity,
       unit,
+      boundingBox,
       confidence,
       reviewRequired: modelReviewRequired || reasons.length > 0,
       reviewReasons: reasons,
@@ -290,11 +418,13 @@ export function validateGroceryModelOutput(
         ? Math.max(previous.quantity, quantity)
         : previous.quantity ?? quantity;
       previous.confidence = Math.min(previous.confidence, confidence);
+      previous.boundingBox = previous.boundingBox ?? boundingBox;
       previous.reviewRequired = true;
       previous.reviewReasons = [
         ...new Set([...previous.reviewReasons, ...reasons, 'duplicate_model_rows_collapsed_quantity_not_summed']),
       ];
-      previous.packagingTextEvidence = [...new Set([...previous.packagingTextEvidence, ...evidence])].slice(0, 10);
+      previous.packagingTextEvidence = [...new Set([...previous.packagingTextEvidence, ...evidence])]
+        .slice(0, TRUSTED_OCR_EVIDENCE_LIMIT);
       duplicateGroupsMerged += 1;
     } else {
       byIdentity.set(key, candidate);
