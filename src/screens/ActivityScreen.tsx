@@ -1,192 +1,2010 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, fonts, radii, spacing } from '../theme/theme';
-import { TrendingUp, TrendingDown, Minus, Check, AlertTriangle } from '../icons/NavIcons';
-import { getDashboardSummary, getWeeklyWaste, listLogs } from '../api/freshwise';
-import { ApiError } from '../api/client';
-import { LoadingState, ErrorState } from '../components/ScreenState';
-import type { DashboardSummary, WeeklyWasteRow, WasteReason, ConsumptionWasteLog } from '../api/types';
+/**
+ * ActivityScreen — Insights Dashboard
+ * Epic 5: Food Waste Analytics & Personal Insights
+ *
+ * Two visual states:
+ *   DATA STATE  — "This week" hero card with donut chart, three stat pills,
+ *                 utilisation split list, quick insight card.
+ *   EMPTY STATE — Leaf illustration placeholder, onboarding copy, CTA button,
+ *                 "This week" zero-state, "What happens next?" hint card.
+ *
+ * Four tabs: Overview · Patterns · Trends · Report
+ * All four are implemented for Iteration 2. Patterns, Trends and Report
+ * currently run on dummy data (see MOCK_PATTERNS / MOCK_TRENDS / MOCK_REPORT)
+ * until their backend endpoints exist.
+ *
+ * NOTE: The donut chart (Overview) is drawn with plain View components, not
+ * react-native-svg, so it keeps working in Expo Go without a native rebuild.
+ * The Trends line chart below it DOES use react-native-svg (already a
+ * dependency) since a polyline is impractical to fake with Views.
+ *
+ * Backend wiring: live useEffect is written in comments below the mock block.
+ * Toggle FORCE_EMPTY = true to preview the empty state during development.
+ */
 
-// Reverse of MarkWastedScreen/WasteReasonPicker's label->enum map -- needed
-// here since the dashboard summary comes back with the raw backend enum,
-// not the UI's display label.
-const REASON_LABELS: Record<WasteReason, string> = {
-  expired: 'Expired',
-  bought_too_much: 'Over-purchased',
-  forgot_about_it: 'Forgotten',
-  spoiled: 'Spoiled',
-  changed_plans: 'Changed meal plans',
-  cooked_too_much: 'Cooked too much',
-  didnt_like_taste: "Didn't like the taste",
-  other: 'Other',
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Pressable, Share } from 'react-native';
+import Svg, { Line, Polyline, Circle } from 'react-native-svg';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
+import Button from '../components/Button';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type InsightsTab = 'Overview' | 'Patterns' | 'Trends' | 'Report';
+
+type WeekSummary = {
+  wasted_kg: number;
+  consumed_kg: number;
+  utilisation_rate: number;        // 0–1
+  week_delta_pct: number | null;   // negative = improved (less wasted)
+  food_records: number;
+  quick_insight_title: string | null;
+  quick_insight: string | null;
 };
 
-function formatQty(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+type ScreenData =
+  | { state: 'empty' }
+  | { state: 'data'; summary: WeekSummary };
+
+// -- Patterns tab -----------------------------------------------------------
+
+type FrequencyDatum = {
+  label: string;
+  count: number;
+};
+
+type WasteInsight = {
+  eyebrow: string;    // e.g. "DAIRY INSIGHT"
+  title: string;      // e.g. "Milk is repeatedly wasted"
+  body: string;
+  ctaLabel: string;   // e.g. "View better alternatives"
+};
+
+type PatternsData = {
+  categories: FrequencyDatum[];
+  reasons: FrequencyDatum[];
+  insight: WasteInsight | null;
+};
+
+// -- Alternatives view (reached from the Patterns waste-insight CTA) -------
+
+type AlternativeOption = {
+  id: string;
+  title: string;      // e.g. "UHT Milk"
+  meta: string;        // e.g. "Shelf-stable unopened · 6–9 months"
+  why: string;         // e.g. "Longer shelf life"
+  bestMatch?: boolean;
+};
+
+type AlternativesData = {
+  category: string;         // e.g. "Dairy" — used in the screen title
+  insightTitle: string;
+  insightBody: string;
+  attribution: string;      // e.g. "Based on your recorded dairy consumption and waste history."
+  options: AlternativeOption[];
+};
+
+// -- Trends tab --------------------------------------------------------------
+
+type TrendsPeriod = 'Weekly' | 'Monthly';
+
+type TrendsSeries = {
+  points: number[];       // waste kg, oldest → newest
+  goalKg: number;
+  latestKg: number;
+  deltaPct: number | null; // negative = improved (less wasted)
+  rangeLabel: string;      // e.g. "Last 8 weeks"
+  streakTitle: string;     // e.g. "On track"
+  streakNote: string;      // e.g. "Waste has stayed below your goal for 3 periods."
+};
+
+type TrendsData = Record<TrendsPeriod, TrendsSeries>;
+
+// -- Report tab ---------------------------------------------------------------
+
+type ReportData = {
+  monthLabel: string;              // e.g. "August 2026"
+  deltaPct: number;                // negative = less waste than last month (good)
+  utilisationPct: number;          // 0–100
+  consumedKg: number;
+  wastedKg: number;
+  previousMonthWastedKg: number;
+  categories: FrequencyDatum[];    // reuses the Patterns tab's bar-row shape
+  reasons: FrequencyDatum[];
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function fmtKg(kg: number): string {
+  return Number.isInteger(kg) ? `${kg} kg` : `${kg.toFixed(1)} kg`;
 }
 
-function formatLogDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+function fmtPct(rate: number): string {
+  return `${Math.round(rate * 100)}%`;
 }
+
+// ---------------------------------------------------------------------------
+// Donut chart — pure View, no SVG, works in Expo Go
+// ---------------------------------------------------------------------------
+//
+// Technique: a square View with borderRadius = size/2 (making a circle),
+// clipped with overflow:hidden. Inside, we place the green arc using a
+// rotated half-disk (two Views), then overlay the coral wasted arc on the
+// right side proportionally. The centre is covered by a white circle to
+// create the donut hole, with percentage text overlaid absolutely.
+
+function DonutChart({
+  utilisation,
+  size = 88,
+  thickness = 10,
+}: {
+  utilisation: number;
+  size?: number;
+  thickness?: number;
+}) {
+  const holeSize = size - thickness * 2;
+  // Degrees of the utilised arc (0–360)
+  const utilisedDeg = utilisation * 360;
+  // We draw the green arc as a rotated half-disk pair:
+  // - If utilised <= 0.5: one green half visible, rotated
+  // - If utilised >  0.5: full green circle + correction for the waste side
+  //
+  // Simple two-half approach:
+  //   Left half  = green if utilised > 0.5, otherwise transparent
+  //   Right half = always green, rotated by utilisedDeg from the top
+
+  const rightRotation = utilisedDeg - 90; // starts at 12 o'clock
+  const showFullLeftHalf = utilisation > 0.5;
+
+  return (
+    <View style={{ width: size, height: size, position: 'relative' }}>
+      {/* Base circle — coral (wasted) fills the whole ring */}
+      <View
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: colors.statusToday,
+          position: 'absolute',
+        }}
+      />
+
+      {/* Clip container for green arcs */}
+      <View
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          overflow: 'hidden',
+          position: 'absolute',
+        }}
+      >
+        {/* Right green half-disk, rotated to cover utilisedDeg */}
+        <View
+          style={{
+            position: 'absolute',
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            overflow: 'hidden',
+          }}
+        >
+          <View
+            style={{
+              width: size / 2,
+              height: size,
+              left: size / 2,
+              position: 'absolute',
+              backgroundColor: colors.primary,
+              transform: [
+                { translateX: -(size / 2) },
+                { rotate: `${rightRotation}deg` },
+                { translateX: size / 2 },
+              ],
+              transformOrigin: `0px ${size / 2}px`,
+            }}
+          />
+        </View>
+
+        {/* Left green half-disk — only shown when utilised > 50% */}
+        {showFullLeftHalf && (
+          <View
+            style={{
+              position: 'absolute',
+              width: size / 2,
+              height: size,
+              left: 0,
+              backgroundColor: colors.primary,
+            }}
+          />
+        )}
+      </View>
+
+      {/* Donut hole — white circle covers the centre */}
+      <View
+        style={{
+          position: 'absolute',
+          width: holeSize,
+          height: holeSize,
+          borderRadius: holeSize / 2,
+          backgroundColor: colors.card,
+          top: thickness,
+          left: thickness,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={donutStyles.pct}>{Math.round(utilisation * 100)}%</Text>
+        <Text style={donutStyles.sub}>utilised</Text>
+      </View>
+    </View>
+  );
+}
+
+const donutStyles = StyleSheet.create({
+  pct: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.lg,
+    color: colors.textPrimary,
+  },
+  sub: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Tab bar
+// ---------------------------------------------------------------------------
+
+function TabBar({
+  active,
+  onPress,
+}: {
+  active: InsightsTab;
+  onPress: (t: InsightsTab) => void;
+}) {
+  const tabs: InsightsTab[] = ['Overview', 'Patterns', 'Trends', 'Report'];
+  return (
+    <View style={tabStyles.row}>
+      {tabs.map((tab) => {
+        const isActive = tab === active;
+        return (
+          <Pressable
+            key={tab}
+            onPress={() => onPress(tab)}
+            style={[tabStyles.pill, isActive && tabStyles.pillActive]}
+          >
+            <Text style={[tabStyles.label, isActive && tabStyles.labelActive]}>
+              {tab}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const tabStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  pill: {
+    paddingVertical: spacing.sm - 1,
+    paddingHorizontal: spacing.md + 2,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  pillActive: {
+    backgroundColor: colors.primaryDark,
+    borderColor: colors.primaryDark,
+  },
+  label: {
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+  labelActive: {
+    color: colors.white,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// DATA STATE components
+// ---------------------------------------------------------------------------
+
+function ThisWeekCard({ summary }: { summary: WeekSummary }) {
+  const deltaAbs =
+    summary.week_delta_pct !== null
+      ? Math.abs(Math.round(summary.week_delta_pct))
+      : null;
+  const isImproving =
+    summary.week_delta_pct !== null && summary.week_delta_pct <= 0;
+
+  return (
+    <View style={heroStyles.card}>
+      <View style={heroStyles.left}>
+        <Text style={heroStyles.eyebrow}>This week</Text>
+        <Text style={heroStyles.recordsNote}>
+          Updated from {summary.food_records} food record
+          {summary.food_records === 1 ? '' : 's'}
+        </Text>
+        <Text style={heroStyles.wastedValue}>
+          {fmtKg(summary.wasted_kg)} wasted
+        </Text>
+        {deltaAbs !== null && (
+          <Text
+            style={[
+              heroStyles.delta,
+              {
+                color: isImproving
+                  ? colors.statusFresh
+                  : colors.statusToday,
+              },
+            ]}
+          >
+            {isImproving ? '↓' : '↑'} {deltaAbs}%{' '}
+            {isImproving ? 'less' : 'more'} than last week
+          </Text>
+        )}
+      </View>
+      <View style={heroStyles.right}>
+        <DonutChart utilisation={summary.utilisation_rate} size={88} thickness={10} />
+      </View>
+    </View>
+  );
+}
+
+const heroStyles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  left: { flex: 1, gap: 3 },
+  eyebrow: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.title,
+    color: colors.textPrimary,
+  },
+  recordsNote: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  wastedValue: {
+    fontFamily: fonts.bold,
+    fontSize: 22,
+    color: colors.statusToday,
+    marginTop: spacing.xs,
+  },
+  delta: {
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.sm,
+  },
+  right: { marginLeft: spacing.lg },
+});
+
+function StatPills({ summary }: { summary: WeekSummary }) {
+  const pills = [
+    {
+      value: fmtPct(summary.utilisation_rate),
+      label: 'Utilisation rate',
+      valueColor: undefined as string | undefined,
+    },
+    {
+      value: fmtPct(1 - summary.utilisation_rate),
+      label: 'Waste rate',
+      valueColor: colors.statusToday,
+    },
+    {
+      value: fmtKg(summary.consumed_kg),
+      label: 'Food saved',
+      valueColor: undefined as string | undefined,
+    },
+  ];
+  return (
+    <View style={pillStyles.row}>
+      {pills.map((p) => (
+        <View key={p.label} style={pillStyles.pill}>
+          <Text
+            style={[
+              pillStyles.value,
+              p.valueColor ? { color: p.valueColor } : null,
+            ]}
+          >
+            {p.value}
+          </Text>
+          <Text style={pillStyles.label}>{p.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const pillStyles = StyleSheet.create({
+  row: { flexDirection: 'row', gap: spacing.sm },
+  pill: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    gap: 2,
+  },
+  value: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textPrimary,
+  },
+  label: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+});
+
+function Dot({ color: c }: { color: string }) {
+  return (
+    <View
+      style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: c }}
+    />
+  );
+}
+
+function UtilisationSplit({ summary }: { summary: WeekSummary }) {
+  return (
+    <View style={splitStyles.wrap}>
+      <Text style={splitStyles.heading}>Utilisation split</Text>
+      <View style={splitStyles.card}>
+        <View style={splitStyles.row}>
+          <Dot color={colors.primary} />
+          <Text style={splitStyles.rowLabel}>Consumed</Text>
+          <Text style={splitStyles.rowValue}>
+            {fmtKg(summary.consumed_kg)}
+          </Text>
+        </View>
+        <View style={[splitStyles.row, splitStyles.rowBorder]}>
+          <Dot color={colors.statusToday} />
+          <Text style={splitStyles.rowLabel}>Wasted</Text>
+          <Text
+            style={[splitStyles.rowValue, { color: colors.statusToday }]}
+          >
+            {fmtKg(summary.wasted_kg)}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const splitStyles = StyleSheet.create({
+  wrap: { gap: spacing.md },
+  heading: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.heading,
+    color: colors.textPrimary,
+  },
+  card: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md + 2,
+  },
+  rowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: colors.borderSoft,
+  },
+  rowLabel: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+  rowValue: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+});
+
+function QuickInsightCard({ title, body }: { title: string; body: string }) {
+  return (
+    <View style={insightStyles.wrap}>
+      <Text style={insightStyles.heading}>Quick insight</Text>
+      <View style={insightStyles.card}>
+        <Text style={insightStyles.title}>{title}</Text>
+        <Text style={insightStyles.body}>{body}</Text>
+      </View>
+    </View>
+  );
+}
+
+const insightStyles = StyleSheet.create({
+  wrap: { gap: spacing.md },
+  heading: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.heading,
+    color: colors.textPrimary,
+  },
+  card: {
+    backgroundColor: colors.primaryTint,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  title: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.title,
+    color: colors.primary,
+  },
+  body: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+    lineHeight: 21,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// PATTERNS TAB components
+// ---------------------------------------------------------------------------
+
+function BarRow({
+  label,
+  count,
+  maxCount,
+  color,
+}: {
+  label: string;
+  count: number;
+  maxCount: number;
+  color: string;
+}) {
+  // Keep a small minimum width so low counts still render a visible sliver.
+  const pct = maxCount > 0 ? Math.max(6, (count / maxCount) * 100) : 6;
+  return (
+    <View style={barRowStyles.row}>
+      <Text style={barRowStyles.label} numberOfLines={1}>
+        {label}
+      </Text>
+      <View style={barRowStyles.track}>
+        <View
+          style={[
+            barRowStyles.fill,
+            { width: `${pct}%`, backgroundColor: color },
+          ]}
+        />
+      </View>
+      <Text style={barRowStyles.value}>{count}</Text>
+    </View>
+  );
+}
+
+const barRowStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
+  label: {
+    width: 92,
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+  track: {
+    flex: 1,
+    height: 8,
+    borderRadius: radii.pill,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+    borderRadius: radii.pill,
+  },
+  value: {
+    width: 22,
+    textAlign: 'right',
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+});
+
+function FrequencyCard({
+  title,
+  subtitle,
+  data,
+  barColor,
+  otherColor,
+}: {
+  title: string;
+  subtitle: string;
+  data: FrequencyDatum[];
+  barColor: string;
+  otherColor: string;
+}) {
+  const maxCount = data.reduce((m, d) => Math.max(m, d.count), 0);
+  return (
+    <View style={frequencyStyles.wrap}>
+      <View style={frequencyStyles.headingBlock}>
+        <Text style={frequencyStyles.heading}>{title}</Text>
+        <Text style={frequencyStyles.subheading}>{subtitle}</Text>
+      </View>
+      <View style={frequencyStyles.card}>
+        {data.map((d) => (
+          <BarRow
+            key={d.label}
+            label={d.label}
+            count={d.count}
+            maxCount={maxCount}
+            color={d.label === 'Other' ? otherColor : barColor}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const frequencyStyles = StyleSheet.create({
+  wrap: { gap: spacing.md },
+  headingBlock: { gap: 2 },
+  heading: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.heading,
+    color: colors.textPrimary,
+  },
+  subheading: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  card: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+  },
+});
+
+function WasteInsightCard({
+  insight,
+  onPressCta,
+}: {
+  insight: WasteInsight;
+  onPressCta?: () => void;
+}) {
+  return (
+    <View style={wasteInsightStyles.card}>
+      <Text style={wasteInsightStyles.eyebrow}>{insight.eyebrow}</Text>
+      <Text style={wasteInsightStyles.title}>{insight.title}</Text>
+      <Text style={wasteInsightStyles.body}>{insight.body}</Text>
+      <Pressable
+        style={({ pressed }) => [
+          wasteInsightStyles.button,
+          pressed && { opacity: 0.85 },
+        ]}
+        onPress={onPressCta}
+      >
+        <Text style={wasteInsightStyles.buttonLabel}>
+          {insight.ctaLabel} →
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const wasteInsightStyles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.expiryWarnBg,
+    borderWidth: 1,
+    borderColor: colors.statusSoon,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
+  },
+  eyebrow: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    letterSpacing: 0.5,
+    color: colors.statusSoon,
+  },
+  title: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.title,
+    color: colors.textPrimary,
+    marginTop: 2,
+  },
+  body: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: spacing.sm,
+  },
+  button: {
+    backgroundColor: colors.primaryDark,
+    borderRadius: radii.pill,
+    paddingVertical: spacing.md - 2,
+    alignItems: 'center',
+  },
+  buttonLabel: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.md,
+    color: colors.white,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// ALTERNATIVES VIEW components (Patterns → "View better alternatives")
+// ---------------------------------------------------------------------------
+
+function InsightSummaryCard({
+  title,
+  body,
+  attribution,
+}: {
+  title: string;
+  body: string;
+  attribution: string;
+}) {
+  return (
+    <View style={insightSummaryStyles.card}>
+      <Text style={insightSummaryStyles.title}>{title}</Text>
+      <Text style={insightSummaryStyles.body}>{body}</Text>
+      <Text style={insightSummaryStyles.attribution}>{attribution}</Text>
+    </View>
+  );
+}
+
+const insightSummaryStyles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.expiryWarnBg,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
+  },
+  title: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.heading,
+    color: colors.textPrimary,
+  },
+  body: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  attribution: {
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.sm,
+    color: colors.statusSoon,
+    marginTop: 2,
+  },
+});
+
+function RadioDot({ selected }: { selected: boolean }) {
+  return (
+    <View
+      style={[
+        radioStyles.outer,
+        { borderColor: selected ? colors.primary : colors.border },
+      ]}
+    >
+      {selected && <View style={radioStyles.inner} />}
+    </View>
+  );
+}
+
+const radioStyles = StyleSheet.create({
+  outer: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  },
+});
+
+function AlternativeCard({
+  option,
+  selected,
+  onPress,
+}: {
+  option: AlternativeOption;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        alternativeStyles.card,
+        selected ? alternativeStyles.cardSelected : alternativeStyles.cardUnselected,
+      ]}
+    >
+      <RadioDot selected={selected} />
+      <View style={alternativeStyles.body}>
+        <View style={alternativeStyles.titleRow}>
+          <Text style={alternativeStyles.title}>{option.title}</Text>
+          {option.bestMatch && (
+            <Text style={alternativeStyles.bestMatch}>Best match</Text>
+          )}
+        </View>
+        <Text style={alternativeStyles.meta}>{option.meta}</Text>
+        <Text style={alternativeStyles.why}>Why: {option.why}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+const alternativeStyles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    padding: spacing.lg,
+  },
+  cardSelected: {
+    backgroundColor: colors.primaryTint,
+    borderColor: colors.primary,
+  },
+  cardUnselected: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+  },
+  body: { flex: 1, gap: 4 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  title: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.title,
+    color: colors.textPrimary,
+  },
+  bestMatch: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  meta: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  why: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+    marginTop: 2,
+  },
+});
+
+function AlternativesList({
+  data,
+  selectedId,
+  onSelect,
+}: {
+  data: AlternativesData;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <View style={alternativesListStyles.wrap}>
+      <Text style={alternativesListStyles.heading}>Choose an alternative</Text>
+      {data.options.map((option) => (
+        <AlternativeCard
+          key={option.id}
+          option={option}
+          selected={option.id === selectedId}
+          onPress={() => onSelect(option.id)}
+        />
+      ))}
+    </View>
+  );
+}
+
+const alternativesListStyles = StyleSheet.create({
+  wrap: { gap: spacing.md },
+  heading: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.heading,
+    color: colors.textPrimary,
+  },
+});
+
+function AlternativesFooter({
+  disabled,
+  onUse,
+  onNotNow,
+}: {
+  disabled: boolean;
+  onUse: () => void;
+  onNotNow: () => void;
+}) {
+  return (
+    <View style={alternativesFooterStyles.wrap}>
+      <View style={alternativesFooterStyles.noteBar}>
+        <Text style={alternativesFooterStyles.noteText}>
+          Your current item will not be replaced automatically.
+        </Text>
+      </View>
+      <View style={alternativesFooterStyles.buttonRow}>
+        <Pressable
+          onPress={disabled ? undefined : onUse}
+          style={({ pressed }) => [
+            alternativesFooterStyles.useButton,
+            disabled && alternativesFooterStyles.useButtonDisabled,
+            pressed && !disabled && { opacity: 0.85 },
+          ]}
+        >
+          <Text style={alternativesFooterStyles.useButtonLabel}>
+            Use selected alternative
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={onNotNow}
+          style={({ pressed }) => [
+            alternativesFooterStyles.notNowButton,
+            pressed && { opacity: 0.85 },
+          ]}
+        >
+          <Text style={alternativesFooterStyles.notNowLabel}>Not now</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const alternativesFooterStyles = StyleSheet.create({
+  wrap: { gap: spacing.md },
+  noteBar: {
+    backgroundColor: colors.primaryTint2,
+    borderRadius: radii.md,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+  },
+  noteText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  useButton: {
+    flex: 1.4,
+    backgroundColor: colors.primaryDark,
+    borderRadius: radii.pill,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  useButtonDisabled: {
+    opacity: 0.5,
+  },
+  useButtonLabel: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.md,
+    color: colors.white,
+  },
+  notNowButton: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  notNowLabel: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// TRENDS TAB components
+// ---------------------------------------------------------------------------
+
+function PeriodToggle({
+  active,
+  onChange,
+}: {
+  active: TrendsPeriod;
+  onChange: (p: TrendsPeriod) => void;
+}) {
+  const periods: TrendsPeriod[] = ['Weekly', 'Monthly'];
+  return (
+    <View style={periodToggleStyles.row}>
+      {periods.map((p) => {
+        const isActive = p === active;
+        return (
+          <Pressable
+            key={p}
+            onPress={() => onChange(p)}
+            style={[
+              periodToggleStyles.segment,
+              isActive && periodToggleStyles.segmentActive,
+            ]}
+          >
+            <Text
+              style={[
+                periodToggleStyles.label,
+                isActive && periodToggleStyles.labelActive,
+              ]}
+            >
+              {p}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const periodToggleStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    backgroundColor: colors.card,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 4,
+    gap: 4,
+  },
+  segment: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radii.pill,
+  },
+  segmentActive: {
+    backgroundColor: colors.primaryDark,
+  },
+  label: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+  labelActive: {
+    color: colors.white,
+  },
+});
+
+// SVG line chart -- react-native-svg is already a dependency (unlike the
+// donut chart above, which predates it and deliberately avoided the native
+// module). Draws light grid lines, a dashed goal line with a label, and the
+// waste trend as a rounded polyline with a dot per data point.
+function TrendChart({
+  points,
+  goal,
+}: {
+  points: number[];
+  goal: number;
+}) {
+  const width = 320;
+  const height = 160;
+  const padX = 14;
+  const padY = 16;
+
+  const allValues = [...points, goal];
+  const maxV = Math.max(...allValues) * 1.08;
+  const minV = Math.min(...allValues) * 0.85;
+  const span = Math.max(maxV - minV, 0.0001);
+
+  const scaleX = (i: number) =>
+    points.length > 1
+      ? padX + (i / (points.length - 1)) * (width - padX * 2)
+      : width / 2;
+  const scaleY = (v: number) =>
+    height - padY - ((v - minV) / span) * (height - padY * 2);
+
+  const coords = points.map((v, i) => `${scaleX(i)},${scaleY(v)}`).join(' ');
+  const goalY = scaleY(goal);
+  const gridYs = [0.12, 0.5, 0.88].map((f) => padY + f * (height - padY * 2));
+  const goalLabelX = width * 0.56;
+
+  return (
+    <View style={{ width: '100%', height }}>
+      <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
+        {gridYs.map((y, i) => (
+          <Line
+            key={i}
+            x1={padX}
+            y1={y}
+            x2={width - padX}
+            y2={y}
+            stroke={colors.borderSoft}
+            strokeWidth={1}
+          />
+        ))}
+        <Line
+          x1={padX}
+          y1={goalY}
+          x2={width - padX}
+          y2={goalY}
+          stroke={colors.textSecondary}
+          strokeWidth={1.5}
+          strokeDasharray="5,5"
+        />
+        <Polyline
+          points={coords}
+          fill="none"
+          stroke={colors.primaryDark}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {points.map((v, i) => (
+          <Circle
+            key={i}
+            cx={scaleX(i)}
+            cy={scaleY(v)}
+            r={4}
+            fill={colors.primaryDark}
+          />
+        ))}
+      </Svg>
+      <Text
+        style={[
+          trendChartStyles.goalLabel,
+          {
+            left: `${(goalLabelX / width) * 100}%`,
+            top: Math.max(goalY - 34, 0),
+          },
+        ]}
+      >
+        Goal: {goal} kg
+      </Text>
+    </View>
+  );
+}
+
+const trendChartStyles = StyleSheet.create({
+  goalLabel: {
+    position: 'absolute',
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+});
+
+function TrendsSummary({
+  series,
+  periodWord,
+}: {
+  series: TrendsSeries;
+  periodWord: string;
+}) {
+  const isImproving = series.deltaPct !== null && series.deltaPct <= 0;
+  return (
+    <View style={trendsSummaryStyles.wrap}>
+      <Text style={trendsSummaryStyles.value}>
+        {series.latestKg.toFixed(2)} kg this {periodWord}
+      </Text>
+      {series.deltaPct !== null && (
+        <Text
+          style={[
+            trendsSummaryStyles.delta,
+            { color: isImproving ? colors.statusFresh : colors.statusToday },
+          ]}
+        >
+          {isImproving ? '↓' : '↑'} {Math.abs(Math.round(series.deltaPct))}% from
+          last {periodWord}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+const trendsSummaryStyles = StyleSheet.create({
+  wrap: { gap: 2 },
+  value: {
+    fontFamily: fonts.serif,
+    fontSize: 26,
+    color: colors.textPrimary,
+  },
+  delta: {
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.md,
+  },
+});
+
+function OnTrackCard({ title, body }: { title: string; body: string }) {
+  return (
+    <View style={onTrackStyles.card}>
+      <Text style={onTrackStyles.title}>{title}</Text>
+      <Text style={onTrackStyles.body}>{body}</Text>
+    </View>
+  );
+}
+
+const onTrackStyles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.primaryTint,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
+  },
+  title: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.title,
+    color: colors.primary,
+  },
+  body: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+});
+
+function TrendsChartHeading({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <View style={trendsHeadingStyles.wrap}>
+      <Text style={trendsHeadingStyles.title}>{title}</Text>
+      <Text style={trendsHeadingStyles.subtitle}>{subtitle}</Text>
+    </View>
+  );
+}
+
+const trendsHeadingStyles = StyleSheet.create({
+  wrap: { gap: 2 },
+  title: {
+    fontFamily: fonts.serif,
+    fontSize: 22,
+    color: colors.textPrimary,
+  },
+  subtitle: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// REPORT TAB components
+// ---------------------------------------------------------------------------
+
+function ReportHeadline({ data }: { data: ReportData }) {
+  const isLess = data.deltaPct <= 0;
+  const pct = Math.abs(Math.round(data.deltaPct));
+  return (
+    <View style={reportHeadlineStyles.wrap}>
+      <Text
+        style={[
+          reportHeadlineStyles.title,
+          { color: isLess ? colors.statusFresh : colors.statusToday },
+        ]}
+      >
+        {pct}% {isLess ? 'less' : 'more'} waste than last month
+      </Text>
+      <Text style={reportHeadlineStyles.subtitle}>
+        You utilised {Math.round(data.utilisationPct)}% of purchased food.
+      </Text>
+    </View>
+  );
+}
+
+const reportHeadlineStyles = StyleSheet.create({
+  wrap: { gap: 3 },
+  title: {
+    fontFamily: fonts.bold,
+    fontSize: 22,
+  },
+  subtitle: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+  },
+});
+
+function ReportTotalsCard({ data }: { data: ReportData }) {
+  // "August 2026" -> "August totals" -- first word of the month label, so
+  // the heading tracks whatever month the backend eventually reports.
+  const monthWord = data.monthLabel.split(' ')[0] || data.monthLabel;
+  return (
+    <View style={reportTotalsStyles.card}>
+      <DonutChart utilisation={data.utilisationPct / 100} size={110} thickness={14} />
+      <View style={reportTotalsStyles.right}>
+        <Text style={reportTotalsStyles.heading}>{monthWord} totals</Text>
+        <Text style={reportTotalsStyles.consumed}>
+          {data.consumedKg.toFixed(1)} kg consumed
+        </Text>
+        <Text style={reportTotalsStyles.wasted}>
+          {data.wastedKg.toFixed(1)} kg wasted
+        </Text>
+        <Text style={reportTotalsStyles.previous}>
+          Previous month: {data.previousMonthWastedKg.toFixed(1)} kg
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+const reportTotalsStyles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+  },
+  right: { flex: 1, gap: 3 },
+  heading: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.title,
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  consumed: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+  wasted: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.statusToday,
+  },
+  previous: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+});
+
+function ReportSectionTitle({ children }: { children: string }) {
+  return <Text style={reportSectionTitleStyles.text}>{children}</Text>;
+}
+
+const reportSectionTitleStyles = StyleSheet.create({
+  text: {
+    fontFamily: fonts.serif,
+    fontSize: 24,
+    color: colors.textPrimary,
+  },
+});
+
+function KeyFindingsCard({
+  categories,
+  reasons,
+}: {
+  categories: FrequencyDatum[];
+  reasons: FrequencyDatum[];
+}) {
+  const catMax = categories.reduce((m, d) => Math.max(m, d.count), 0);
+  const reasonMax = reasons.reduce((m, d) => Math.max(m, d.count), 0);
+  return (
+    <View style={keyFindingsStyles.card}>
+      <Text style={keyFindingsStyles.subheading}>
+        Most wasted categories · Top 5 + Other
+      </Text>
+      <View>
+        {categories.map((d) => (
+          <BarRow
+            key={d.label}
+            label={d.label}
+            count={d.count}
+            maxCount={catMax}
+            color={d.label === 'Other' ? colors.sourceManual : colors.statusToday}
+          />
+        ))}
+      </View>
+
+      <Text style={[keyFindingsStyles.subheading, keyFindingsStyles.subheadingSpaced]}>
+        Common reasons · Top 5 + Other
+      </Text>
+      <View>
+        {reasons.map((d) => (
+          <BarRow
+            key={d.label}
+            label={d.label}
+            count={d.count}
+            maxCount={reasonMax}
+            color={d.label === 'Other' ? colors.sourceManual : colors.statusSoon}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const keyFindingsStyles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xs,
+  },
+  subheading: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.title,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  subheadingSpaced: {
+    marginTop: spacing.lg,
+  },
+});
+
+function ShareReportButton({ data }: { data: ReportData }) {
+  const isLess = data.deltaPct <= 0;
+  const pct = Math.abs(Math.round(data.deltaPct));
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message:
+          `FreshWise — ${data.monthLabel} waste report\n` +
+          `${pct}% ${isLess ? 'less' : 'more'} waste than last month. ` +
+          `Utilised ${Math.round(data.utilisationPct)}% of purchased food ` +
+          `(${data.consumedKg.toFixed(1)} kg consumed, ${data.wastedKg.toFixed(1)} kg wasted).`,
+      });
+    } catch {
+      // Share sheet dismissed or unavailable -- nothing to recover from here.
+    }
+  };
+
+  return (
+    <Pressable
+      onPress={handleShare}
+      style={({ pressed }) => [
+        shareReportStyles.button,
+        pressed && { opacity: 0.85 },
+      ]}
+    >
+      <Text style={shareReportStyles.label}>Share monthly report</Text>
+    </Pressable>
+  );
+}
+
+const shareReportStyles = StyleSheet.create({
+  button: {
+    backgroundColor: colors.primaryDark,
+    borderRadius: radii.pill,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  label: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.md,
+    color: colors.white,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// EMPTY STATE components
+// ---------------------------------------------------------------------------
+
+function EmptyThisWeek() {
+  return (
+    <View style={emptyWeekStyles.wrap}>
+      <Text style={emptyWeekStyles.heading}>This week</Text>
+      <View style={emptyWeekStyles.pillRow}>
+        {[
+          { value: '—', label: 'Utilisation', isDash: true },
+          { value: '—', label: 'Waste rate', isDash: true },
+          { value: '0', label: 'Food records', isDash: false },
+        ].map((p) => (
+          <View key={p.label} style={emptyWeekStyles.pill}>
+            <Text
+              style={[
+                emptyWeekStyles.pillValue,
+                p.isDash && { color: colors.textSecondary },
+              ]}
+            >
+              {p.value}
+            </Text>
+            <Text style={emptyWeekStyles.pillLabel}>{p.label}</Text>
+          </View>
+        ))}
+      </View>
+      <View style={emptyWeekStyles.hintCard}>
+        <Text style={emptyWeekStyles.hintTitle}>What happens next?</Text>
+        <Text style={emptyWeekStyles.hintBody}>
+          Your dashboard updates automatically as records are added.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+const emptyWeekStyles = StyleSheet.create({
+  wrap: { gap: spacing.md },
+  heading: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.heading,
+    color: colors.textPrimary,
+  },
+  pillRow: { flexDirection: 'row', gap: spacing.sm },
+  pill: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    gap: 3,
+  },
+  pillValue: {
+    fontFamily: fonts.bold,
+    fontSize: 20,
+    color: colors.textPrimary,
+  },
+  pillLabel: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  hintCard: {
+    backgroundColor: colors.primaryTint,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
+  },
+  hintTitle: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.md,
+    color: colors.primary,
+  },
+  hintBody: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Mock data  (replace with live API when backend is ready)
+// ---------------------------------------------------------------------------
+
+const MOCK_SUMMARY: WeekSummary = {
+  wasted_kg: 1.8,
+  consumed_kg: 6.4,
+  utilisation_rate: 0.78,
+  week_delta_pct: -18,
+  food_records: 23,
+  quick_insight_title: "You're improving",
+  quick_insight:
+    'Vegetable waste fell most this week. Keep planning meals around items expiring first.',
+};
+
+/**
+ * Flip to true to preview the empty state in Expo Go.
+ * Switch back to false once live API data is wired in.
+ */
+const FORCE_EMPTY = false;
+
+// Patterns tab — dummy data until backend wiring lands.
+// TODO: Replace with a live call, e.g. getWastePatterns(30) returning
+// { categories, reasons, insight } shaped like PatternsData above.
+const MOCK_PATTERNS: PatternsData = {
+  categories: [
+    { label: 'Dairy', count: 18 },
+    { label: 'Fruit', count: 14 },
+    { label: 'Vegetables', count: 10 },
+    { label: 'Bakery', count: 7 },
+    { label: 'Protein', count: 5 },
+    { label: 'Other', count: 4 },
+  ],
+  reasons: [
+    { label: 'Expired', count: 16 },
+    { label: 'Over-purchased', count: 12 },
+    { label: 'Forgotten', count: 9 },
+    { label: 'Spoiled', count: 6 },
+    { label: 'Cooked too much', count: 4 },
+    { label: 'Other', count: 3 },
+  ],
+  insight: {
+    eyebrow: 'DAIRY INSIGHT',
+    title: 'Milk is repeatedly wasted',
+    body:
+      'Wasted 4× in the last 30 days · usually before the carton is finished.',
+    ctaLabel: 'View better alternatives',
+  },
+};
+
+// Alternatives view — dummy data until backend wiring lands.
+// TODO: Replace with a live call, e.g. getWasteAlternatives('dairy') returning
+// AlternativesData shaped like MOCK_ALTERNATIVES below. Keyed by category so
+// tapping a different insight card's CTA (once more exist) can swap this in.
+const MOCK_ALTERNATIVES: AlternativesData = {
+  category: 'Dairy',
+  insightTitle: 'Milk is repeatedly wasted',
+  insightBody:
+    'Wasted 4× in the last 30 days · usually before the carton is finished.',
+  attribution: 'Based on your recorded dairy consumption and waste history.',
+  options: [
+    {
+      id: 'uht-milk',
+      title: 'UHT Milk',
+      meta: 'Shelf-stable unopened · 6–9 months',
+      why: 'Longer shelf life',
+      bestMatch: true,
+    },
+    {
+      id: 'powdered-milk',
+      title: 'Powdered Milk',
+      meta: 'Room temperature · Up to 12 months',
+      why: 'Better for occasional use',
+    },
+    {
+      id: 'frozen-milk',
+      title: 'Frozen Milk Portions',
+      meta: 'Frozen storage · Up to 3 months',
+      why: 'Use only what you need',
+    },
+  ],
+};
+
+// Trends tab — dummy data until backend wiring lands.
+// TODO: Replace with a live call, e.g. getWasteTrends('weekly' | 'monthly')
+// returning a TrendsSeries shaped like the entries below.
+const MOCK_TRENDS: TrendsData = {
+  Weekly: {
+    points: [1.92, 1.78, 1.88, 1.55, 1.5, 1.32, 1.18, 0.98],
+    goalKg: 1.4,
+    latestKg: 0.98,
+    deltaPct: -18,
+    rangeLabel: 'Last 8 weeks',
+    streakTitle: 'On track',
+    streakNote: 'Waste has stayed below your goal for 3 periods.',
+  },
+  Monthly: {
+    points: [2.05, 1.85, 1.95, 1.5, 1.25, 1.05],
+    goalKg: 1.4,
+    latestKg: 1.05,
+    deltaPct: -12,
+    rangeLabel: 'Last 6 months',
+    streakTitle: 'On track',
+    streakNote: 'Waste has stayed below your goal for 3 periods.',
+  },
+};
+
+// Report tab — dummy data until backend wiring lands.
+// TODO: Replace with a live call, e.g. getMonthlyReport() returning a
+// ReportData shaped like MOCK_REPORT below.
+const MOCK_REPORT: ReportData = {
+  monthLabel: 'August 2026',
+  deltaPct: -12,
+  utilisationPct: 81,
+  consumedKg: 8.2,
+  wastedKg: 1.9,
+  previousMonthWastedKg: 2.2,
+  categories: [
+    { label: 'Vegetables', count: 18 },
+    { label: 'Fruit', count: 14 },
+    { label: 'Dairy', count: 10 },
+    { label: 'Bakery', count: 7 },
+    { label: 'Protein', count: 5 },
+    { label: 'Other', count: 4 },
+  ],
+  reasons: [
+    { label: 'Expired', count: 16 },
+    { label: 'Over-purchased', count: 12 },
+    { label: 'Forgotten', count: 9 },
+    { label: 'Spoiled', count: 6 },
+    { label: 'Cooked too much', count: 4 },
+    { label: 'Other', count: 3 },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Screen
+// ---------------------------------------------------------------------------
 
 export default function ActivityScreen() {
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [weekly, setWeekly] = useState<WeeklyWasteRow[]>([]);
-  const [logs, setLogs] = useState<ConsumptionWasteLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const navigation = useNavigation<any>();
+  const [activeTab, setActiveTab] = useState<InsightsTab>('Overview');
 
-  useEffect(() => {
-    let alive = true;
-    Promise.all([getDashboardSummary(30), getWeeklyWaste(12), listLogs()])
-      .then(([summaryData, weeklyData, logsData]) => {
-        if (!alive) return;
-        setSummary(summaryData);
-        setWeekly(weeklyData);
-        setLogs(logsData);
-      })
-      .catch((e) => alive && setError(e instanceof ApiError ? e.message : 'Could not load activity.'))
-      .finally(() => alive && setLoading(false));
-    return () => {
-      alive = false;
-    };
-  }, []);
+  // "View better alternatives" from a Patterns insight card swaps the tab body
+  // for the alternatives flow below, while keeping the Insights header/tabs in
+  // place (matches the Figma — this isn't a separate stack screen). Tapping any
+  // tab pill while this is open backs out of it first (see TabBar onPress below).
+  const [showAlternatives, setShowAlternatives] = useState(false);
+  const [selectedAlternativeId, setSelectedAlternativeId] = useState<string | null>(
+    MOCK_ALTERNATIVES.options.find((o) => o.bestMatch)?.id ??
+      MOCK_ALTERNATIVES.options[0]?.id ??
+      null
+  );
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error} />;
+  // Trends tab — Weekly/Monthly sub-toggle, independent of the top-level tab bar.
+  const [trendsPeriod, setTrendsPeriod] = useState<TrendsPeriod>('Weekly');
 
-  // weekly-waste rows are one row per (week, reason) pair -- roll them up to
-  // one total per week, since the trend card only cares about the week's
-  // overall total, not the reason breakdown.
-  const totalsByWeek = new Map<string, number>();
-  for (const row of weekly) {
-    totalsByWeek.set(row.week_start, (totalsByWeek.get(row.week_start) ?? 0) + row.total_quantity_wasted);
-  }
-  const weeksDesc = [...totalsByWeek.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
-  const [thisWeek, lastWeek] = weeksDesc;
+  // -------------------------------------------------------------------------
+  // TODO: Replace mock block with live API calls when backend is ready.
+  //
+  // import { getDashboardSummary, getWeeklyWaste } from '../api/freshwise';
+  // import { ApiError } from '../api/client';
+  // import { LoadingState, ErrorState } from '../components/ScreenState';
+  // import type { DashboardSummary, WeeklyWasteRow } from '../api/types';
+  //
+  // const [screenData, setScreenData] = useState<ScreenData | 'loading' | string>('loading');
+  // useEffect(() => {
+  //   let alive = true;
+  //   Promise.all([getDashboardSummary(7), getWeeklyWaste(2)])
+  //     .then(([summary, weekly]) => {
+  //       if (!alive) return;
+  //       const hasData = summary.total_wasted_events + summary.total_consumed_events > 0;
+  //       if (!hasData) { setScreenData({ state: 'empty' }); return; }
+  //       const totalsByWeek = new Map<string, number>();
+  //       for (const row of weekly) {
+  //         totalsByWeek.set(row.week_start, (totalsByWeek.get(row.week_start) ?? 0) + row.total_quantity_wasted);
+  //       }
+  //       const [thisWk, lastWk] = [...totalsByWeek.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  //       const delta = thisWk && lastWk && lastWk[1] > 0
+  //         ? ((thisWk[1] - lastWk[1]) / lastWk[1]) * 100 : null;
+  //       setScreenData({
+  //         state: 'data',
+  //         summary: {
+  //           wasted_kg: summary.total_wasted_quantity,
+  //           consumed_kg: summary.total_consumed_quantity,
+  //           utilisation_rate: summary.waste_rate !== null ? 1 - summary.waste_rate : 0,
+  //           week_delta_pct: delta,
+  //           food_records: summary.total_wasted_events + summary.total_consumed_events,
+  //           quick_insight_title: "You're improving",
+  //           quick_insight: null,
+  //         },
+  //       });
+  //     })
+  //     .catch((e) => alive && setScreenData(e instanceof ApiError ? e.message : 'Could not load insights.'))
+  //   return () => { alive = false; };
+  // }, []);
+  // if (screenData === 'loading') return <LoadingState />;
+  // if (typeof screenData === 'string') return <ErrorState message={screenData} />;
+  // -------------------------------------------------------------------------
 
-  let trend: 'up' | 'down' | 'same' | 'no-data' = 'no-data';
-  let percentChange: number | null = null;
-  if (thisWeek && lastWeek) {
-    const [, thisQty] = thisWeek;
-    const [, lastQty] = lastWeek;
-    if (lastQty === 0) {
-      trend = thisQty === 0 ? 'same' : 'up';
-    } else {
-      percentChange = ((thisQty - lastQty) / lastQty) * 100;
-      trend = percentChange > 0.5 ? 'up' : percentChange < -0.5 ? 'down' : 'same';
-    }
-  } else if (thisWeek) {
-    trend = 'no-data'; // only one week on record -- nothing to compare against yet
-  }
+  const screenData: ScreenData = FORCE_EMPTY
+    ? { state: 'empty' }
+    : { state: 'data', summary: MOCK_SUMMARY };
 
-  const trendColor = trend === 'up' ? colors.statusToday : trend === 'down' ? colors.statusFresh : colors.textSecondary;
-  const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
-
-  const trendHeadline =
-    trend === 'up'
-      ? `Waste is up${percentChange !== null ? ` ${Math.round(Math.abs(percentChange))}%` : ''} vs last week`
-      : trend === 'down'
-        ? `Waste is down${percentChange !== null ? ` ${Math.round(Math.abs(percentChange))}%` : ''} vs last week`
-        : trend === 'same'
-          ? 'About the same as last week'
-          : 'Not enough history yet';
+  const subtitleByTab: Record<InsightsTab, string> = {
+    Overview:
+      screenData.state === 'data'
+        ? 'A clear view of how your household is doing.'
+        : 'Understand your household food habits over time.',
+    Patterns: 'See what is wasted most often — and why.',
+    Trends: 'Track progress against your reduction goal.',
+    Report: `Your completed summary for ${MOCK_REPORT.monthLabel}.`,
+  };
+  const subtitle = showAlternatives
+    ? 'Alternatives based on your waste history.'
+    : subtitleByTab[activeTab];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Activity</Text>
-        <Text style={styles.subtitle}>How your food waste is trending over time.</Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <Text style={styles.title}>Insights</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
 
-        <View style={[styles.trendCard, { borderColor: trendColor }]}>
-          <View style={styles.trendHeader}>
-            <View style={[styles.trendIconWrap, { backgroundColor: trendColor }]}>
-              <TrendIcon size={20} color={colors.white} />
-            </View>
-            <Text style={[styles.trendHeadline, { color: trendColor }]}>{trendHeadline}</Text>
-          </View>
-          {thisWeek && lastWeek ? (
-            <Text style={styles.trendDetail}>
-              This week: {formatQty(thisWeek[1])} · Last week: {formatQty(lastWeek[1])}
-            </Text>
-          ) : thisWeek ? (
-            <Text style={styles.trendDetail}>This week so far: {formatQty(thisWeek[1])}</Text>
-          ) : (
-            <Text style={styles.trendDetail}>Record a wasted item to start tracking your trend.</Text>
-          )}
-        </View>
+        {/* Tabs */}
+        <TabBar
+          active={activeTab}
+          onPress={(tab) => {
+            // Leaving the alternatives view first means a tab tap always lands
+            // on that tab's normal content, never on a stale alternatives body.
+            setShowAlternatives(false);
+            setActiveTab(tab);
+          }}
+        />
 
-        {summary ? (
+        {!showAlternatives && (
           <>
-            <Text style={styles.sectionTitle}>Last 30 days</Text>
-            <View style={styles.statRow}>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{formatQty(summary.total_wasted_quantity)}</Text>
-                <Text style={styles.statLabel}>wasted</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{formatQty(summary.total_consumed_quantity)}</Text>
-                <Text style={styles.statLabel}>consumed</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>
-                  {summary.waste_rate !== null ? `${Math.round(summary.waste_rate * 100)}%` : '—'}
-                </Text>
-                <Text style={styles.statLabel}>waste rate</Text>
-              </View>
-            </View>
-
-            {summary.top_waste_reasons.length > 0 ? (
+            {/* Overview */}
+            {activeTab === 'Overview' && (
               <>
-                <Text style={styles.sectionTitle}>Top reasons</Text>
-                <View style={styles.reasonsCard}>
-                  {summary.top_waste_reasons.map((r, i) => (
-                    <View key={r.waste_reason} style={[styles.reasonRow, i > 0 && styles.reasonRowBorder]}>
-                      <Text style={styles.reasonLabel}>{REASON_LABELS[r.waste_reason]}</Text>
-                      <Text style={styles.reasonCount}>{r.count}×</Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            ) : null}
-          </>
-        ) : null}
+                {screenData.state === 'data' && (
+                  <>
+                    <ThisWeekCard summary={screenData.summary} />
+                    <StatPills summary={screenData.summary} />
+                    <UtilisationSplit summary={screenData.summary} />
+                    {screenData.summary.quick_insight &&
+                      screenData.summary.quick_insight_title && (
+                        <QuickInsightCard
+                          title={screenData.summary.quick_insight_title}
+                          body={screenData.summary.quick_insight}
+                        />
+                      )}
+                  </>
+                )}
 
-        {logs.length > 0 ? (
-          <>
-            <Text style={styles.sectionTitle}>History</Text>
-            <View style={styles.historyCard}>
-              {logs.slice(0, 20).map((log, i) => {
-                const isWasted = log.status === 'wasted';
-                const Icon = isWasted ? AlertTriangle : Check;
-                const iconColor = isWasted ? colors.errorText : colors.primary;
-                const qtyText = log.item_unit ? `${formatQty(log.quantity)} ${log.item_unit}` : formatQty(log.quantity);
-                return (
-                  <View key={log.log_id} style={[styles.historyRow, i > 0 && styles.reasonRowBorder]}>
-                    <View style={[styles.historyIconWrap, { backgroundColor: iconColor }]}>
-                      <Icon size={14} color={colors.white} />
-                    </View>
-                    <View style={styles.historyText}>
-                      <Text style={styles.historyItemName} numberOfLines={1}>
-                        {log.item_name ?? 'Item'}
+                {screenData.state === 'empty' && (
+                  <>
+                    <View style={styles.illustrationCard}>
+                      {/*
+                        DESIGNER: Replace the circle below with the leaf asset once ready.
+                        <Image
+                          source={require('../../assets/leaf-illustration.png')}
+                          style={styles.illustrationImage}
+                          resizeMode="contain"
+                        />
+                      */}
+                      <View style={styles.illustrationCircle} />
+                      <Text style={styles.illustrationTitle}>
+                        Your insights will grow here
                       </Text>
-                      <Text style={styles.historyDetail} numberOfLines={1}>
-                        {isWasted ? 'Wasted' : 'Consumed'} · {qtyText}
-                        {isWasted && log.waste_reason ? ` · ${REASON_LABELS[log.waste_reason]}` : ''}
+                      <Text style={styles.illustrationBody}>
+                        Record consumed and wasted food to build your first
+                        utilisation baseline and discover patterns.
                       </Text>
+                      <Button
+                        label="Add your first food"
+                        variant="primary"
+                        style={styles.ctaButton}
+                        onPress={() => navigation.navigate('AddFood')}
+                      />
                     </View>
-                    <Text style={styles.historyDate}>{formatLogDate(log.logged_at)}</Text>
-                  </View>
-                );
-              })}
-            </View>
+                    <EmptyThisWeek />
+                  </>
+                )}
+              </>
+            )}
+
+            {/* Patterns */}
+            {activeTab === 'Patterns' && (
+              <>
+                <FrequencyCard
+                  title="Frequently wasted categories"
+                  subtitle="Top 5 + Other · sorted by frequency"
+                  data={MOCK_PATTERNS.categories}
+                  barColor={colors.statusToday}
+                  otherColor={colors.sourceManual}
+                />
+                <FrequencyCard
+                  title="Common waste reasons"
+                  subtitle="Top 5 + Other · sorted by frequency"
+                  data={MOCK_PATTERNS.reasons}
+                  barColor={colors.statusSoon}
+                  otherColor={colors.sourceManual}
+                />
+                {MOCK_PATTERNS.insight && (
+                  <WasteInsightCard
+                    insight={MOCK_PATTERNS.insight}
+                    onPressCta={() => setShowAlternatives(true)}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Trends */}
+            {activeTab === 'Trends' && (
+              <>
+                <PeriodToggle active={trendsPeriod} onChange={setTrendsPeriod} />
+                {(() => {
+                  const series = MOCK_TRENDS[trendsPeriod];
+                  const periodWord = trendsPeriod === 'Weekly' ? 'week' : 'month';
+                  const chartTitle =
+                    trendsPeriod === 'Weekly'
+                      ? 'Weekly waste trend'
+                      : 'Monthly waste trend';
+                  return (
+                    <>
+                      <TrendsChartHeading
+                        title={chartTitle}
+                        subtitle={series.rangeLabel}
+                      />
+                      <View style={styles.chartCard}>
+                        <TrendChart points={series.points} goal={series.goalKg} />
+                      </View>
+                      <TrendsSummary series={series} periodWord={periodWord} />
+                      <OnTrackCard
+                        title={series.streakTitle}
+                        body={series.streakNote}
+                      />
+                    </>
+                  );
+                })()}
+              </>
+            )}
+
+            {/* Report */}
+            {activeTab === 'Report' && (
+              <>
+                <ReportHeadline data={MOCK_REPORT} />
+                <ReportTotalsCard data={MOCK_REPORT} />
+                <ReportSectionTitle>Key findings</ReportSectionTitle>
+                <KeyFindingsCard
+                  categories={MOCK_REPORT.categories}
+                  reasons={MOCK_REPORT.reasons}
+                />
+                <ShareReportButton data={MOCK_REPORT} />
+              </>
+            )}
           </>
-        ) : null}
+        )}
+
+        {/* Alternatives (from Patterns → "View better alternatives") */}
+        {showAlternatives && (
+          <>
+            <InsightSummaryCard
+              title={MOCK_ALTERNATIVES.insightTitle}
+              body={MOCK_ALTERNATIVES.insightBody}
+              attribution={MOCK_ALTERNATIVES.attribution}
+            />
+            <AlternativesList
+              data={MOCK_ALTERNATIVES}
+              selectedId={selectedAlternativeId}
+              onSelect={setSelectedAlternativeId}
+            />
+            <AlternativesFooter
+              disabled={!selectedAlternativeId}
+              // TODO: wire up once there's a real endpoint to apply the swap.
+              onUse={() => setShowAlternatives(false)}
+              onNotNow={() => setShowAlternatives(false)}
+            />
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
   safe: {
@@ -195,141 +2013,87 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.xxl,
-    gap: spacing.lg,
+    gap: spacing.xl,
+    paddingBottom: spacing.xxl * 2,
   },
   title: {
     fontFamily: fonts.serif,
-    fontSize: 31,
+    fontSize: fontSize.display,
     color: colors.textPrimary,
   },
   subtitle: {
     fontFamily: fonts.regular,
-    fontSize: 14,
+    fontSize: fontSize.md,
     color: colors.textSecondary,
-    marginTop: -spacing.md,
+    marginTop: -spacing.lg,
   },
-  trendCard: {
+  illustrationCard: {
     backgroundColor: colors.card,
-    borderWidth: 1.5,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.xxl,
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  illustrationCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: colors.primaryTint,
+    marginBottom: spacing.sm,
+  },
+  illustrationImage: {
+    width: 88,
+    height: 88,
+    marginBottom: spacing.sm,
+  },
+  illustrationTitle: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.heading,
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  illustrationBody: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  ctaButton: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    borderRadius: radii.pill,
+    paddingVertical: spacing.md,
+  },
+  comingSoonCard: {
+    backgroundColor: colors.card,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.xxl,
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+  },
+  comingSoonTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textPrimary,
+  },
+  comingSoonBody: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  chartCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radii.lg,
     padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  trendHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  trendIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trendHeadline: {
-    fontFamily: fonts.bold,
-    fontSize: 17,
-    flex: 1,
-  },
-  trendDetail: {
-    fontFamily: fonts.regular,
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  sectionTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 19,
-    color: colors.textPrimary,
-  },
-  statRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    gap: 2,
-  },
-  statValue: {
-    fontFamily: fonts.bold,
-    fontSize: 20,
-    color: colors.textPrimary,
-  },
-  statLabel: {
-    fontFamily: fonts.regular,
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  reasonsCard: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing.lg,
-  },
-  reasonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  reasonRowBorder: {
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
-  },
-  reasonLabel: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
-  reasonCount: {
-    fontFamily: fonts.bold,
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  historyCard: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing.lg,
-  },
-  historyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  historyIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  historyText: {
-    flex: 1,
-    gap: 1,
-  },
-  historyItemName: {
-    fontFamily: fonts.bold,
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
-  historyDetail: {
-    fontFamily: fonts.regular,
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  historyDate: {
-    fontFamily: fonts.regular,
-    fontSize: 12,
-    color: colors.textSecondary,
   },
 });
