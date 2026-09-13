@@ -9,26 +9,30 @@
  *                 "This week" zero-state, "What happens next?" hint card.
  *
  * Four tabs: Overview · Patterns · Trends · Report
- * All four are implemented for Iteration 2. Patterns, Trends and Report
- * currently run on dummy data (see MOCK_PATTERNS / MOCK_TRENDS / MOCK_REPORT)
- * until their backend endpoints exist.
+ * Overview is LIVE: it reads GET /v1/dashboard/summary and
+ * GET /v1/dashboard/weekly-waste (see useWeekSummary() below), which in turn
+ * reflect every recordOutcome() call made from MarkConsumedScreen and
+ * MarkWastedScreen (WasteRecordedScreen is just the confirmation screen for
+ * the latter — the log write already happened by the time it's shown).
+ * Patterns, Trends and Report still run on dummy data (see MOCK_PATTERNS /
+ * MOCK_TRENDS / MOCK_REPORT) until their backend endpoints exist.
  *
  * NOTE: The donut chart (Overview) is drawn with plain View components, not
  * react-native-svg, so it keeps working in Expo Go without a native rebuild.
  * The Trends line chart below it DOES use react-native-svg (already a
  * dependency) since a polyline is impractical to fake with Views.
- *
- * Backend wiring: live useEffect is written in comments below the mock block.
- * Toggle FORCE_EMPTY = true to preview the empty state during development.
  */
 
-import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Share } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Pressable, Share, ActivityIndicator } from 'react-native';
 import Svg, { Line, Polyline, Circle } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
+import { getDashboardSummary, getWeeklyWaste } from '../api/freshwise';
+import { ApiError } from '../api/client';
+import type { DashboardSummary, WeeklyWasteRow, WasteReason } from '../api/types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1613,26 +1617,59 @@ const emptyWeekStyles = StyleSheet.create({
   },
 });
 
-// ---------------------------------------------------------------------------
-// Mock data  (replace with live API when backend is ready)
-// ---------------------------------------------------------------------------
+function OverviewLoading() {
+  return (
+    <View style={overviewStateStyles.wrap}>
+      <ActivityIndicator color={colors.primary} />
+    </View>
+  );
+}
 
-const MOCK_SUMMARY: WeekSummary = {
-  wasted_kg: 1.8,
-  consumed_kg: 6.4,
-  utilisation_rate: 0.78,
-  week_delta_pct: -18,
-  food_records: 23,
-  quick_insight_title: "You're improving",
-  quick_insight:
-    'Vegetable waste fell most this week. Keep planning meals around items expiring first.',
-};
+function OverviewError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <View style={overviewStateStyles.wrap}>
+      <Text style={overviewStateStyles.errorText}>{message}</Text>
+      <Pressable
+        onPress={onRetry}
+        style={({ pressed }) => [overviewStateStyles.retryButton, pressed && { opacity: 0.85 }]}
+      >
+        <Text style={overviewStateStyles.retryLabel}>Try again</Text>
+      </Pressable>
+    </View>
+  );
+}
 
-/**
- * Flip to true to preview the empty state in Expo Go.
- * Switch back to false once live API data is wired in.
- */
-const FORCE_EMPTY = false;
+const overviewStateStyles = StyleSheet.create({
+  wrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.xxl,
+  },
+  errorText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: colors.primaryDark,
+    borderRadius: radii.pill,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.xl,
+  },
+  retryLabel: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.md,
+    color: colors.white,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Mock data — Patterns, Trends and Report tabs (replace with live API calls
+// once their backend endpoints exist). Overview is live — see
+// useWeekSummary() further down.
+// ---------------------------------------------------------------------------
 
 // Patterns tab — dummy data until backend wiring lands.
 // TODO: Replace with a live call, e.g. getWastePatterns(30) returning
@@ -1749,6 +1786,112 @@ const MOCK_REPORT: ReportData = {
 };
 
 // ---------------------------------------------------------------------------
+// Overview tab — live data
+// ---------------------------------------------------------------------------
+//
+// Sourced from the same two dashboard endpoints HomeScreen's stat cards will
+// eventually use: a 7-day summary for the headline numbers (utilisation rate,
+// waste rate, food saved) and a 2-week waste breakdown purely to compute the
+// week-over-week delta arrow. Both endpoints already aggregate every
+// recordOutcome() call written from MarkConsumedScreen and MarkWastedScreen —
+// there's no separate write path to keep in sync.
+
+type OverviewState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; data: ScreenData };
+
+// Friendly labels for the backend's waste_reason enum, used only for the
+// Overview quick-insight sentence. Kept local (rather than importing
+// WASTE_REASON_BY_LABEL, which maps the other direction) since this is the
+// one place Overview needs to go from enum -> prose.
+const WASTE_REASON_PROSE: Record<WasteReason, string> = {
+  expired: 'Items expiring before use',
+  spoiled: 'Spoiled food',
+  cooked_too_much: 'Cooking more than needed',
+  forgot_about_it: 'Forgotten items',
+  didnt_like_taste: 'Taste preferences',
+  changed_plans: 'Changed meal plans',
+  bought_too_much: 'Over-purchasing',
+  other: 'Other reasons',
+};
+
+function buildWeekSummary(summary: DashboardSummary, weekly: WeeklyWasteRow[]): WeekSummary {
+  // weekly-waste rows are one row PER REASON per week, so multiple rows can
+  // share a week_start -- sum them to get each week's total before comparing.
+  const totalsByWeek = new Map<string, number>();
+  for (const row of weekly) {
+    totalsByWeek.set(row.week_start, (totalsByWeek.get(row.week_start) ?? 0) + row.total_quantity_wasted);
+  }
+  const weeksSorted = [...totalsByWeek.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  const [thisWeek, lastWeek] = weeksSorted;
+  const weekDeltaPct =
+    thisWeek && lastWeek && lastWeek[1] > 0
+      ? ((thisWeek[1] - lastWeek[1]) / lastWeek[1]) * 100
+      : null;
+
+  const utilisationRate = summary.waste_rate !== null ? 1 - summary.waste_rate : 0;
+  const foodRecords = summary.total_wasted_events + summary.total_consumed_events;
+  const isImproving = weekDeltaPct !== null && weekDeltaPct <= 0;
+  const topReason = summary.top_waste_reasons[0];
+
+  const quickInsightTitle = foodRecords === 0 ? null : isImproving ? "You're improving" : 'Room to improve';
+  const quickInsight =
+    foodRecords === 0
+      ? null
+      : topReason
+        ? `${WASTE_REASON_PROSE[topReason.waste_reason]} accounted for the most waste this period ` +
+          `(${topReason.count} record${topReason.count === 1 ? '' : 's'}). ` +
+          (isImproving ? 'Keep an eye on it to stay on track.' : 'Tackling this first will make the biggest difference.')
+        : isImproving
+          ? 'Waste is trending down — keep it up!'
+          : 'Record more outcomes to start spotting patterns.';
+
+  return {
+    wasted_kg: summary.total_wasted_quantity,
+    consumed_kg: summary.total_consumed_quantity,
+    utilisation_rate: utilisationRate,
+    week_delta_pct: weekDeltaPct,
+    food_records: foodRecords,
+    quick_insight_title: quickInsightTitle,
+    quick_insight: quickInsight,
+  };
+}
+
+/** Mirrors usePantry()'s shape in data/pantryItems.ts: refetches on every
+ *  focus (not just on mount) so returning here after Mark Consumed / Mark
+ *  Wasted always shows the up-to-date rate, without either screen needing to
+ *  know this tab exists. */
+function useWeekSummary() {
+  const [state, setState] = useState<OverviewState>({ status: 'loading' });
+
+  const load = useCallback(async () => {
+    setState({ status: 'loading' });
+    try {
+      const [summary, weekly] = await Promise.all([getDashboardSummary(7), getWeeklyWaste(2)]);
+      const hasData = summary.total_wasted_events + summary.total_consumed_events > 0;
+      setState({
+        status: 'ready',
+        data: hasData ? { state: 'data', summary: buildWeekSummary(summary, weekly) } : { state: 'empty' },
+      });
+    } catch (e) {
+      setState({
+        status: 'error',
+        message: e instanceof ApiError ? e.message : 'Could not load insights.',
+      });
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  return { state, retry: load };
+}
+
+// ---------------------------------------------------------------------------
 // Screen
 // ---------------------------------------------------------------------------
 
@@ -1770,56 +1913,12 @@ export default function ActivityScreen() {
   // Trends tab — Weekly/Monthly sub-toggle, independent of the top-level tab bar.
   const [trendsPeriod, setTrendsPeriod] = useState<TrendsPeriod>('Weekly');
 
-  // -------------------------------------------------------------------------
-  // TODO: Replace mock block with live API calls when backend is ready.
-  //
-  // import { getDashboardSummary, getWeeklyWaste } from '../api/freshwise';
-  // import { ApiError } from '../api/client';
-  // import { LoadingState, ErrorState } from '../components/ScreenState';
-  // import type { DashboardSummary, WeeklyWasteRow } from '../api/types';
-  //
-  // const [screenData, setScreenData] = useState<ScreenData | 'loading' | string>('loading');
-  // useEffect(() => {
-  //   let alive = true;
-  //   Promise.all([getDashboardSummary(7), getWeeklyWaste(2)])
-  //     .then(([summary, weekly]) => {
-  //       if (!alive) return;
-  //       const hasData = summary.total_wasted_events + summary.total_consumed_events > 0;
-  //       if (!hasData) { setScreenData({ state: 'empty' }); return; }
-  //       const totalsByWeek = new Map<string, number>();
-  //       for (const row of weekly) {
-  //         totalsByWeek.set(row.week_start, (totalsByWeek.get(row.week_start) ?? 0) + row.total_quantity_wasted);
-  //       }
-  //       const [thisWk, lastWk] = [...totalsByWeek.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  //       const delta = thisWk && lastWk && lastWk[1] > 0
-  //         ? ((thisWk[1] - lastWk[1]) / lastWk[1]) * 100 : null;
-  //       setScreenData({
-  //         state: 'data',
-  //         summary: {
-  //           wasted_kg: summary.total_wasted_quantity,
-  //           consumed_kg: summary.total_consumed_quantity,
-  //           utilisation_rate: summary.waste_rate !== null ? 1 - summary.waste_rate : 0,
-  //           week_delta_pct: delta,
-  //           food_records: summary.total_wasted_events + summary.total_consumed_events,
-  //           quick_insight_title: "You're improving",
-  //           quick_insight: null,
-  //         },
-  //       });
-  //     })
-  //     .catch((e) => alive && setScreenData(e instanceof ApiError ? e.message : 'Could not load insights.'))
-  //   return () => { alive = false; };
-  // }, []);
-  // if (screenData === 'loading') return <LoadingState />;
-  // if (typeof screenData === 'string') return <ErrorState message={screenData} />;
-  // -------------------------------------------------------------------------
-
-  const screenData: ScreenData = FORCE_EMPTY
-    ? { state: 'empty' }
-    : { state: 'data', summary: MOCK_SUMMARY };
+  // Overview tab — live, see useWeekSummary() above.
+  const { state: overviewState, retry: retryOverview } = useWeekSummary();
 
   const subtitleByTab: Record<InsightsTab, string> = {
     Overview:
-      screenData.state === 'data'
+      overviewState.status === 'ready' && overviewState.data.state === 'data'
         ? 'A clear view of how your household is doing.'
         : 'Understand your household food habits over time.',
     Patterns: 'See what is wasted most often — and why.',
@@ -1856,22 +1955,28 @@ export default function ActivityScreen() {
             {/* Overview */}
             {activeTab === 'Overview' && (
               <>
-                {screenData.state === 'data' && (
+                {overviewState.status === 'loading' && <OverviewLoading />}
+
+                {overviewState.status === 'error' && (
+                  <OverviewError message={overviewState.message} onRetry={retryOverview} />
+                )}
+
+                {overviewState.status === 'ready' && overviewState.data.state === 'data' && (
                   <>
-                    <ThisWeekCard summary={screenData.summary} />
-                    <StatPills summary={screenData.summary} />
-                    <UtilisationSplit summary={screenData.summary} />
-                    {screenData.summary.quick_insight &&
-                      screenData.summary.quick_insight_title && (
+                    <ThisWeekCard summary={overviewState.data.summary} />
+                    <StatPills summary={overviewState.data.summary} />
+                    <UtilisationSplit summary={overviewState.data.summary} />
+                    {overviewState.data.summary.quick_insight &&
+                      overviewState.data.summary.quick_insight_title && (
                         <QuickInsightCard
-                          title={screenData.summary.quick_insight_title}
-                          body={screenData.summary.quick_insight}
+                          title={overviewState.data.summary.quick_insight_title}
+                          body={overviewState.data.summary.quick_insight}
                         />
                       )}
                   </>
                 )}
 
-                {screenData.state === 'empty' && (
+                {overviewState.status === 'ready' && overviewState.data.state === 'empty' && (
                   <>
                     <View style={styles.illustrationCard}>
                       {/*
