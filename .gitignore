@@ -14,6 +14,8 @@ web-build/
 android/.gradle/
 android/build/
 android/app/build/
+.gradle-build-home/
+*.class
 modules/*/android/.cxx/
 modules/*/android/build/
 modules/*/android/src/main/jniLibs/

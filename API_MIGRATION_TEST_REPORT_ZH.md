@@ -31,9 +31,9 @@ Qwen3-VL-4B 服务，手机端无需知道模型供应端密钥。
 - `pytest -q`：180 passed，1 warning，耗时 19.11 秒。
 - warning 为 FastAPI TestClient 使用的 Starlette/httpx 弃用提示，不是测试失败。
 - `/health`：HTTP 成功，后端状态 ready；当前本地模型未加载。
-- `/v1/api-recognition/config`：两个提示词均成功加载，模型固定为开源基座
-  `qwen3-vl-4b-instruct`，海外 Base URL 固定为新加坡 DashScope；由于尚未
-  注入同区域有效 Secret，`enabled=false`，符合预期。
+- `/v1/api-recognition/config`：两个提示词均成功加载；当前配置已切换到中国站
+  DashScope，托管模型为账号实际可用的 `qwen3-vl-flash`。若后续改为自托管
+  4B，只需要替换网关的 `api_base_url` 与 `api_model`。
 - 过期日期 smoke test：以 2026-09-13 为参考日，`UHT full cream milk` 命中
   180 天规则并返回 2027-03-12；这是确定性规则输出，不是模型读取出的包装日期。
 
@@ -80,9 +80,9 @@ Qwen3-VL-4B 服务，手机端无需知道模型供应端密钥。
 
 ## 尚待 4B 服务配置后验收
 
-1. 在阿里云新加坡区域创建新 Key，并把它只放入服务器 Secret/`.env`；海外
-   Base URL 已设为 `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`，
-   默认模型已设为 `qwen3-vl-4b-instruct`。
+1. 在阿里云中国站创建新 Key，并把它只放入服务器 Secret/`.env`；当前
+   Base URL 已设为 `https://dashscope.aliyuncs.com/compatible-mode/v1`，
+   默认模型已设为 `qwen3-vl-flash`。
 2. 重启 FastAPI，确认 `/v1/api-recognition/config` 返回 `enabled=true`。
 3. 用真实多商品照片和真实小票各做一轮识别，核对名称、数量、坐标和延迟。
 4. 使用生产 HTTPS 地址重新构建 APK，并关闭当前仅供局域网原型使用的明文 HTTP。

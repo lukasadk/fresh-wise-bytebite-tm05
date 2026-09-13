@@ -180,6 +180,14 @@ export type OpenFoodFactsProduct = {
 export type RecipeRecommendation = {
   recipe_id: string;
   recipe_name: string | null;
+  title?: string;
+  reason?: string;
+  available_ingredients?: string[];
+  priority_ingredients?: string[];
+  steps?: string[];
+  source?: string;
+  ai_enhanced?: boolean;
+  score?: number;
   ingredient_tokens: string[] | null;
   tags: string[] | null;
   servings: number | null;

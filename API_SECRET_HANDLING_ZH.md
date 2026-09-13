@@ -19,8 +19,9 @@
 `D:\WasteWise_Grocery_VLM\.env`：
 
 ```dotenv
-WW_API_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
-WW_API_MODEL=qwen3-vl-4b-instruct
+WW_API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+WW_API_MODEL=qwen3-vl-flash
+WW_API_RECIPE_MODEL=qwen-plus
 WW_API_KEY_REQUIRED=true
 WW_API_KEY=在签发平台重新生成的密钥
 ```

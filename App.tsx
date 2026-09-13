@@ -22,6 +22,7 @@ import {
 
 import HomeScreen from './src/screens/HomeScreen';
 import RecipesScreen from './src/screens/RecipesScreen';
+import RecipeDetailScreen from './src/screens/RecipeDetailScreen';
 import ActivityScreen from './src/screens/ActivityScreen';
 import PantryScreen from './src/screens/PantryScreen';
 import UseFirstScreen from './src/screens/UseFirstScreen';
@@ -264,6 +265,7 @@ export default function App() {
                     <Stack.Screen name="AddFood" component={AddFoodScreen} />
                     <Stack.Screen name="PhotoGrocery" component={PhotoGroceryScreen} />
                     <Stack.Screen name="FoodDetail" component={FoodDetailScreen} />
+                    <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} />
                     <Stack.Screen name="RecordOutcome" component={RecordOutcomeScreen} />
                     <Stack.Screen name="MarkConsumed" component={MarkConsumedScreen} />
                     <Stack.Screen name="MarkWasted" component={MarkWastedScreen} />

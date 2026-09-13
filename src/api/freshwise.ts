@@ -2,6 +2,7 @@
 // Every function here returns typed data or throws ApiError.
 
 import { request } from './client';
+import { API_BASE_URL, API_KEY, API_KEY_HEADER } from './config';
 import { getDeviceId } from './device';
 import type {
   ConsumptionWasteLog,
@@ -17,6 +18,15 @@ import type {
   WasteReason,
   WeeklyWasteRow,
 } from './types';
+
+const groceryAiBaseUrl = (
+  process.env.EXPO_PUBLIC_GROCERY_AI_API_URL
+  ?? process.env.EXPO_PUBLIC_WASTEWISE_BROWSER_MODEL_API_URL
+  ?? API_BASE_URL
+).trim().replace(/\/+$/, '');
+const groceryAiServiceKey = (process.env.EXPO_PUBLIC_GROCERY_AI_SERVICE_KEY ?? '').trim();
+const groceryAiTimeoutMs = 60_000;
+const groceryAiSharesMainApi = groceryAiBaseUrl === API_BASE_URL.replace(/\/+$/, '');
 
 // --- Identity -------------------------------------------------------------
 
@@ -189,6 +199,80 @@ export function getRecipeRecommendations(opts: { dietTags?: string[]; limit?: nu
   if (opts.limit) q.set('limit', String(opts.limit));
   const qs = q.toString();
   return request<RecipeRecommendation[]>(`/v1/recipes/recommendations${qs ? `?${qs}` : ''}`);
+}
+
+export async function getRagRecipeRecommendations(
+  inventory: FoodItem[],
+  opts: { limit?: number; language?: 'en' | 'zh'; useAi?: boolean } = {},
+): Promise<RecipeRecommendation[]> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), groceryAiTimeoutMs);
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  };
+  if (groceryAiServiceKey) headers['X-WasteWise-API-Key'] = groceryAiServiceKey;
+  if (groceryAiSharesMainApi && API_KEY) headers[API_KEY_HEADER] = API_KEY;
+  try {
+    const response = await fetch(`${groceryAiBaseUrl}/v1/recipe-rag/recommend`, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({
+        limit: opts.limit ?? 3,
+        language: opts.language ?? 'en',
+        use_ai: opts.useAi ?? true,
+        inventory: inventory.map((item) => ({
+          name: item.canonical_food_name || item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          category: item.category,
+          expiry_date: item.expiry_date,
+          expiry_days: item.days_to_expiry,
+        })),
+      }),
+    });
+    const text = await response.text();
+    const payload = text ? JSON.parse(text) : {};
+    if (!response.ok) {
+      const detail = typeof payload?.detail === 'string' ? payload.detail : `HTTP ${response.status}`;
+      throw new Error(detail);
+    }
+    const rawRecommendations = Array.isArray(payload?.recommendations) ? payload.recommendations : [];
+    return rawRecommendations.map((recipe: any): RecipeRecommendation => {
+      const title = typeof recipe?.title === 'string' ? recipe.title : recipe?.recipe_name ?? 'Untitled recipe';
+      const available = Array.isArray(recipe?.available_ingredients) ? recipe.available_ingredients : [];
+      return {
+        recipe_id: String(recipe?.recipe_id ?? title),
+        recipe_name: title,
+        title,
+        reason: typeof recipe?.reason === 'string' ? recipe.reason : '',
+        available_ingredients: available,
+        priority_ingredients: Array.isArray(recipe?.priority_ingredients) ? recipe.priority_ingredients : [],
+        steps: Array.isArray(recipe?.steps) ? recipe.steps.map(String).filter(Boolean) : [],
+        source: typeof recipe?.source === 'string' ? recipe.source : 'mini_recipe_rag',
+        ai_enhanced: recipe?.ai_enhanced === true,
+        score: Number.isFinite(Number(recipe?.score)) ? Number(recipe.score) : 0,
+        ingredient_tokens: available,
+        tags: Array.isArray(recipe?.tags) ? recipe.tags.map(String).filter(Boolean) : [],
+        servings: Number.isFinite(Number(recipe?.servings)) ? Number(recipe.servings) : null,
+        serving_size: null,
+        matched_ingredients: available,
+        missing_ingredients: Array.isArray(recipe?.missing_ingredients) ? recipe.missing_ingredients : [],
+        expiring_ingredients_matched: Array.isArray(recipe?.priority_ingredients) ? recipe.priority_ingredients : [],
+        coverage_score: Number.isFinite(Number(recipe?.score)) ? Number(recipe.score) : 0,
+        expiry_weight_score: 0,
+        total_score: Number.isFinite(Number(recipe?.score)) ? Number(recipe.score) : 0,
+      };
+    });
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Recipe AI timed out. Please try again.');
+    }
+    throw new Error(`Could not load AI recipe recommendations from ${groceryAiBaseUrl}.`, { cause: error });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export const getRecipeDetail = (recipeId: string) =>

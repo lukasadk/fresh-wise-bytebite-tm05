@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  requireNativeComponent,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -32,6 +34,7 @@ import {
   estimateExpiryWithApi,
   getGroceryAIStatus,
 } from '../vlm/apiRecognitionEngine';
+import { copyImageToAppCache, hasNativeImageFilePicker, pickImageFromDeviceFiles } from '../native/photoFilePicker';
 import type { GroceryRecognitionMode } from '../vlm/apiRecognitionEngine';
 import type { GroceryCandidate } from '../vlm/schema';
 
@@ -44,7 +47,10 @@ type EditableItem = GroceryCandidate & {
 
 type Notice = { title: string; body: string };
 
+const NativePreviewImage = requireNativeComponent<{ sourceUri: string; style?: object }>('FreshWisePreviewImageView');
+
 const BOX_COLOURS = ['#1F7A42', '#D9603B', '#C68A2E', '#2F86C9', '#7A68B3'];
+const IMAGE_PICKER_MEDIA_TYPE = ImagePicker.MediaTypeOptions.Images;
 
 function toIsoDate(date: Date): string {
   const year = date.getFullYear();
@@ -91,6 +97,7 @@ export default function ApiGroceryScreen({ navigation }: any) {
   const [serviceState, setServiceState] = useState<'checking' | 'ready' | 'unavailable'>('checking');
   const [serviceMessage, setServiceMessage] = useState('Checking the AI service…');
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [displayImageUri, setDisplayImageUri] = useState<string | null>(null);
   const [imageRatio, setImageRatio] = useState(3 / 4);
   const [items, setItems] = useState<EditableItem[]>([]);
   const [busy, setBusy] = useState<'camera' | 'library' | 'recognition' | 'saving' | null>(null);
@@ -125,6 +132,7 @@ export default function ApiGroceryScreen({ navigation }: any) {
     if (busy) return;
     setMode(nextMode);
     setImageUri(null);
+    setDisplayImageUri(null);
     setItems([]);
     setLatency(null);
     setNotice(null);
@@ -141,17 +149,35 @@ export default function ApiGroceryScreen({ navigation }: any) {
         if (!permission.granted) throw new Error('Camera permission is required.');
       }
       const result = source === 'camera'
-        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: IMAGE_PICKER_MEDIA_TYPE, quality: 0.9 })
+        : hasNativeImageFilePicker()
+          ? { canceled: false as const, assets: [await pickImageFromDeviceFiles()].filter(Boolean) as any[] }
+          : await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: IMAGE_PICKER_MEDIA_TYPE,
+          quality: 0.9,
+          // Some Android ROMs crash the new system photo picker during native
+          // module initialization. The legacy picker is more compatible for an
+          // APK distributed outside Play Store and still returns a normal URI.
+          ...(Platform.OS === 'android' ? { legacy: true } : {}),
+        });
       const asset = result.canceled ? null : result.assets[0];
       if (asset?.uri) {
-        setImageUri(asset.uri);
-        if (asset.width > 0 && asset.height > 0) setImageRatio(asset.width / asset.height);
+        const cachedAsset = Platform.OS === 'android'
+          ? await copyImageToAppCache(asset.uri)
+          : { uri: asset.uri, width: asset.width, height: asset.height };
+        setImageUri(cachedAsset.uri);
+        setDisplayImageUri(cachedAsset.uri);
+        const width = Number(cachedAsset.width ?? asset.width);
+        const height = Number(cachedAsset.height ?? asset.height);
+        if (width > 0 && height > 0) setImageRatio(width / height);
       }
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Choose another image and try again.';
       setNotice({
         title: 'Could not open the image',
-        body: error instanceof Error ? error.message : 'Choose another image and try again.',
+        body: message.includes('ExceptionInInitializerError')
+          ? 'This phone blocked the system photo picker. Please grant Photos permission and try again, or use Take photo.'
+          : message,
       });
     } finally {
       setBusy(null);
@@ -165,6 +191,17 @@ export default function ApiGroceryScreen({ navigation }: any) {
     setItems([]);
     try {
       const result = await analyzeGroceryImage(imageUri, mode);
+      const nextDisplayUri = result.reviewImageUri ?? imageUri;
+      setDisplayImageUri(nextDisplayUri);
+      if (result.reviewImageUri) {
+        Image.getSize(
+          result.reviewImageUri,
+          (width, height) => {
+            if (width > 0 && height > 0) setImageRatio(width / height);
+          },
+          () => {},
+        );
+      }
       const nextItems = editableItems(result.items);
       setItems(nextItems);
       setLatency(result.timing.totalMs);
@@ -283,6 +320,7 @@ export default function ApiGroceryScreen({ navigation }: any) {
   };
 
   const hasResults = items.length > 0;
+  const previewImageUri = displayImageUri ?? imageUri;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -338,9 +376,9 @@ export default function ApiGroceryScreen({ navigation }: any) {
           </View>
         ) : null}
 
-        {imageUri ? (
-          <View style={[styles.imageFrame, { aspectRatio: imageRatio }]}>
-            <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
+        {previewImageUri ? (
+          <View collapsable={false} style={[styles.imageFrame, { aspectRatio: imageRatio }]}>
+            <NativePreviewImage sourceUri={previewImageUri} style={styles.image} />
             {hasResults && mode === 'photo' ? items.map((item, index) => {
               if (!item.boundingBox) return null;
               const [x1, y1, x2, y2] = item.boundingBox;
@@ -500,7 +538,7 @@ export default function ApiGroceryScreen({ navigation }: any) {
                 <Camera size={17} color={colors.primary} />
                 <Text style={styles.textActionLabel}>Retake</Text>
               </Pressable>
-              <Pressable onPress={() => { setItems([]); setImageUri(null); setLatency(null); setNotice(null); }} style={styles.textAction}>
+              <Pressable onPress={() => { setItems([]); setImageUri(null); setDisplayImageUri(null); setLatency(null); setNotice(null); }} style={styles.textAction}>
                 <ImageIcon size={17} color={colors.primary} />
                 <Text style={styles.textActionLabel}>Choose another</Text>
               </Pressable>
@@ -572,8 +610,8 @@ const styles = StyleSheet.create({
   serviceText: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textSecondary },
   serviceBadge: { fontFamily: fonts.bold, fontSize: 10, letterSpacing: 0.6, color: colors.primary },
   serviceBadgeError: { color: colors.alertIcon },
-  imageFrame: { position: 'relative', width: '100%', overflow: 'hidden', borderRadius: radii.lg, backgroundColor: colors.primaryTint },
-  image: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+  imageFrame: { position: 'relative', width: '100%', borderRadius: radii.lg, backgroundColor: colors.primaryTint },
+  image: { width: '100%', height: '100%', borderRadius: radii.lg },
   emptyImage: {
     minHeight: 250, alignItems: 'center', justifyContent: 'center', gap: 9, padding: 28,
     borderWidth: 1, borderColor: colors.borderSoft, borderRadius: radii.xl, backgroundColor: colors.primaryTint,

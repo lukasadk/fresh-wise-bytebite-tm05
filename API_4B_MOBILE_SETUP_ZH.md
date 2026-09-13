@@ -3,10 +3,11 @@
 ## 当前架构
 
 Android APK 不再内置 2B/4B 权重。手机只把用户选择的图片发送给
-`WasteWise_Grocery_VLM` FastAPI 网关；网关再调用服务端部署的开源 4B
-视觉语言模型。当前目标明确为原始 `Qwen3-VL-4B-Instruct` 基座，不加载
-WasteWise 自训练 QLoRA 适配器。模型地址、模型名称和供应端密钥全部保留在
-服务器上。
+`WasteWise_Grocery_VLM` FastAPI 网关；网关再调用服务端的 Qwen VL API。
+当前中国站托管 API 配置为账号实际可用的 `qwen3-vl-flash`。如果后续改为
+自托管原始 `Qwen3-VL-4B-Instruct` 基座，只需要把网关的 `api_model` 和
+`api_base_url` 改到自托管服务，不加载 WasteWise 自训练 QLoRA 适配器。模型
+地址、模型名称和供应端密钥全部保留在服务器上。
 
 这里的“API”可以完全由你自己部署的开源模型提供，不要求购买第三方模型
 API。只要 Qwen3-VL-4B 推理服务提供 OpenAI-compatible `/v1/chat/completions`
@@ -15,7 +16,7 @@ API。只要 Qwen3-VL-4B 推理服务提供 OpenAI-compatible `/v1/chat/completi
 ```text
 Android / Web
   -> WasteWise FastAPI 网关
-      -> OpenAI-compatible Qwen3-VL-4B 服务
+      -> OpenAI-compatible Qwen VL 服务
 ```
 
 手机端支持：
@@ -28,14 +29,17 @@ Android / Web
 模型提供可靠 `bounding_box` 时把商品名称框绘制在原图对应位置。小票模式
 不伪造商品物理位置。
 
-## 以后配置 4B 模型
+预计过期日期按“用户当天识别/添加日期 + 品类规则天数”生成，例如牛奶按开封
+后冷藏约 10 天估算；这不是包装上印刷的保质期，用户确认前可以编辑。
+
+## 当前中国站 API 配置
 
 在 `D:\WasteWise_Grocery_VLM\models\config\external_api.json` 填写非敏感项：
 
 ```json
 {
-  "api_base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-  "api_model": "qwen3-vl-4b-instruct",
+  "api_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "api_model": "qwen3-vl-flash",
   "api_key_required": true,
   "api_prompt_path": "models/config/api_grocery_prompt.txt",
   "api_receipt_prompt_path": "models/config/api_receipt_prompt.txt",
@@ -46,13 +50,14 @@ Android / Web
 }
 ```
 
-`qwen3-vl-4b-instruct` 是阿里云兼容 API 使用的模型代码。如果你自己的
-vLLM/SGLang 服务把同一基座注册为 `Qwen/Qwen3-VL-4B-Instruct`，只修改
-`api_model`，不要添加任何适配器路径。
+当前中国站账号模型列表没有开放 `qwen3-vl-4b-instruct`，所以托管 API 先用
+同系列可用模型 `qwen3-vl-flash`。如果你自己的 vLLM/SGLang 服务把 4B 基座
+注册为 `Qwen/Qwen3-VL-4B-Instruct`，只修改 `api_base_url` 和 `api_model`，
+不要添加任何适配器路径。
 
-上例为海外新加坡区域的公共 DashScope 地址。Key 也必须在同一新加坡区域
-创建；中国北京、美国或其他供应商的 Key 不能跨区域使用。生产环境优先改用
-阿里云控制台显示的 `{WorkspaceId}.ap-southeast-1.maas.aliyuncs.com` 专属地址。
+上例为中国站公共 DashScope 地址。Key 必须在同一中国站/北京区域创建；新加坡、
+美国或其他区域的 Key 不能跨区域使用。生产环境优先改用阿里云控制台显示的
+同区域专属地址。
 
 如果模型服务需要密钥，只写入服务端 `D:\WasteWise_Grocery_VLM\.env`：
 
@@ -85,6 +90,12 @@ EXPO_PUBLIC_GROCERY_AI_API_URL=http://192.168.68.103:8000
 ```powershell
 cd D:\WasteWise_Grocery_VLM
 .\.venv\Scripts\python.exe -m uvicorn wastewise_grocery_vlm.main:app --app-dir src --host 0.0.0.0 --port 8000
+```
+
+如果已经把中国站 Key 保存到 Windows DPAPI，可以直接使用：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start_api_gateway_china.ps1
 ```
 
 检查 `http://192.168.68.103:8000/v1/api-recognition/config`。在 4B 地址尚未

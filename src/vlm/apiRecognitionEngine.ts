@@ -1,4 +1,5 @@
-import { API_BASE_URL } from '../api/config.ts';
+import { API_BASE_URL, API_KEY, API_KEY_HEADER } from '../api/config.ts';
+import { hasNativeImageBase64Reader, readImageBase64 } from '../native/photoFilePicker';
 import { GROCERY_UNITS, mapToAppCategory } from './schema.ts';
 import type {
   GroceryBoundingBox,
@@ -17,6 +18,7 @@ export type GroceryAIStatus = {
 
 export type ApiGroceryAnalysis = ValidatedGroceryResult & {
   imageUri: string;
+  reviewImageUri: string | null;
   inputType: 'grocery_photo' | 'receipt';
   analysisId: string;
   timing: { totalMs: number };
@@ -30,6 +32,7 @@ type ApiAnalysis = {
   warnings?: unknown;
   generation_attempts?: unknown;
   latency_ms?: unknown;
+  review_image_url?: unknown;
 };
 
 const configuredBaseUrl = (
@@ -42,6 +45,7 @@ const serviceKey = (process.env.EXPO_PUBLIC_GROCERY_AI_SERVICE_KEY ?? '').trim()
 const requestTimeoutMs = 180_000;
 const unitSet = new Set<string>(GROCERY_UNITS);
 const isWebRuntime = typeof document !== 'undefined';
+const sharesMainApi = configuredBaseUrl === API_BASE_URL.replace(/\/+$/, '');
 
 export const GROCERY_AI_API_BASE_URL = configuredBaseUrl;
 
@@ -49,6 +53,7 @@ function headers(json = false): Record<string, string> {
   const result: Record<string, string> = { Accept: 'application/json' };
   if (json) result['Content-Type'] = 'application/json';
   if (serviceKey) result['X-WasteWise-API-Key'] = serviceKey;
+  if (sharesMainApi && API_KEY) result[API_KEY_HEADER] = API_KEY;
   return result;
 }
 
@@ -81,9 +86,20 @@ function text(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value.trim() : fallback;
 }
 
+function capitalizeFirstLetter(value: string): string {
+  return value.replace(/\p{L}/u, (letter) => letter.toLocaleUpperCase());
+}
+
 function nullableText(value: unknown): string | null {
   const parsed = text(value);
   return parsed || null;
+}
+
+function absoluteApiUrl(pathOrUrl: unknown): string | null {
+  const parsed = text(pathOrUrl);
+  if (!parsed) return null;
+  if (/^https?:\/\//i.test(parsed)) return parsed;
+  return `${configuredBaseUrl}${parsed.startsWith('/') ? '' : '/'}${parsed}`;
 }
 
 function stringList(value: unknown): string[] {
@@ -130,7 +146,7 @@ function productDisplayName(item: ApiItem): string {
     }
     parts.push(part);
   }
-  return parts.join(' ').slice(0, 200);
+  return capitalizeFirstLetter(parts.join(' ')).slice(0, 200);
 }
 
 export function mapApiAnalysisResponse(payload: ApiAnalysis, imageUri: string): ApiGroceryAnalysis {
@@ -170,6 +186,7 @@ export function mapApiAnalysisResponse(payload: ApiAnalysis, imageUri: string): 
 
   return {
     imageUri,
+    reviewImageUri: absoluteApiUrl(payload.review_image_url),
     inputType: payload.input_type === 'receipt' ? 'receipt' : 'grocery_photo',
     analysisId: text(payload.analysis_id),
     items,
@@ -196,18 +213,55 @@ export async function getGroceryAIStatus(): Promise<GroceryAIStatus> {
 }
 
 async function imagePart(imageUri: string): Promise<Blob | Record<string, string>> {
+  const lower = imageUri.split('?')[0].toLocaleLowerCase();
+  const extension = lower.endsWith('.png') ? 'png' : lower.endsWith('.webp') ? 'webp' : 'jpg';
+  const type = extension === 'png' ? 'image/png' : extension === 'webp' ? 'image/webp' : 'image/jpeg';
+  const name = `grocery-image.${extension}`;
   if (!isWebRuntime) {
-    return { uri: imageUri, name: 'grocery-image.jpg', type: 'image/jpeg' };
+    return { uri: imageUri, name, type };
   }
   const response = await fetch(imageUri);
   if (!response.ok) throw new Error('The selected image could not be read.');
   return response.blob();
 }
 
+function imageContentType(imageUri: string): 'image/jpeg' | 'image/png' | 'image/webp' {
+  const lower = imageUri.split('?')[0].toLocaleLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  return 'image/jpeg';
+}
+
 export async function analyzeGroceryImage(
   imageUri: string,
   mode: GroceryRecognitionMode,
 ): Promise<ApiGroceryAnalysis> {
+  if (!isWebRuntime && hasNativeImageBase64Reader()) {
+    const endpoint = mode === 'receipt'
+      ? '/v1/api-recognition/receipt-json'
+      : '/v1/api-recognition/analyze-json';
+    const contentType = imageContentType(imageUri);
+    const imageBase64 = await readImageBase64(imageUri);
+    const response = await withTimeout(`${configuredBaseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: headers(true),
+      body: JSON.stringify({
+        image_base64: imageBase64,
+        content_type: contentType,
+      }),
+    });
+    if (!response.ok) throw new Error(`AI recognition failed: ${await responseDetail(response)}`);
+    const analysis = mapApiAnalysisResponse(await response.json() as ApiAnalysis, imageUri);
+    return {
+      ...analysis,
+      // Android's RN Image pipeline can render app-cache file:// URIs as a blank
+      // drawable on some MIUI builds. The native picker now normalizes the source
+      // to a reasonably sized JPEG first, so keeping this same JPEG as a data URI
+      // gives the result page a self-contained preview for the SVG overlay.
+      reviewImageUri: `data:${contentType};base64,${imageBase64}`,
+    };
+  }
+
   const form = new FormData();
   const part = await imagePart(imageUri);
   if (isWebRuntime) form.append('file', part as Blob, 'grocery-image.jpg');
