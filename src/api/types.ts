@@ -77,6 +77,32 @@ export type WeeklyWasteRow = {
   total_quantity_wasted: number;
 };
 
+/** One bar in the Patterns tab -- either a food category (free text, e.g.
+ *  "Vegetables") or a waste_reason enum value ("expired", ...). Already
+ *  top-5 + a rolled-up "Other" bucket, in that order, courtesy of the
+ *  backend's _top5_plus_other(). */
+export type WastePatternBucket = {
+  label: string;
+  count: number;
+};
+
+/** The single food item wasted more often than anything else the household
+ *  has logged (case-insensitively deduped server-side). Only present when
+ *  it's a genuine repeat -- the backend floors this at times_wasted >= 2. */
+export type WastePatternItem = {
+  name: string;
+  times_wasted: number;
+};
+
+/** GET /v1/dashboard/waste-patterns. Computed over the household's ENTIRE
+ *  waste history (no time window) -- "based on the user's entries so far". */
+export type WastePatternsOut = {
+  total_waste_events: number;
+  top_waste_categories: WastePatternBucket[];
+  top_waste_reasons: WastePatternBucket[];
+  most_wasted_item: WastePatternItem | null;
+};
+
 export type FoodkeeperStorage = {
   foodkeeper_id: number;
   canonical_food_name: string;

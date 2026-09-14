@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db
 from app.deps import get_current_user
 from app.models import UserProfile
-from app.schemas import DashboardSummary, WeeklyWasteRow
+from app.schemas import DashboardSummary, WastePatternBucket, WastePatternItem, WastePatternsOut, WeeklyWasteRow
 
 router = APIRouter(prefix="/v1/dashboard", tags=["dashboard"])
 
@@ -109,4 +109,98 @@ async def dashboard_summary(
         top_waste_reasons=[
             {"waste_reason": r.waste_reason, "count": int(r.cnt), "quantity": float(r.qty or 0)} for r in reasons
         ],
+    )
+
+
+def _top5_plus_other(rows: list[tuple[str, int]]) -> list[WastePatternBucket]:
+    """rows must already be ordered by count DESC. Anything past the 5th
+    place collapses into one trailing 'Other' bucket, dropped entirely if
+    there's nothing left to roll up (e.g. exactly 5 or fewer distinct labels
+    -- an empty 'Other: 0' row would be misleading, not just redundant)."""
+    top5, rest = rows[:5], rows[5:]
+    buckets = [WastePatternBucket(label=label, count=count) for label, count in top5]
+    if rest:
+        buckets.append(WastePatternBucket(label="Other", count=sum(count for _, count in rest)))
+    return buckets
+
+
+@router.get("/waste-patterns", response_model=WastePatternsOut)
+async def waste_patterns(
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Patterns tab: 'frequently wasted categories', 'common waste reasons',
+    and the single most repetitively wasted item -- all computed over the
+    household's entire logged history (no `days`/`weeks` param, unlike
+    /summary and /weekly-waste above), since the point is "what's wasted
+    most often so far", not a rolling window.
+    """
+    category_rows = (
+        await db.execute(
+            text(
+                """
+                SELECT COALESCE(fi.category, 'Other') AS label, COUNT(*) AS cnt
+                FROM consumption_waste_log cwl
+                JOIN food_item fi ON fi.item_id = cwl.item_id
+                WHERE fi.user_id = :user_id AND cwl.status = 'wasted'
+                GROUP BY COALESCE(fi.category, 'Other')
+                ORDER BY cnt DESC
+                """
+            ),
+            {"user_id": str(user.user_id)},
+        )
+    ).all()
+
+    # waste_reason is NOT NULL whenever status = 'wasted' (enforced by
+    # ConsumptionWasteLogCreate's validator at write time), so no COALESCE
+    # needed here the way there is for category above.
+    reason_rows = (
+        await db.execute(
+            text(
+                """
+                SELECT cwl.waste_reason AS label, COUNT(*) AS cnt
+                FROM consumption_waste_log cwl
+                JOIN food_item fi ON fi.item_id = cwl.item_id
+                WHERE fi.user_id = :user_id AND cwl.status = 'wasted'
+                GROUP BY cwl.waste_reason
+                ORDER BY cnt DESC
+                """
+            ),
+            {"user_id": str(user.user_id)},
+        )
+    ).all()
+
+    total_events = sum(int(r.cnt) for r in category_rows)
+
+    # Case-insensitive dedupe ("Milk" and "milk" are the same item) via
+    # LOWER(TRIM(...)) as the grouping key. MIN(fi.name) picks a stable
+    # display casing (alphabetically first of whatever's been logged) rather
+    # than showing the raw grouping key.
+    top_item_row = (
+        await db.execute(
+            text(
+                """
+                SELECT MIN(fi.name) AS display_name, COUNT(*) AS cnt
+                FROM consumption_waste_log cwl
+                JOIN food_item fi ON fi.item_id = cwl.item_id
+                WHERE fi.user_id = :user_id AND cwl.status = 'wasted'
+                GROUP BY LOWER(TRIM(fi.name))
+                HAVING COUNT(*) >= 2
+                ORDER BY cnt DESC, display_name ASC
+                LIMIT 1
+                """
+            ),
+            {"user_id": str(user.user_id)},
+        )
+    ).first()
+
+    return WastePatternsOut(
+        total_waste_events=total_events,
+        top_waste_categories=_top5_plus_other([(r.label, int(r.cnt)) for r in category_rows]),
+        top_waste_reasons=_top5_plus_other([(r.label, int(r.cnt)) for r in reason_rows]),
+        most_wasted_item=(
+            WastePatternItem(name=top_item_row.display_name, times_wasted=int(top_item_row.cnt))
+            if top_item_row
+            else None
+        ),
     )
