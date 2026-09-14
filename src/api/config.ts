@@ -28,7 +28,7 @@ const LAN_IP = '100.108.18.20'; // only used if no EXPO_PUBLIC_API_BASE_URL is s
 // Expo Go via `expo start` -- where __DEV__ is true -- and failed everywhere
 // else. One value for both modes removes that whole class of bug.
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://freshwise-api-production.up.railway.app';
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://freshwise-api-iteration-2.up.railway.app';
 
 // Shared key for the hosted API; must match API_KEY in the server's environment.
 // Empty is fine against a local backend that has no API_KEY set.

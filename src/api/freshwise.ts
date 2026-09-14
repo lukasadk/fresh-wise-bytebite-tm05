@@ -15,6 +15,7 @@ import type {
   RecipeRecommendation,
   UserProfile,
   WasteReason,
+  WastePatternsOut,
   WeeklyWasteRow,
 } from './types';
 
@@ -180,6 +181,11 @@ export const getDashboardSummary = (days = 30) =>
 
 export const getWeeklyWaste = (weeks = 12) =>
   request<WeeklyWasteRow[]>(`/v1/dashboard/weekly-waste?weeks=${weeks}`);
+
+/** Patterns tab (ActivityScreen): top waste categories/reasons and the single
+ *  repeatedly-wasted item, computed over the household's entire waste history
+ *  (no time-window query params -- unlike summary/weekly-waste above). */
+export const getWastePatterns = () => request<WastePatternsOut>('/v1/dashboard/waste-patterns');
 
 // --- Recipes ---------------------------------------------------------------
 

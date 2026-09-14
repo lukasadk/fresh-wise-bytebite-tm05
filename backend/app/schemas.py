@@ -196,6 +196,37 @@ class DashboardSummary(BaseModel):
     top_waste_reasons: list[dict]  # [{"waste_reason": "...", "count": n, "quantity": n}]
 
 
+class WastePatternBucket(BaseModel):
+    """One bar in the Patterns tab -- either a food category (free text, e.g.
+    'Vegetables') or a waste_reason value. Top-5 by count + a rolled-up
+    'Other' bucket for everything past the 5th, in that order."""
+
+    label: str
+    count: int
+
+
+class WastePatternItem(BaseModel):
+    """The single food item wasted more often than any other, matched
+    case-insensitively ("Milk" and "milk" are the same item). Only ever
+    populated when the repeat count is >= 2 -- a single occurrence isn't a
+    pattern worth flagging."""
+
+    name: str
+    times_wasted: int
+
+
+class WastePatternsOut(BaseModel):
+    """GET /v1/dashboard/waste-patterns. Computed over the household's ENTIRE
+    waste history (no time window) -- "what's wasted most often, based on
+    your entries so far", not a rolling period like /summary and
+    /weekly-waste above."""
+
+    total_waste_events: int
+    top_waste_categories: list[WastePatternBucket]
+    top_waste_reasons: list[WastePatternBucket]
+    most_wasted_item: WastePatternItem | None
+
+
 # --- Diet preferences -------------------------------------------------------
 
 

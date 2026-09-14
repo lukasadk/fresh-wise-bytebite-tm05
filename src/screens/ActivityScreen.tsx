@@ -14,8 +14,13 @@
  * reflect every recordOutcome() call made from MarkConsumedScreen and
  * MarkWastedScreen (WasteRecordedScreen is just the confirmation screen for
  * the latter — the log write already happened by the time it's shown).
- * Patterns, Trends and Report still run on dummy data (see MOCK_PATTERNS /
- * MOCK_TRENDS / MOCK_REPORT) until their backend endpoints exist.
+ * Patterns is also LIVE: it reads GET /v1/dashboard/waste-patterns (see
+ * usePatterns() below) for the category/reason bar charts and the single
+ * repeatedly-wasted item, computed over the household's entire waste
+ * history. Its "View better alternatives" CTA still opens a dummy
+ * alternatives view (MOCK_ALTERNATIVES) -- there's no supporting data for
+ * that yet. Trends and Report still run on dummy data (see MOCK_TRENDS /
+ * MOCK_REPORT) until their backend endpoints exist.
  *
  * NOTE: The donut chart (Overview) is drawn with plain View components, not
  * react-native-svg, so it keeps working in Expo Go without a native rebuild.
@@ -30,9 +35,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
-import { getDashboardSummary, getWeeklyWaste } from '../api/freshwise';
+import { getDashboardSummary, getWeeklyWaste, getWastePatterns } from '../api/freshwise';
 import { ApiError } from '../api/client';
-import type { DashboardSummary, WeeklyWasteRow, WasteReason } from '../api/types';
+import type { DashboardSummary, WeeklyWasteRow, WasteReason, WastePatternsOut } from '../api/types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1666,39 +1671,85 @@ const overviewStateStyles = StyleSheet.create({
 });
 
 // ---------------------------------------------------------------------------
-// Mock data — Patterns, Trends and Report tabs (replace with live API calls
-// once their backend endpoints exist). Overview is live — see
-// useWeekSummary() further down.
+// Mock data — Alternatives, Trends and Report (replace with live API calls
+// once their backend endpoints exist). Overview and Patterns are live — see
+// useWeekSummary() / usePatterns() further down.
 // ---------------------------------------------------------------------------
 
-// Patterns tab — dummy data until backend wiring lands.
-// TODO: Replace with a live call, e.g. getWastePatterns(30) returning
-// { categories, reasons, insight } shaped like PatternsData above.
-const MOCK_PATTERNS: PatternsData = {
-  categories: [
-    { label: 'Dairy', count: 18 },
-    { label: 'Fruit', count: 14 },
-    { label: 'Vegetables', count: 10 },
-    { label: 'Bakery', count: 7 },
-    { label: 'Protein', count: 5 },
-    { label: 'Other', count: 4 },
-  ],
-  reasons: [
-    { label: 'Expired', count: 16 },
-    { label: 'Over-purchased', count: 12 },
-    { label: 'Forgotten', count: 9 },
-    { label: 'Spoiled', count: 6 },
-    { label: 'Cooked too much', count: 4 },
-    { label: 'Other', count: 3 },
-  ],
-  insight: {
-    eyebrow: 'DAIRY INSIGHT',
-    title: 'Milk is repeatedly wasted',
-    body:
-      'Wasted 4× in the last 30 days · usually before the carton is finished.',
-    ctaLabel: 'View better alternatives',
-  },
+// Patterns tab — LIVE, see usePatterns() further down. Backend endpoint:
+// GET /v1/dashboard/waste-patterns (routers/dashboard.py::waste_patterns).
+
+// The backend reports waste_reason as its raw enum value (or the literal
+// string "Other" for the rolled-up bucket). This is the display-label
+// mapping for the Patterns/Report bar rows — mirrors WASTE_REASON_BY_LABEL
+// in api/freshwise.ts but in the opposite direction and worded for a short
+// bar-chart row rather than a form option.
+const WASTE_REASON_ROW_LABEL: Record<WasteReason, string> = {
+  expired: 'Expired',
+  bought_too_much: 'Over-purchased',
+  forgot_about_it: 'Forgotten',
+  spoiled: 'Spoiled',
+  cooked_too_much: 'Cooked too much',
+  didnt_like_taste: "Didn't like taste",
+  changed_plans: 'Changed plans',
+  other: 'Other',
 };
+
+function reasonRowLabel(label: string): string {
+  return WASTE_REASON_ROW_LABEL[label as WasteReason] ?? label;
+}
+
+/** Maps the raw API response to the shapes FrequencyCard/WasteInsightCard
+ *  already expect. No category eyebrow (e.g. "DAIRY INSIGHT") is invented —
+ *  the backend's most_wasted_item only carries a name + repeat count, not a
+ *  category, so the insight copy stays generic rather than guessing one. */
+function buildPatternsData(raw: WastePatternsOut): PatternsData {
+  return {
+    categories: raw.top_waste_categories.map((b) => ({ label: b.label, count: b.count })),
+    reasons: raw.top_waste_reasons.map((b) => ({ label: reasonRowLabel(b.label), count: b.count })),
+    insight: raw.most_wasted_item
+      ? {
+          eyebrow: 'REPEAT WASTE',
+          title: `${raw.most_wasted_item.name} is repeatedly wasted`,
+          body: `Wasted ${raw.most_wasted_item.times_wasted}× so far, based on your recorded entries.`,
+          ctaLabel: 'View better alternatives',
+        }
+      : null,
+  };
+}
+
+type PatternsState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; data: PatternsData; totalEvents: number };
+
+/** Same refetch-on-focus shape as useWeekSummary() below, so returning here
+ *  after MarkWastedScreen always reflects the latest entry. No day-range
+ *  param — the Patterns tab is deliberately "entire history", not rolling. */
+function usePatterns() {
+  const [state, setState] = useState<PatternsState>({ status: 'loading' });
+
+  const load = useCallback(async () => {
+    setState({ status: 'loading' });
+    try {
+      const raw = await getWastePatterns();
+      setState({ status: 'ready', data: buildPatternsData(raw), totalEvents: raw.total_waste_events });
+    } catch (e) {
+      setState({
+        status: 'error',
+        message: e instanceof ApiError ? e.message : 'Could not load waste patterns.',
+      });
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  return { state, retry: load };
+}
 
 // Alternatives view — dummy data until backend wiring lands.
 // TODO: Replace with a live call, e.g. getWasteAlternatives('dairy') returning
@@ -1916,6 +1967,9 @@ export default function ActivityScreen() {
   // Overview tab — live, see useWeekSummary() above.
   const { state: overviewState, retry: retryOverview } = useWeekSummary();
 
+  // Patterns tab — live, see usePatterns() above.
+  const { state: patternsState, retry: retryPatterns } = usePatterns();
+
   const subtitleByTab: Record<InsightsTab, string> = {
     Overview:
       overviewState.status === 'ready' && overviewState.data.state === 'data'
@@ -2011,25 +2065,46 @@ export default function ActivityScreen() {
             {/* Patterns */}
             {activeTab === 'Patterns' && (
               <>
-                <FrequencyCard
-                  title="Frequently wasted categories"
-                  subtitle="Top 5 + Other · sorted by frequency"
-                  data={MOCK_PATTERNS.categories}
-                  barColor={colors.statusToday}
-                  otherColor={colors.sourceManual}
-                />
-                <FrequencyCard
-                  title="Common waste reasons"
-                  subtitle="Top 5 + Other · sorted by frequency"
-                  data={MOCK_PATTERNS.reasons}
-                  barColor={colors.statusSoon}
-                  otherColor={colors.sourceManual}
-                />
-                {MOCK_PATTERNS.insight && (
-                  <WasteInsightCard
-                    insight={MOCK_PATTERNS.insight}
-                    onPressCta={() => setShowAlternatives(true)}
-                  />
+                {patternsState.status === 'loading' && <OverviewLoading />}
+
+                {patternsState.status === 'error' && (
+                  <OverviewError message={patternsState.message} onRetry={retryPatterns} />
+                )}
+
+                {patternsState.status === 'ready' && patternsState.totalEvents === 0 && (
+                  <View style={styles.illustrationCard}>
+                    <View style={styles.illustrationCircle} />
+                    <Text style={styles.illustrationTitle}>No waste recorded yet</Text>
+                    <Text style={styles.illustrationBody}>
+                      Mark items as wasted from the pantry to start seeing your
+                      household's categories, reasons, and repeat offenders here.
+                    </Text>
+                  </View>
+                )}
+
+                {patternsState.status === 'ready' && patternsState.totalEvents > 0 && (
+                  <>
+                    <FrequencyCard
+                      title="Frequently wasted categories"
+                      subtitle="Top 5 + Other · sorted by frequency"
+                      data={patternsState.data.categories}
+                      barColor={colors.statusToday}
+                      otherColor={colors.sourceManual}
+                    />
+                    <FrequencyCard
+                      title="Common waste reasons"
+                      subtitle="Top 5 + Other · sorted by frequency"
+                      data={patternsState.data.reasons}
+                      barColor={colors.statusSoon}
+                      otherColor={colors.sourceManual}
+                    />
+                    {patternsState.data.insight && (
+                      <WasteInsightCard
+                        insight={patternsState.data.insight}
+                        onPressCta={() => setShowAlternatives(true)}
+                      />
+                    )}
+                  </>
                 )}
               </>
             )}
