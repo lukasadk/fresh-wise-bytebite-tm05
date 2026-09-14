@@ -149,6 +149,9 @@ type ReportData = {
   consumedKg: number;
   wastedKg: number;
   previousMonthWastedKg: number;
+  /** First word of the previous month's label (e.g. "July" from "July 2026") —
+   *  used in the headline banner's "than July" / "more than July" copy. */
+  previousMonthLabel: string;
   categories: FrequencyDatum[];    // genuinely month-scoped — see GET /v1/dashboard/monthly-report
   reasons: FrequencyDatum[];
 };
@@ -1510,49 +1513,130 @@ const trendsHeadingStyles = StyleSheet.create({
 // REPORT TAB components
 // ---------------------------------------------------------------------------
 
+function MonthNavigator({
+  label,
+  onPrev,
+  onNext,
+  canGoNext,
+  disabled,
+}: {
+  label: string;
+  onPrev: () => void;
+  onNext: () => void;
+  canGoNext: boolean;
+  disabled: boolean;
+}) {
+  return (
+    <View style={monthNavStyles.card}>
+      <Pressable
+        onPress={disabled ? undefined : onPrev}
+        hitSlop={10}
+        style={monthNavStyles.arrowButton}
+      >
+        <Text style={[monthNavStyles.arrow, disabled && monthNavStyles.arrowDisabled]}>‹</Text>
+      </Pressable>
+      <Text style={monthNavStyles.label}>{label}</Text>
+      <Pressable
+        onPress={disabled || !canGoNext ? undefined : onNext}
+        hitSlop={10}
+        style={monthNavStyles.arrowButton}
+      >
+        <Text
+          style={[
+            monthNavStyles.arrow,
+            (disabled || !canGoNext) && monthNavStyles.arrowDisabled,
+          ]}
+        >
+          ›
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const monthNavStyles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+  },
+  arrowButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  arrow: {
+    fontFamily: fonts.bold,
+    fontSize: 22,
+    color: colors.textPrimary,
+    lineHeight: 24,
+  },
+  arrowDisabled: {
+    color: colors.border,
+  },
+  label: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: fonts.bold,
+    fontSize: fontSize.title,
+    color: colors.textPrimary,
+  },
+});
+
 function ReportHeadline({ data }: { data: ReportData }) {
   if (data.deltaPct === null) {
     return (
-      <View style={reportHeadlineStyles.wrap}>
+      <View style={reportHeadlineStyles.card}>
         <Text style={[reportHeadlineStyles.title, { color: colors.textPrimary }]}>
           {data.wastedKg.toFixed(1)} kg wasted in {data.monthLabel}
         </Text>
-        <Text style={reportHeadlineStyles.subtitle}>
-          You utilised {Math.round(data.utilisationPct)}% of purchased food
-          — not enough history yet to compare against the month before.
+        <Text style={[reportHeadlineStyles.subtitle, { color: colors.textSecondary }]}>
+          Not enough history yet to compare against the month before.
         </Text>
       </View>
     );
   }
   const isLess = data.deltaPct <= 0;
   const pct = Math.abs(Math.round(data.deltaPct));
+  const accentColor = isLess ? colors.primary : colors.statusToday;
   return (
-    <View style={reportHeadlineStyles.wrap}>
-      <Text
-        style={[
-          reportHeadlineStyles.title,
-          { color: isLess ? colors.statusFresh : colors.statusToday },
-        ]}
-      >
+    <View style={reportHeadlineStyles.card}>
+      <Text style={[reportHeadlineStyles.title, { color: accentColor }]}>
         {pct}% {isLess ? 'less' : 'more'} waste than last month
       </Text>
-      <Text style={reportHeadlineStyles.subtitle}>
-        You utilised {Math.round(data.utilisationPct)}% of purchased food.
+      <Text
+        style={[
+          reportHeadlineStyles.subtitle,
+          { color: isLess ? colors.textSecondary : accentColor },
+        ]}
+      >
+        {isLess
+          ? `than ${data.previousMonthLabel}`
+          : `You wasted ${pct}% more than ${data.previousMonthLabel}.`}
       </Text>
     </View>
   );
 }
 
 const reportHeadlineStyles = StyleSheet.create({
-  wrap: { gap: 3 },
+  card: {
+    backgroundColor: colors.primaryTint,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    gap: 3,
+  },
   title: {
     fontFamily: fonts.bold,
     fontSize: 22,
   },
   subtitle: {
-    fontFamily: fonts.regular,
+    fontFamily: fonts.semibold,
     fontSize: fontSize.md,
-    color: colors.textSecondary,
   },
 });
 
@@ -2215,6 +2299,7 @@ function buildReportData(raw: MonthlyReportOut): ReportData {
     consumedKg: cur.consumed_quantity,
     wastedKg: cur.wasted_quantity,
     previousMonthWastedKg: prev.wasted_quantity,
+    previousMonthLabel: prev.label.split(' ')[0] || prev.label,
     categories: cur.top_waste_categories.map((b) => ({ label: b.label, count: b.count })),
     reasons: cur.top_waste_reasons.map((b) => ({ label: reasonRowLabel(b.label), count: b.count })),
   };
@@ -2229,15 +2314,23 @@ type ReportState =
 /** Same focus-refetch pattern as useWeekSummary()/usePatterns() -- returning
  *  here after Mark Consumed / Mark Wasted always reflects the latest entry,
  *  and crossing a month boundary while the app is open picks up the new
- *  "most recent month" on next focus. */
-function useReport() {
+ *  "most recent month" on next focus.
+ *
+ *  monthOffset (0 = the household's most recently logged month, 1 = the one
+ *  before that, etc.) drives the ‹/› MonthNavigator. Unlike a focus change,
+ *  paging months happens WHILE the tab is already focused, so a plain effect
+ *  keyed on monthOffset covers that case; useFocusEffect still handles
+ *  "came back from another screen with new data" on top of it. Both can fire
+ *  once each on first mount -- an extra GET on load is a small price for not
+ *  needing a coordination flag between the two triggers. */
+function useReport(monthOffset: number) {
   const [state, setState] = useState<ReportState>({ status: 'loading' });
 
   const load = useCallback(async () => {
     setState({ status: 'loading' });
     try {
       const tz = getDeviceTimeZone();
-      const raw = await getMonthlyReport(tz);
+      const raw = await getMonthlyReport(tz, monthOffset);
       const hasCurrentData = raw.current.wasted_events + raw.current.consumed_events > 0;
       setState(
         hasCurrentData
@@ -2250,13 +2343,20 @@ function useReport() {
         message: e instanceof ApiError ? e.message : 'Could not load the monthly report.',
       });
     }
-  }, []);
+  }, [monthOffset]);
 
   useFocusEffect(
     useCallback(() => {
       load();
     }, [load]),
   );
+
+  // Handles paging with the MonthNavigator arrows -- see docstring above for
+  // why this is needed alongside useFocusEffect rather than instead of it.
+  React.useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthOffset]);
 
   return { state, retry: load };
 }
@@ -2394,8 +2494,11 @@ export default function ActivityScreen() {
   // Trends tab — live, see useTrends() above.
   const { state: trendsState, retry: retryTrends } = useTrends();
 
+  // Report tab — which month is being viewed (0 = most recently logged).
+  const [monthOffset, setMonthOffset] = useState(0);
+
   // Report tab — live, see useReport() above.
-  const { state: reportState, retry: retryReport } = useReport();
+  const { state: reportState, retry: retryReport } = useReport(monthOffset);
 
   const reportMonthLabel =
     reportState.status === 'ready'
@@ -2438,6 +2541,7 @@ export default function ActivityScreen() {
             setShowAlternatives(false);
             resetAlternatives();
             setSelectedAlternativeId(null);
+            setMonthOffset(0);
             setActiveTab(tab);
           }}
         />
@@ -2611,6 +2715,14 @@ export default function ActivityScreen() {
             {/* Report */}
             {activeTab === 'Report' && (
               <>
+                <MonthNavigator
+                  label={reportMonthLabel ?? '···'}
+                  onPrev={() => setMonthOffset((o) => o + 1)}
+                  onNext={() => setMonthOffset((o) => Math.max(0, o - 1))}
+                  canGoNext={monthOffset > 0}
+                  disabled={reportState.status === 'loading'}
+                />
+
                 {reportState.status === 'loading' && <OverviewLoading />}
 
                 {reportState.status === 'error' && (
@@ -2633,7 +2745,7 @@ export default function ActivityScreen() {
                   <>
                     <ReportHeadline data={reportState.data} />
                     <ReportTotalsCard data={reportState.data} />
-                    <ReportSectionTitle>Key findings</ReportSectionTitle>
+                    <ReportSectionTitle>Top wasted categories</ReportSectionTitle>
                     <KeyFindingsCard
                       categories={reportState.data.categories}
                       reasons={reportState.data.reasons}

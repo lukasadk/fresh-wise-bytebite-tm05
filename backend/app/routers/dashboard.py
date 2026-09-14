@@ -319,21 +319,34 @@ async def _month_summary(
 @router.get("/monthly-report", response_model=MonthlyReportOut)
 async def monthly_report(
     tz: str = Query(default="UTC", description="IANA timezone, e.g. 'Asia/Kuala_Lumpur'"),
+    months_back: int = Query(
+        default=0,
+        ge=0,
+        le=120,
+        description="0 = the household's most recently logged month (default). "
+        "1 = the month before that, 2 = two months before, etc. Powers the "
+        "Report tab's ‹/› month navigator -- the 'anchor' (what months_back=0 "
+        "means) never moves, so paging backward and then forward always lands "
+        "back on the same starting point rather than drifting with time.",
+    ),
     user: UserProfile = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Report tab: the most recent calendar month the household actually
-    logged a consumed/wasted outcome in via MarkConsumedScreen/
-    MarkWastedScreen (POST /v1/logs), compared against the month before it.
+    """Report tab: a specific calendar month (identified by months_back,
+    counting backward from the household's most recently logged month),
+    compared against the month immediately before it.
 
-    "Current" is deliberately NOT always "today's calendar month" -- it's
-    whichever month contains the household's MOST RECENT log entry. A
+    "months_back=0" is deliberately NOT always "today's calendar month" --
+    it's whichever month contains the household's MOST RECENT log entry. A
     household that last logged something in August and hasn't opened the app
-    yet in September should see its August report on September 1st, not an
-    empty one just because the calendar rolled over. If the household has
-    never logged anything at all, there's no data to anchor to, so "current"
-    falls back to today's month (all zeros -- the Report tab's empty state is
-    a client-side concern from there).
+    yet in September should see its August report as "months_back=0" on
+    September 1st, not an empty one just because the calendar rolled over.
+    Paging further back with months_back=1, 2, ... always counts from that
+    same anchor month, not from "today" -- so the anchor doesn't shift under
+    the user's feet while they're browsing older months in one sitting. If
+    the household has never logged anything at all, there's no data to
+    anchor to, so the anchor falls back to today's month (all zeros -- the
+    Report tab's empty state is a client-side concern from there).
 
     Both months' boundaries are computed in the CALLER's own timezone (see
     _validate_tz/_month_summary) rather than the server's, for the same
@@ -361,7 +374,15 @@ async def monthly_report(
     anchor_utc = latest.latest_logged_at if latest and latest.latest_logged_at else datetime.now(timezone.utc)
     anchor_local = anchor_utc.astimezone(zone)
 
-    current_start = datetime(anchor_local.year, anchor_local.month, 1, tzinfo=zone)
+    # Shift the anchor's month backward by months_back using integer
+    # arithmetic on a 0-indexed "months since year 0" count, rather than
+    # looping months_back times with the 32-day jump-then-truncate trick --
+    # months_back can be up to 120, and this is exact either way, just
+    # clearer at the call site.
+    total_months = anchor_local.year * 12 + (anchor_local.month - 1) - months_back
+    target_year, target_month0 = divmod(total_months, 12)
+    current_start = datetime(target_year, target_month0 + 1, 1, tzinfo=zone)
+
     # First of the month AFTER current -- a 32-day jump-then-truncate rather
     # than an if/else on month == 12, since it's the same operation either way.
     next_start = (current_start + timedelta(days=32)).replace(day=1)
