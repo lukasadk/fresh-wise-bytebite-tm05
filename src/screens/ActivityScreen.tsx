@@ -35,7 +35,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
-import { getDashboardSummary, getWeeklyWaste, getWastePatterns } from '../api/freshwise';
+import { getDashboardSummary, getWeeklyWaste, getWastePatterns, getAlternativesFromFoodkeeper } from '../api/freshwise';
+import type { FoodkeeperAlternative } from '../api/freshwise';
 import { ApiError } from '../api/client';
 import type { DashboardSummary, WeeklyWasteRow, WasteReason, WastePatternsOut } from '../api/types';
 
@@ -67,10 +68,15 @@ type FrequencyDatum = {
 };
 
 type WasteInsight = {
-  eyebrow: string;    // e.g. "DAIRY INSIGHT"
-  title: string;      // e.g. "Milk is repeatedly wasted"
+  eyebrow: string;
+  title: string;
   body: string;
-  ctaLabel: string;   // e.g. "View better alternatives"
+  ctaLabel: string;
+  /** The canonical_food_name of the most-wasted item, passed to
+   *  getAlternativesFromFoodkeeper() when the CTA is tapped. Null when the
+   *  backend's most_wasted_item doesn't carry one (shouldn't happen but
+   *  guards against a schema change). */
+  canonicalFoodName: string | null;
 };
 
 type PatternsData = {
@@ -81,19 +87,17 @@ type PatternsData = {
 
 // -- Alternatives view (reached from the Patterns waste-insight CTA) -------
 
-type AlternativeOption = {
-  id: string;
-  title: string;      // e.g. "UHT Milk"
-  meta: string;        // e.g. "Shelf-stable unopened · 6–9 months"
-  why: string;         // e.g. "Longer shelf life"
-  bestMatch?: boolean;
-};
+// AlternativeOption is now FoodkeeperAlternative from freshwise.ts —
+// the same type is re-exported here as a local alias so component props
+// stay readable without importing from two places.
+type AlternativeOption = FoodkeeperAlternative;
 
 type AlternativesData = {
-  category: string;         // e.g. "Dairy" — used in the screen title
-  insightTitle: string;
+  /** Display name of the most-wasted item (e.g. "Milk"), used in the heading. */
+  itemName: string;
+  /** canonical_food_name, passed to getAlternativesFromFoodkeeper(). */
+  canonicalFoodName: string;
   insightBody: string;
-  attribution: string;      // e.g. "Based on your recorded dairy consumption and waste history."
   options: AlternativeOption[];
 };
 
@@ -1713,6 +1717,14 @@ function buildPatternsData(raw: WastePatternsOut): PatternsData {
           title: `${raw.most_wasted_item.name} is repeatedly wasted`,
           body: `Wasted ${raw.most_wasted_item.times_wasted}× so far, based on your recorded entries.`,
           ctaLabel: 'View better alternatives',
+          // canonical_food_name is the lookup key for FoodKeeper storage data.
+          // The backend's most_wasted_item carries the raw item name as stored
+          // in food_item.name -- which may differ from the canonical form the
+          // FoodKeeper reference uses ("Milk" vs "milk", "Whole Milk" vs "milk").
+          // Convert to lowercase and trim as a best-effort normalisation;
+          // lookupStorage does a ILIKE match server-side so minor differences
+          // in spacing or capitalisation are tolerated.
+          canonicalFoodName: raw.most_wasted_item.name.toLowerCase().trim(),
         }
       : null,
   };
@@ -1751,39 +1763,54 @@ function usePatterns() {
   return { state, retry: load };
 }
 
-// Alternatives view — dummy data until backend wiring lands.
-// TODO: Replace with a live call, e.g. getWasteAlternatives('dairy') returning
-// AlternativesData shaped like MOCK_ALTERNATIVES below. Keyed by category so
-// tapping a different insight card's CTA (once more exist) can swap this in.
-const MOCK_ALTERNATIVES: AlternativesData = {
-  category: 'Dairy',
-  insightTitle: 'Milk is repeatedly wasted',
-  insightBody:
-    'Wasted 4× in the last 30 days · usually before the carton is finished.',
-  attribution: 'Based on your recorded dairy consumption and waste history.',
-  options: [
-    {
-      id: 'uht-milk',
-      title: 'UHT Milk',
-      meta: 'Shelf-stable unopened · 6–9 months',
-      why: 'Longer shelf life',
-      bestMatch: true,
-    },
-    {
-      id: 'powdered-milk',
-      title: 'Powdered Milk',
-      meta: 'Room temperature · Up to 12 months',
-      why: 'Better for occasional use',
-    },
-    {
-      id: 'frozen-milk',
-      title: 'Frozen Milk Portions',
-      meta: 'Frozen storage · Up to 3 months',
-      why: 'Use only what you need',
-    },
-  ],
-};
+// ---------------------------------------------------------------------------
+// Alternatives live hook
+// ---------------------------------------------------------------------------
+//
+// Fires lazily when the user taps "View better alternatives" on the Patterns
+// insight card. Uses FoodKeeper reference data (the same dataset that powers
+// storage guidance in FoodDetailScreen) to build storage-method alternatives
+// sorted by shelf life -- no dedicated backend endpoint needed.
 
+type AlternativesState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'empty'; itemName: string }          // no FoodKeeper match for this item
+  | { status: 'ready'; data: AlternativesData };   // alternatives populated
+
+function useAlternatives() {
+  const [state, setState] = useState<AlternativesState>({ status: 'idle' });
+
+  const load = useCallback(async (itemName: string, canonicalFoodName: string) => {
+    setState({ status: 'loading' });
+    try {
+      const options = await getAlternativesFromFoodkeeper(canonicalFoodName);
+      if (!options.length) {
+        setState({ status: 'empty', itemName });
+        return;
+      }
+      setState({
+        status: 'ready',
+        data: {
+          itemName,
+          canonicalFoodName,
+          insightBody: `Different ways to store ${itemName} to extend shelf life and reduce waste.`,
+          options,
+        },
+      });
+    } catch (e) {
+      setState({
+        status: 'error',
+        message: e instanceof ApiError ? e.message : 'Could not load storage alternatives.',
+      });
+    }
+  }, []);
+
+  const reset = useCallback(() => setState({ status: 'idle' }), []);
+
+  return { state, load, reset };
+}
 // Trends tab — dummy data until backend wiring lands.
 // TODO: Replace with a live call, e.g. getWasteTrends('weekly' | 'monthly')
 // returning a TrendsSeries shaped like the entries below.
@@ -1950,16 +1977,12 @@ export default function ActivityScreen() {
   const navigation = useNavigation<any>();
   const [activeTab, setActiveTab] = useState<InsightsTab>('Overview');
 
-  // "View better alternatives" from a Patterns insight card swaps the tab body
-  // for the alternatives flow below, while keeping the Insights header/tabs in
-  // place (matches the Figma — this isn't a separate stack screen). Tapping any
-  // tab pill while this is open backs out of it first (see TabBar onPress below).
+  // Alternatives view (Patterns → "View better alternatives").
+  // showAlternatives gates the whole view; alternativesState drives what
+  // renders inside it. Reset when navigating away via a tab tap.
   const [showAlternatives, setShowAlternatives] = useState(false);
-  const [selectedAlternativeId, setSelectedAlternativeId] = useState<string | null>(
-    MOCK_ALTERNATIVES.options.find((o) => o.bestMatch)?.id ??
-      MOCK_ALTERNATIVES.options[0]?.id ??
-      null
-  );
+  const { state: alternativesState, load: loadAlternatives, reset: resetAlternatives } = useAlternatives();
+  const [selectedAlternativeId, setSelectedAlternativeId] = useState<string | null>(null);
 
   // Trends tab — Weekly/Monthly sub-toggle, independent of the top-level tab bar.
   const [trendsPeriod, setTrendsPeriod] = useState<TrendsPeriod>('Weekly');
@@ -1980,7 +2003,9 @@ export default function ActivityScreen() {
     Report: `Your completed summary for ${MOCK_REPORT.monthLabel}.`,
   };
   const subtitle = showAlternatives
-    ? 'Alternatives based on your waste history.'
+    ? alternativesState.status === 'ready'
+      ? `Storage options for ${alternativesState.data.itemName} · ranked by shelf life.`
+      : 'Alternatives based on your waste history.'
     : subtitleByTab[activeTab];
 
   return (
@@ -1997,9 +2022,9 @@ export default function ActivityScreen() {
         <TabBar
           active={activeTab}
           onPress={(tab) => {
-            // Leaving the alternatives view first means a tab tap always lands
-            // on that tab's normal content, never on a stale alternatives body.
             setShowAlternatives(false);
+            resetAlternatives();
+            setSelectedAlternativeId(null);
             setActiveTab(tab);
           }}
         />
@@ -2101,7 +2126,13 @@ export default function ActivityScreen() {
                     {patternsState.data.insight && (
                       <WasteInsightCard
                         insight={patternsState.data.insight}
-                        onPressCta={() => setShowAlternatives(true)}
+                        onPressCta={() => {
+                          const { insight } = patternsState.data;
+                          if (!insight?.canonicalFoodName) return;
+                          setShowAlternatives(true);
+                          setSelectedAlternativeId(null);
+                          loadAlternatives(insight.title.split(' is ')[0], insight.canonicalFoodName);
+                        }}
                       />
                     )}
                   </>
@@ -2159,22 +2190,84 @@ export default function ActivityScreen() {
         {/* Alternatives (from Patterns → "View better alternatives") */}
         {showAlternatives && (
           <>
-            <InsightSummaryCard
-              title={MOCK_ALTERNATIVES.insightTitle}
-              body={MOCK_ALTERNATIVES.insightBody}
-              attribution={MOCK_ALTERNATIVES.attribution}
-            />
-            <AlternativesList
-              data={MOCK_ALTERNATIVES}
-              selectedId={selectedAlternativeId}
-              onSelect={setSelectedAlternativeId}
-            />
-            <AlternativesFooter
-              disabled={!selectedAlternativeId}
-              // TODO: wire up once there's a real endpoint to apply the swap.
-              onUse={() => setShowAlternatives(false)}
-              onNotNow={() => setShowAlternatives(false)}
-            />
+            {/* Loading */}
+            {alternativesState.status === 'loading' && <OverviewLoading />}
+
+            {/* Error */}
+            {alternativesState.status === 'error' && (
+              <OverviewError
+                message={alternativesState.message}
+                onRetry={() => {
+                  // Retry needs the item name + canonical name -- read them
+                  // back from the patterns insight since that's still live.
+                  if (patternsState.status === 'ready' && patternsState.data.insight?.canonicalFoodName) {
+                    const { insight } = patternsState.data;
+                    loadAlternatives(
+                      insight.title.split(' is ')[0],
+                      insight.canonicalFoodName!,
+                    );
+                  }
+                }}
+              />
+            )}
+
+            {/* No FoodKeeper match */}
+            {alternativesState.status === 'empty' && (
+              <View style={styles.illustrationCard}>
+                <Text style={styles.illustrationTitle}>
+                  No storage alternatives found
+                </Text>
+                <Text style={styles.illustrationBody}>
+                  We don’t have FoodKeeper data for{' '}
+                  <Text style={{ fontFamily: fonts.bold }}>
+                    {alternativesState.itemName}
+                  </Text>{' '}
+                  yet. Try storing it in the fridge or freezer to extend shelf life.
+                </Text>
+                <Button
+                  label="Go back"
+                  variant="secondary"
+                  style={styles.ctaButton}
+                  onPress={() => {
+                    setShowAlternatives(false);
+                    resetAlternatives();
+                  }}
+                />
+              </View>
+            )}
+
+            {/* Live alternatives from FoodKeeper */}
+            {alternativesState.status === 'ready' && (
+              <>
+                <InsightSummaryCard
+                  title={`${alternativesState.data.itemName} is repeatedly wasted`}
+                  body={alternativesState.data.insightBody}
+                  attribution="Based on FoodKeeper storage data · US FDA / USDA (CC0 1.0)"
+                />
+                <AlternativesList
+                  data={alternativesState.data}
+                  selectedId={selectedAlternativeId}
+                  onSelect={(id) => {
+                    setSelectedAlternativeId(id);
+                  }}
+                />
+                <AlternativesFooter
+                  disabled={!selectedAlternativeId}
+                  onUse={() => {
+                    // TODO: wire up once there’s a real endpoint to apply the
+                    // preferred storage method to future add-food flows.
+                    setShowAlternatives(false);
+                    resetAlternatives();
+                    setSelectedAlternativeId(null);
+                  }}
+                  onNotNow={() => {
+                    setShowAlternatives(false);
+                    resetAlternatives();
+                    setSelectedAlternativeId(null);
+                  }}
+                />
+              </>
+            )}
           </>
         )}
       </ScrollView>
