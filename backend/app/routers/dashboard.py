@@ -1,21 +1,46 @@
 """Waste Insights Dashboard -- Epic 2: "what I waste, how much, why, and
-how it changes over time." Reads from the `weekly_waste_summary` VIEW
-defined in erd-schema.sql (raw SQL here since it's a plain read-only view
-with a composite grouping key, not worth mapping as an ORM entity) plus
-a rolled-up summary computed directly off consumption_waste_log.
+how it changes over time." `weekly_waste` reads from the `weekly_waste_summary`
+VIEW defined in erd-schema.sql (raw SQL here since it's a plain read-only view
+with a composite grouping key, not worth mapping as an ORM entity). The rest
+compute directly off consumption_waste_log, since each needs a filter (a
+rolling window; all-time; one specific calendar month) the view doesn't expose.
 """
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.deps import get_current_user
 from app.models import UserProfile
-from app.schemas import DashboardSummary, WastePatternBucket, WastePatternItem, WastePatternsOut, WeeklyWasteRow
+from app.schemas import (
+    DashboardSummary,
+    MonthlyReportMonth,
+    MonthlyReportOut,
+    WastePatternBucket,
+    WastePatternItem,
+    WastePatternsOut,
+    WeeklyWasteRow,
+)
 
 router = APIRouter(prefix="/v1/dashboard", tags=["dashboard"])
+
+
+def _validate_tz(tz: str) -> str:
+    """Rejects anything that isn't a real IANA zone name (e.g. a typo'd
+    'Asia/KualaLumpur' instead of 'Asia/Kuala_Lumpur') with a clear 422
+    instead of letting Postgres fail the query with an opaque error deeper
+    in the stack."""
+    try:
+        ZoneInfo(tz)
+    except (ZoneInfoNotFoundError, ValueError, KeyError):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unknown timezone '{tz}' -- expected an IANA name like 'Asia/Kuala_Lumpur'.",
+        )
+    return tz
 
 
 @router.get("/weekly-waste", response_model=list[WeeklyWasteRow])
@@ -204,3 +229,146 @@ async def waste_patterns(
             else None
         ),
     )
+
+
+async def _month_summary(
+    db: AsyncSession, user_id, start_local: datetime, end_local: datetime
+) -> MonthlyReportMonth:
+    """`start_local`/`end_local` are the [inclusive, exclusive) calendar-month
+    boundaries in the CALLER's own timezone -- converted to UTC instants here,
+    right before querying, since that's the only form Postgres should compare
+    logged_at against."""
+    start_utc = start_local.astimezone(timezone.utc)
+    end_utc = end_local.astimezone(timezone.utc)
+    params = {"user_id": str(user_id), "start": start_utc, "end": end_utc}
+
+    totals = (
+        await db.execute(
+            text(
+                """
+                SELECT cwl.status, COUNT(*) AS events, SUM(cwl.quantity) AS quantity
+                FROM consumption_waste_log cwl
+                JOIN food_item fi ON fi.item_id = cwl.item_id
+                WHERE fi.user_id = :user_id AND cwl.logged_at >= :start AND cwl.logged_at < :end
+                GROUP BY cwl.status
+                """
+            ),
+            params,
+        )
+    ).all()
+
+    wasted_events = consumed_events = 0
+    wasted_qty = consumed_qty = 0.0
+    for row in totals:
+        if row.status == "wasted":
+            wasted_events, wasted_qty = int(row.events), float(row.quantity or 0)
+        elif row.status == "consumed":
+            consumed_events, consumed_qty = int(row.events), float(row.quantity or 0)
+
+    denom = wasted_qty + consumed_qty
+    utilisation_rate = (consumed_qty / denom) if denom > 0 else None
+
+    category_rows = (
+        await db.execute(
+            text(
+                """
+                SELECT COALESCE(fi.category, 'Other') AS label, COUNT(*) AS cnt
+                FROM consumption_waste_log cwl
+                JOIN food_item fi ON fi.item_id = cwl.item_id
+                WHERE fi.user_id = :user_id AND cwl.status = 'wasted'
+                  AND cwl.logged_at >= :start AND cwl.logged_at < :end
+                GROUP BY COALESCE(fi.category, 'Other')
+                ORDER BY cnt DESC
+                """
+            ),
+            params,
+        )
+    ).all()
+
+    reason_rows = (
+        await db.execute(
+            text(
+                """
+                SELECT cwl.waste_reason AS label, COUNT(*) AS cnt
+                FROM consumption_waste_log cwl
+                JOIN food_item fi ON fi.item_id = cwl.item_id
+                WHERE fi.user_id = :user_id AND cwl.status = 'wasted'
+                  AND cwl.logged_at >= :start AND cwl.logged_at < :end
+                GROUP BY cwl.waste_reason
+                ORDER BY cnt DESC
+                """
+            ),
+            params,
+        )
+    ).all()
+
+    return MonthlyReportMonth(
+        year=start_local.year,
+        month=start_local.month,
+        label=start_local.strftime("%B %Y"),
+        wasted_events=wasted_events,
+        wasted_quantity=wasted_qty,
+        consumed_events=consumed_events,
+        consumed_quantity=consumed_qty,
+        utilisation_rate=utilisation_rate,
+        top_waste_categories=_top5_plus_other([(r.label, int(r.cnt)) for r in category_rows]),
+        top_waste_reasons=_top5_plus_other([(r.label, int(r.cnt)) for r in reason_rows]),
+    )
+
+
+@router.get("/monthly-report", response_model=MonthlyReportOut)
+async def monthly_report(
+    tz: str = Query(default="UTC", description="IANA timezone, e.g. 'Asia/Kuala_Lumpur'"),
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Report tab: the most recent calendar month the household actually
+    logged a consumed/wasted outcome in via MarkConsumedScreen/
+    MarkWastedScreen (POST /v1/logs), compared against the month before it.
+
+    "Current" is deliberately NOT always "today's calendar month" -- it's
+    whichever month contains the household's MOST RECENT log entry. A
+    household that last logged something in August and hasn't opened the app
+    yet in September should see its August report on September 1st, not an
+    empty one just because the calendar rolled over. If the household has
+    never logged anything at all, there's no data to anchor to, so "current"
+    falls back to today's month (all zeros -- the Report tab's empty state is
+    a client-side concern from there).
+
+    Both months' boundaries are computed in the CALLER's own timezone (see
+    _validate_tz/_month_summary) rather than the server's, for the same
+    reason weekly_waste's view-bypass exists: a log written at 11pm local
+    time can already be "tomorrow" in UTC, which would put it in the wrong
+    month for a household anywhere east of Greenwich.
+    """
+    _validate_tz(tz)
+    zone = ZoneInfo(tz)
+
+    latest = (
+        await db.execute(
+            text(
+                """
+                SELECT MAX(cwl.logged_at) AS latest_logged_at
+                FROM consumption_waste_log cwl
+                JOIN food_item fi ON fi.item_id = cwl.item_id
+                WHERE fi.user_id = :user_id
+                """
+            ),
+            {"user_id": str(user.user_id)},
+        )
+    ).first()
+
+    anchor_utc = latest.latest_logged_at if latest and latest.latest_logged_at else datetime.now(timezone.utc)
+    anchor_local = anchor_utc.astimezone(zone)
+
+    current_start = datetime(anchor_local.year, anchor_local.month, 1, tzinfo=zone)
+    # First of the month AFTER current -- a 32-day jump-then-truncate rather
+    # than an if/else on month == 12, since it's the same operation either way.
+    next_start = (current_start + timedelta(days=32)).replace(day=1)
+    # First of the month BEFORE current -- same trick, jumping backward from
+    # a day that's always inside the previous month.
+    previous_start = (current_start - timedelta(days=1)).replace(day=1)
+
+    current = await _month_summary(db, user.user_id, current_start, next_start)
+    previous = await _month_summary(db, user.user_id, previous_start, current_start)
+    return MonthlyReportOut(current=current, previous=previous)

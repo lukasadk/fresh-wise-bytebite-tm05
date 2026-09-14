@@ -17,10 +17,25 @@
  * Patterns is also LIVE: it reads GET /v1/dashboard/waste-patterns (see
  * usePatterns() below) for the category/reason bar charts and the single
  * repeatedly-wasted item, computed over the household's entire waste
- * history. Its "View better alternatives" CTA still opens a dummy
- * alternatives view (MOCK_ALTERNATIVES) -- there's no supporting data for
- * that yet. Trends and Report still run on dummy data (see MOCK_TRENDS /
- * MOCK_REPORT) until their backend endpoints exist.
+ * history. Its "View better alternatives" CTA opens a live FoodKeeper-backed
+ * storage-alternatives view (see useAlternatives() below).
+ * Trends is also LIVE: it reads the same GET /v1/dashboard/weekly-waste as
+ * Overview (see useTrends() below) and derives both the Weekly view and a
+ * client-side-aggregated Monthly view from it — there's no monthly-waste
+ * endpoint on the backend. "Goal" has no backend concept either, so the
+ * dashed goal line and "On track"/"Above target" message are computed as the
+ * period's own running average, not a hardcoded number.
+ * Report is also LIVE (see useReport() below): it reports on the most
+ * recently COMPLETED calendar month with real data (matching "Your
+ * completed summary for ..."), read from GET /v1/dashboard/monthly-report --
+ * which itself anchors on the household's MOST RECENT log entry rather than
+ * blindly "today's calendar month", so a household that last logged
+ * something in August still sees its August report in September, not an
+ * empty one. Both this month's and the comparison month's category/reason
+ * breakdowns come back from the SAME call, genuinely month-scoped (unlike an
+ * earlier version of this hook, which had to approximate categories from
+ * usePatterns()' all-time data since /v1/dashboard/summary has no
+ * per-category breakdown at all).
  *
  * NOTE: The donut chart (Overview) is drawn with plain View components, not
  * react-native-svg, so it keeps working in Expo Go without a native rebuild.
@@ -30,15 +45,16 @@
 
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Share, ActivityIndicator } from 'react-native';
-import Svg, { Line, Polyline, Circle } from 'react-native-svg';
+import Svg, { Line, Polyline, Circle, Text as SvgText } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
-import { getDashboardSummary, getWeeklyWaste, getWastePatterns, getAlternativesFromFoodkeeper } from '../api/freshwise';
+import { getDashboardSummary, getWeeklyWaste, getWastePatterns, getAlternativesFromFoodkeeper, getMonthlyReport } from '../api/freshwise';
 import type { FoodkeeperAlternative } from '../api/freshwise';
 import { ApiError } from '../api/client';
-import type { DashboardSummary, WeeklyWasteRow, WasteReason, WastePatternsOut } from '../api/types';
+import { getDeviceTimeZone } from '../data/timezone';
+import type { DashboardSummary, WeeklyWasteRow, WasteReason, WastePatternsOut, MonthlyReportOut } from '../api/types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -107,6 +123,10 @@ type TrendsPeriod = 'Weekly' | 'Monthly';
 
 type TrendsSeries = {
   points: number[];       // waste kg, oldest → newest
+  /** "YYYY-MM-DD" per point, same length as points — weekly rows use the
+   *  ISO week's Monday, monthly rows are padded to the 1st of the month.
+   *  Used by TrendChart to render X-axis date labels. */
+  periodKeys: string[];
   goalKg: number;
   latestKg: number;
   deltaPct: number | null; // negative = improved (less wasted)
@@ -120,13 +140,16 @@ type TrendsData = Record<TrendsPeriod, TrendsSeries>;
 // -- Report tab ---------------------------------------------------------------
 
 type ReportData = {
-  monthLabel: string;              // e.g. "August 2026"
-  deltaPct: number;                // negative = less waste than last month (good)
+  monthLabel: string;              // e.g. "August 2026" — the most recently completed calendar month
+  /** negative = less waste than the month before (good). Null when the
+   *  month before THAT had zero waste logged, making a % change undefined
+   *  rather than a misleading divide-by-zero substitute. */
+  deltaPct: number | null;
   utilisationPct: number;          // 0–100
   consumedKg: number;
   wastedKg: number;
   previousMonthWastedKg: number;
-  categories: FrequencyDatum[];    // reuses the Patterns tab's bar-row shape
+  categories: FrequencyDatum[];    // genuinely month-scoped — see GET /v1/dashboard/monthly-report
   reasons: FrequencyDatum[];
 };
 
@@ -1128,96 +1151,241 @@ const periodToggleStyles = StyleSheet.create({
   },
 });
 
-// SVG line chart -- react-native-svg is already a dependency (unlike the
-// donut chart above, which predates it and deliberately avoided the native
-// module). Draws light grid lines, a dashed goal line with a label, and the
-// waste trend as a rounded polyline with a dot per data point.
+// ---------------------------------------------------------------------------
+// Trend chart label helpers
+// ---------------------------------------------------------------------------
+
+/** Format a "YYYY-MM-DD" (or full ISO datetime) period key into a
+ *  human-readable label.
+ *  Weekly  -> "8 Sep"  (day + abbreviated month)
+ *  Monthly -> "Sep 26" (abbreviated month + short year) */
+function formatPeriodKey(key: string, period: TrendsPeriod): string {
+  // The backend serialises week_start as a full datetime ("2026-09-08T00:00:00+00:00"),
+  // not a plain date -- naively splitting the whole string on '-' corrupts
+  // the day (and can even eat into a '-' timezone offset). Strip everything
+  // from 'T' onward first, so only the "YYYY-MM-DD" date part gets split.
+  const datePart = key.split('T')[0];
+  const [year, month, day] = datePart.split('-').map(Number);
+  // Protect against a malformed key arriving from the API.
+  if (!year || !month || !day) return key;
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mon = MONTHS[(month - 1) % 12];
+  if (period === 'Monthly') {
+    // "Sep 26" — abbreviated month + two-digit year.
+    return `${mon} ${String(year).slice(2)}`;
+  }
+  // Weekly: "8 Sep" — day is the Monday that starts the ISO week.
+  return `${day} ${mon}`;
+}
+
+/** Pick which point indices should get an X-axis label.
+ *  Rules:
+ *   - Always label index 0 (oldest) and index n-1 (newest / "this period").
+ *   - Add up to two evenly-spaced interior indices when n > 4.
+ *   - Never select an index within 1 of an already-selected one to prevent
+ *     adjacent labels colliding on small screens. */
+function pickLabelIndices(n: number): number[] {
+  if (n <= 1) return [0];
+  if (n <= 4) return Array.from({ length: n }, (_, i) => i);
+  // Two interior candidates, evenly spaced.
+  const c1 = Math.round(n / 3);
+  const c2 = Math.round((2 * n) / 3);
+  // Deduplicate and sort, then drop any that are too close to an edge.
+  const raw = [...new Set([0, c1, c2, n - 1])].sort((a, b) => a - b);
+  const kept: number[] = [];
+  for (const idx of raw) {
+    if (kept.length === 0 || idx - kept[kept.length - 1] >= 2) {
+      kept.push(idx);
+    }
+  }
+  return kept;
+}
+
+// SVG line chart — react-native-svg (already a dependency).
+// ALL text (x-axis dates, y-axis kg, goal label) lives inside the SVG
+// viewBox so it scales correctly and can never be clipped by the card's
+// overflow:hidden. React Native <Text> positioned absolutely outside the
+// SVG is unreliable because it doesn't know the card's rendered width;
+// SVG <Text> anchors to the same coordinate space as the data points.
 function TrendChart({
   points,
   goal,
+  periodKeys = [],
+  period = 'Weekly',
 }: {
   points: number[];
   goal: number;
+  /** "YYYY-MM-DD" key per point — same array length as points. When omitted
+   *   (mock data path) no X-axis date labels are rendered. */
+  periodKeys?: string[];
+  period?: TrendsPeriod;
 }) {
-  const width = 320;
-  const height = 160;
-  const padX = 14;
-  const padY = 16;
+  // ---- coordinate system ------------------------------------------------
+  // Total SVG canvas dimensions (viewBox units, not device pixels).
+  const SVG_W = 320;
+  const SVG_H = 220;  // taller than before to fit X-axis label row below the plot
 
+  // Margins around the plot area (inside the canvas).
+  // Left margin is wide enough for a 3-char kg label ("2.5").
+  // Bottom margin reserves space for the X-axis date labels.
+  const LEFT   = 34;
+  const RIGHT  = 14;
+  const TOP    = 14;
+  const BOTTOM = 36;  // label row + a little breathing room
+
+  const PLOT_W = SVG_W - LEFT - RIGHT;
+  const PLOT_H = SVG_H - TOP - BOTTOM;
+
+  // ---- value scale -------------------------------------------------------
   const allValues = [...points, goal];
-  const maxV = Math.max(...allValues) * 1.08;
-  const minV = Math.min(...allValues) * 0.85;
-  const span = Math.max(maxV - minV, 0.0001);
+  const dataMax = Math.max(...allValues);
+  const dataMin = Math.min(...allValues);
+  // Pad the range so the extreme points aren't flush against the axes.
+  const span = Math.max(dataMax - dataMin, 0.1);
+  const maxV  = dataMax + span * 0.12;
+  const minV  = Math.max(0, dataMin - span * 0.12);
+  const valueSpan = Math.max(maxV - minV, 0.0001);
 
-  const scaleX = (i: number) =>
+  const toX = (i: number) =>
     points.length > 1
-      ? padX + (i / (points.length - 1)) * (width - padX * 2)
-      : width / 2;
-  const scaleY = (v: number) =>
-    height - padY - ((v - minV) / span) * (height - padY * 2);
+      ? LEFT + (i / (points.length - 1)) * PLOT_W
+      : LEFT + PLOT_W / 2;
+  const toY = (v: number) =>
+    TOP + PLOT_H - ((v - minV) / valueSpan) * PLOT_H;
 
-  const coords = points.map((v, i) => `${scaleX(i)},${scaleY(v)}`).join(' ');
-  const goalY = scaleY(goal);
-  const gridYs = [0.12, 0.5, 0.88].map((f) => padY + f * (height - padY * 2));
-  const goalLabelX = width * 0.56;
+  // ---- derived geometry --------------------------------------------------
+  const polylinePoints = points.map((v, i) => `${toX(i)},${toY(v)}`).join(' ');
+  const goalY = toY(goal);
+
+  // Three horizontal grid lines at 12%, 50%, 88% of the plot height.
+  const gridYs = [0.12, 0.5, 0.88].map(f => TOP + f * PLOT_H);
+
+  // ---- Y-axis labels (kg values at each grid line) -----------------------
+  // Map each grid Y back to a kg value and format to 1 decimal place.
+  const yLabels = gridYs.map(gy => {
+    const kg = minV + (1 - (gy - TOP) / PLOT_H) * valueSpan;
+    return { y: gy, text: `${kg.toFixed(1)}` };
+  });
+
+  // ---- X-axis labels (dates at selected point indices) -------------------
+  const hasKeys = periodKeys.length === points.length && points.length > 0;
+  const labelIndices = hasKeys ? pickLabelIndices(points.length) : [];
+
+  // Anchor strategy to avoid clipping:
+  //  index 0             → textAnchor "start"  (label extends rightward)
+  //  index n-1           → textAnchor "end"    (label extends leftward)
+  //  everything else     → textAnchor "middle"
+  const xLabels = labelIndices.map(i => ({
+    x: toX(i),
+    text: formatPeriodKey(periodKeys[i], period),
+    anchor: i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle' as 'start' | 'middle' | 'end',
+    // "This week" / "This month" label gets a bolder colour on the last point.
+    color: i === points.length - 1 ? colors.primary : colors.textSecondary,
+    fontFamily: i === points.length - 1 ? fonts.semibold : fonts.regular,
+  }));
+
+  // Goal label: sits just above the dashed line, right-of-centre.
+  // Pinned to x = 60% of the plot width so it never goes past the right edge.
+  const goalLabelX = Math.min(LEFT + PLOT_W * 0.60, SVG_W - RIGHT - 60);
+  const goalLabelY = Math.max(goalY - 6, TOP + 10);
 
   return (
-    <View style={{ width: '100%', height }}>
-      <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
+    <View style={{ width: '100%', aspectRatio: SVG_W / SVG_H }}>
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {/* Horizontal grid lines */}
         {gridYs.map((y, i) => (
           <Line
-            key={i}
-            x1={padX}
-            y1={y}
-            x2={width - padX}
-            y2={y}
+            key={`grid-${i}`}
+            x1={LEFT} y1={y} x2={LEFT + PLOT_W} y2={y}
             stroke={colors.borderSoft}
             strokeWidth={1}
           />
         ))}
+
+        {/* Y-axis kg labels */}
+        {yLabels.map((lbl, i) => (
+          <SvgText
+            key={`ylabel-${i}`}
+            x={LEFT - 6}
+            y={lbl.y + 4}   // +4 to vertically centre against the grid line
+            textAnchor="end"
+            fontSize={9}
+            fontFamily={fonts.regular}
+            fill={colors.textSecondary}
+          >
+            {lbl.text}
+          </SvgText>
+        ))}
+
+        {/* Goal / baseline dashed line */}
         <Line
-          x1={padX}
-          y1={goalY}
-          x2={width - padX}
-          y2={goalY}
+          x1={LEFT} y1={goalY} x2={LEFT + PLOT_W} y2={goalY}
           stroke={colors.textSecondary}
           strokeWidth={1.5}
-          strokeDasharray="5,5"
+          strokeDasharray="5,4"
         />
+
+        {/* Goal label — inside SVG so it never clips */}
+        <SvgText
+          x={goalLabelX}
+          y={goalLabelY}
+          textAnchor="middle"
+          fontSize={10}
+          fontFamily={fonts.semibold}
+          fill={colors.textSecondary}
+        >
+          Goal: {goal} kg
+        </SvgText>
+
+        {/* Trend polyline */}
         <Polyline
-          points={coords}
+          points={polylinePoints}
           fill="none"
           stroke={colors.primaryDark}
           strokeWidth={2.5}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+
+        {/* Data point dots */}
         {points.map((v, i) => (
           <Circle
-            key={i}
-            cx={scaleX(i)}
-            cy={scaleY(v)}
+            key={`dot-${i}`}
+            cx={toX(i)}
+            cy={toY(v)}
             r={4}
             fill={colors.primaryDark}
           />
         ))}
+
+        {/* X-axis date labels — inside SVG so they scale with the viewBox
+             and can never overflow the card's clipping bounds. */}
+        {xLabels.map((lbl, i) => (
+          <SvgText
+            key={`xlabel-${i}`}
+            x={lbl.x}
+            y={SVG_H - 8}  // sits inside the bottom margin, 8 units from the bottom
+            textAnchor={lbl.anchor}
+            fontSize={10}
+            fontFamily={lbl.fontFamily}
+            fill={lbl.color}
+          >
+            {lbl.text}
+          </SvgText>
+        ))}
       </Svg>
-      <Text
-        style={[
-          trendChartStyles.goalLabel,
-          {
-            left: `${(goalLabelX / width) * 100}%`,
-            top: Math.max(goalY - 34, 0),
-          },
-        ]}
-      >
-        Goal: {goal} kg
-      </Text>
     </View>
   );
 }
 
 const trendChartStyles = StyleSheet.create({
+  // Kept for any future absolute-positioned overlays; currently unused
+  // because all labels moved inside the SVG.
   goalLabel: {
     position: 'absolute',
     fontFamily: fonts.semibold,
@@ -1267,10 +1435,18 @@ const trendsSummaryStyles = StyleSheet.create({
   },
 });
 
-function OnTrackCard({ title, body }: { title: string; body: string }) {
+function OnTrackCard({
+  title,
+  body,
+  positive = true,
+}: {
+  title: string;
+  body: string;
+  positive?: boolean;
+}) {
   return (
-    <View style={onTrackStyles.card}>
-      <Text style={onTrackStyles.title}>{title}</Text>
+    <View style={[onTrackStyles.card, !positive && onTrackStyles.cardWarn]}>
+      <Text style={[onTrackStyles.title, !positive && onTrackStyles.titleWarn]}>{title}</Text>
       <Text style={onTrackStyles.body}>{body}</Text>
     </View>
   );
@@ -1283,10 +1459,16 @@ const onTrackStyles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.xs,
   },
+  cardWarn: {
+    backgroundColor: colors.expiryWarnBg,
+  },
   title: {
     fontFamily: fonts.bold,
     fontSize: fontSize.title,
     color: colors.primary,
+  },
+  titleWarn: {
+    color: colors.statusSoon,
   },
   body: {
     fontFamily: fonts.regular,
@@ -1329,6 +1511,19 @@ const trendsHeadingStyles = StyleSheet.create({
 // ---------------------------------------------------------------------------
 
 function ReportHeadline({ data }: { data: ReportData }) {
+  if (data.deltaPct === null) {
+    return (
+      <View style={reportHeadlineStyles.wrap}>
+        <Text style={[reportHeadlineStyles.title, { color: colors.textPrimary }]}>
+          {data.wastedKg.toFixed(1)} kg wasted in {data.monthLabel}
+        </Text>
+        <Text style={reportHeadlineStyles.subtitle}>
+          You utilised {Math.round(data.utilisationPct)}% of purchased food
+          — not enough history yet to compare against the month before.
+        </Text>
+      </View>
+    );
+  }
   const isLess = data.deltaPct <= 0;
   const pct = Math.abs(Math.round(data.deltaPct));
   return (
@@ -1434,44 +1629,67 @@ const reportSectionTitleStyles = StyleSheet.create({
 
 function KeyFindingsCard({
   categories,
+  categoriesNote,
   reasons,
 }: {
-  categories: FrequencyDatum[];
+  /** Null while Patterns hasn't loaded yet — renders without a categories
+   *  section rather than a misleading empty bar list. */
+  categories: FrequencyDatum[] | null;
+  /** Small caveat shown under the categories heading (e.g. "All-time").
+   *  See the Report render block for why this differs from `reasons`. */
+  categoriesNote?: string;
   reasons: FrequencyDatum[];
 }) {
-  const catMax = categories.reduce((m, d) => Math.max(m, d.count), 0);
+  const hasCategories = categories !== null && categories.length > 0;
+  const catMax = hasCategories ? categories!.reduce((m, d) => Math.max(m, d.count), 0) : 0;
   const reasonMax = reasons.reduce((m, d) => Math.max(m, d.count), 0);
   return (
     <View style={keyFindingsStyles.card}>
-      <Text style={keyFindingsStyles.subheading}>
-        Most wasted categories · Top 5 + Other
-      </Text>
-      <View>
-        {categories.map((d) => (
-          <BarRow
-            key={d.label}
-            label={d.label}
-            count={d.count}
-            maxCount={catMax}
-            color={d.label === 'Other' ? colors.sourceManual : colors.statusToday}
-          />
-        ))}
-      </View>
+      {hasCategories && (
+        <>
+          <Text style={keyFindingsStyles.subheading}>
+            Most wasted categories · Top 5 + Other
+          </Text>
+          {categoriesNote && (
+            <Text style={keyFindingsStyles.note}>{categoriesNote}</Text>
+          )}
+          <View>
+            {categories!.map((d) => (
+              <BarRow
+                key={d.label}
+                label={d.label}
+                count={d.count}
+                maxCount={catMax}
+                color={d.label === 'Other' ? colors.sourceManual : colors.statusToday}
+              />
+            ))}
+          </View>
+        </>
+      )}
 
-      <Text style={[keyFindingsStyles.subheading, keyFindingsStyles.subheadingSpaced]}>
+      <Text
+        style={[
+          keyFindingsStyles.subheading,
+          hasCategories && keyFindingsStyles.subheadingSpaced,
+        ]}
+      >
         Common reasons · Top 5 + Other
       </Text>
-      <View>
-        {reasons.map((d) => (
-          <BarRow
-            key={d.label}
-            label={d.label}
-            count={d.count}
-            maxCount={reasonMax}
-            color={d.label === 'Other' ? colors.sourceManual : colors.statusSoon}
-          />
-        ))}
-      </View>
+      {reasons.length > 0 ? (
+        <View>
+          {reasons.map((d) => (
+            <BarRow
+              key={d.label}
+              label={d.label}
+              count={d.count}
+              maxCount={reasonMax}
+              color={d.label === 'Other' ? colors.sourceManual : colors.statusSoon}
+            />
+          ))}
+        </View>
+      ) : (
+        <Text style={keyFindingsStyles.note}>Nothing was marked wasted this month.</Text>
+      )}
     </View>
   );
 }
@@ -1484,7 +1702,7 @@ const keyFindingsStyles = StyleSheet.create({
     borderRadius: radii.lg,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.xs,
+    paddingBottom: spacing.lg,
   },
   subheading: {
     fontFamily: fonts.bold,
@@ -1495,18 +1713,25 @@ const keyFindingsStyles = StyleSheet.create({
   subheadingSpaced: {
     marginTop: spacing.lg,
   },
+  note: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
 });
 
 function ShareReportButton({ data }: { data: ReportData }) {
-  const isLess = data.deltaPct <= 0;
-  const pct = Math.abs(Math.round(data.deltaPct));
-
   const handleShare = async () => {
+    const deltaText =
+      data.deltaPct === null
+        ? 'No prior month to compare against yet.'
+        : `${Math.abs(Math.round(data.deltaPct))}% ${data.deltaPct <= 0 ? 'less' : 'more'} waste than last month.`;
     try {
       await Share.share({
         message:
           `FreshWise — ${data.monthLabel} waste report\n` +
-          `${pct}% ${isLess ? 'less' : 'more'} waste than last month. ` +
+          `${deltaText} ` +
           `Utilised ${Math.round(data.utilisationPct)}% of purchased food ` +
           `(${data.consumedKg.toFixed(1)} kg consumed, ${data.wastedKg.toFixed(1)} kg wasted).`,
       });
@@ -1675,9 +1900,9 @@ const overviewStateStyles = StyleSheet.create({
 });
 
 // ---------------------------------------------------------------------------
-// Mock data — Alternatives, Trends and Report (replace with live API calls
-// once their backend endpoints exist). Overview and Patterns are live — see
-// useWeekSummary() / usePatterns() further down.
+// All four tabs are LIVE. Nothing below is mock data anymore -- see
+// useWeekSummary() / usePatterns() / useAlternatives() / useTrends() /
+// useReport() further down for each tab's data hook.
 // ---------------------------------------------------------------------------
 
 // Patterns tab — LIVE, see usePatterns() further down. Backend endpoint:
@@ -1811,57 +2036,230 @@ function useAlternatives() {
 
   return { state, load, reset };
 }
-// Trends tab — dummy data until backend wiring lands.
-// TODO: Replace with a live call, e.g. getWasteTrends('weekly' | 'monthly')
-// returning a TrendsSeries shaped like the entries below.
-const MOCK_TRENDS: TrendsData = {
-  Weekly: {
-    points: [1.92, 1.78, 1.88, 1.55, 1.5, 1.32, 1.18, 0.98],
-    goalKg: 1.4,
-    latestKg: 0.98,
-    deltaPct: -18,
-    rangeLabel: 'Last 8 weeks',
-    streakTitle: 'On track',
-    streakNote: 'Waste has stayed below your goal for 3 periods.',
-  },
-  Monthly: {
-    points: [2.05, 1.85, 1.95, 1.5, 1.25, 1.05],
-    goalKg: 1.4,
-    latestKg: 1.05,
-    deltaPct: -12,
-    rangeLabel: 'Last 6 months',
-    streakTitle: 'On track',
-    streakNote: 'Waste has stayed below your goal for 3 periods.',
-  },
-};
 
-// Report tab — dummy data until backend wiring lands.
-// TODO: Replace with a live call, e.g. getMonthlyReport() returning a
-// ReportData shaped like MOCK_REPORT below.
-const MOCK_REPORT: ReportData = {
-  monthLabel: 'August 2026',
-  deltaPct: -12,
-  utilisationPct: 81,
-  consumedKg: 8.2,
-  wastedKg: 1.9,
-  previousMonthWastedKg: 2.2,
-  categories: [
-    { label: 'Vegetables', count: 18 },
-    { label: 'Fruit', count: 14 },
-    { label: 'Dairy', count: 10 },
-    { label: 'Bakery', count: 7 },
-    { label: 'Protein', count: 5 },
-    { label: 'Other', count: 4 },
-  ],
-  reasons: [
-    { label: 'Expired', count: 16 },
-    { label: 'Over-purchased', count: 12 },
-    { label: 'Forgotten', count: 9 },
-    { label: 'Spoiled', count: 6 },
-    { label: 'Cooked too much', count: 4 },
-    { label: 'Other', count: 3 },
-  ],
-};
+// ---------------------------------------------------------------------------
+// Trends tab — live data hook
+// ---------------------------------------------------------------------------
+//
+// There's no /v1/dashboard/monthly-waste endpoint, so both Weekly and
+// Monthly views are built from a single getWeeklyWaste() call: Weekly uses
+// the raw per-week totals, Monthly buckets those same weeks into calendar
+// months client-side. 26 weeks (~6 months) covers both views' ranges (last
+// 8 weeks / last 6 months) in one request.
+//
+// "Goal" has no dedicated backend concept (no goal field anywhere in
+// UserProfile) -- it's computed here as the mean of the period's own points,
+// i.e. "your own average" as an implicit reduction target. That keeps the
+// dashed goal line and the "On track" streak message honestly data-driven
+// instead of a hardcoded number that never reflects what's actually been
+// logged.
+
+type WeekTotal = { weekStart: string; total: number };
+
+/** weekly-waste rows are one row PER REASON per week, so multiple rows can
+ *  share a week_start -- sum them into one total per week first. */
+function sumWeeklyTotals(rows: WeeklyWasteRow[]): WeekTotal[] {
+  const totals = new Map<string, number>();
+  for (const row of rows) {
+    totals.set(row.week_start, (totals.get(row.week_start) ?? 0) + row.total_quantity_wasted);
+  }
+  return [...totals.entries()]
+    .map(([weekStart, total]) => ({ weekStart, total }))
+    .sort((a, b) => a.weekStart.localeCompare(b.weekStart)); // ascending, oldest first
+}
+
+function computeGoalKg(points: number[]): number {
+  if (!points.length) return 0;
+  const avg = points.reduce((s, v) => s + v, 0) / points.length;
+  return Math.round(avg * 10) / 10;
+}
+
+/** Consecutive periods, counting back from the most recent, that sit on the
+ *  same side of the goal line as the latest period -- i.e. however many in a
+ *  row have been "below goal" (a positive streak) or "above goal" (a streak
+ *  worth flagging). Direction is whatever the newest point is doing. */
+function computeTrailingStreak(points: number[], goalKg: number): { count: number; onTrack: boolean } {
+  const onTrack = points[points.length - 1] <= goalKg;
+  let count = 0;
+  for (let i = points.length - 1; i >= 0; i--) {
+    if ((points[i] <= goalKg) === onTrack) count++;
+    else break;
+  }
+  return { count, onTrack };
+}
+
+function finishSeries(points: number[], periodKeys: string[], rangeLabel: string): TrendsSeries {
+  if (points.length === 0) {
+    return {
+      points: [], periodKeys: [], goalKg: 0, latestKg: 0, deltaPct: null, rangeLabel,
+      streakTitle: 'No data yet',
+      streakNote: 'Mark items as consumed or wasted to start building this chart.',
+    };
+  }
+  const goalKg = computeGoalKg(points);
+  const latestKg = points[points.length - 1];
+  const prev = points.length > 1 ? points[points.length - 2] : null;
+  const deltaPct = prev !== null && prev > 0 ? ((latestKg - prev) / prev) * 100 : null;
+
+  if (points.length < 2) {
+    return {
+      points, periodKeys, goalKg, latestKg, deltaPct: null, rangeLabel,
+      streakTitle: 'Just getting started',
+      streakNote: 'Keep logging outcomes to start seeing a trend here.',
+    };
+  }
+
+  const streak = computeTrailingStreak(points, goalKg);
+  return {
+    points, periodKeys, goalKg, latestKg, deltaPct, rangeLabel,
+    streakTitle: streak.onTrack ? 'On track' : 'Above target',
+    streakNote: streak.onTrack
+      ? `Waste has stayed at or below your average for ${streak.count} period${streak.count === 1 ? '' : 's'}.`
+      : `Waste has been above your average for ${streak.count} period${streak.count === 1 ? '' : 's'}. Check the Patterns tab to see what's driving it.`,
+  };
+}
+
+function buildWeeklySeries(weekTotals: WeekTotal[]): TrendsSeries {
+  const last8 = weekTotals.slice(-8);
+  return finishSeries(
+    last8.map((w) => Math.round(w.total * 100) / 100),
+    last8.map((w) => w.weekStart), // already "YYYY-MM-DD" (the week's Monday)
+    'Last 8 weeks',
+  );
+}
+
+function buildMonthlySeries(weekTotals: WeekTotal[]): TrendsSeries {
+  const byMonth = new Map<string, number>();
+  for (const w of weekTotals) {
+    const monthKey = w.weekStart.slice(0, 7); // "YYYY-MM"
+    byMonth.set(monthKey, (byMonth.get(monthKey) ?? 0) + w.total);
+  }
+  const months = [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  const last6 = months.slice(-6);
+  return finishSeries(
+    last6.map(([, total]) => Math.round(total * 100) / 100),
+    last6.map(([month]) => `${month}-01`), // pad to "YYYY-MM-DD" for formatPeriodKey
+    'Last 6 months',
+  );
+}
+
+type TrendsState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; data: TrendsData; hasData: boolean };
+
+function useTrends() {
+  const [state, setState] = useState<TrendsState>({ status: 'loading' });
+
+  const load = useCallback(async () => {
+    setState({ status: 'loading' });
+    try {
+      const rows = await getWeeklyWaste(26);
+      const weekTotals = sumWeeklyTotals(rows);
+      setState({
+        status: 'ready',
+        data: { Weekly: buildWeeklySeries(weekTotals), Monthly: buildMonthlySeries(weekTotals) },
+        hasData: weekTotals.length > 0,
+      });
+    } catch (e) {
+      setState({
+        status: 'error',
+        message: e instanceof ApiError ? e.message : 'Could not load trends.',
+      });
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  return { state, retry: load };
+}
+
+// ---------------------------------------------------------------------------
+// Report tab — live data hook
+// ---------------------------------------------------------------------------
+//
+// GET /v1/dashboard/monthly-report returns the household's most recently
+// logged calendar month ("current") and the one before it ("previous") in a
+// single call -- both fully month-scoped, including category/reason
+// breakdowns, since the backend computes them directly off
+// consumption_waste_log rather than approximating from a rolling window.
+// "Current" is whichever month the household actually marked something
+// consumed/wasted in via MarkConsumedScreen/MarkWastedScreen most recently --
+// not necessarily today's calendar month, matching "Your completed summary
+// for ..." rather than showing an empty in-progress month. The device's own
+// IANA timezone is sent so month boundaries match the household's calendar,
+// not the server's (see data/timezone.ts).
+
+function buildReportData(raw: MonthlyReportOut): ReportData {
+  const cur = raw.current;
+  const prev = raw.previous;
+
+  const denom = cur.wasted_quantity + cur.consumed_quantity;
+  const utilisationPct = denom > 0 ? (cur.consumed_quantity / denom) * 100 : 0;
+
+  // No previous-month waste to divide by -> no meaningful percentage change,
+  // rather than a misleading 0% ("unchanged") or a divide-by-zero stand-in.
+  const deltaPct =
+    prev.wasted_quantity > 0
+      ? ((cur.wasted_quantity - prev.wasted_quantity) / prev.wasted_quantity) * 100
+      : null;
+
+  return {
+    monthLabel: cur.label,
+    deltaPct,
+    utilisationPct,
+    consumedKg: cur.consumed_quantity,
+    wastedKg: cur.wasted_quantity,
+    previousMonthWastedKg: prev.wasted_quantity,
+    categories: cur.top_waste_categories.map((b) => ({ label: b.label, count: b.count })),
+    reasons: cur.top_waste_reasons.map((b) => ({ label: reasonRowLabel(b.label), count: b.count })),
+  };
+}
+
+type ReportState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'empty'; monthLabel: string } // nothing logged in the target month
+  | { status: 'ready'; data: ReportData };
+
+/** Same focus-refetch pattern as useWeekSummary()/usePatterns() -- returning
+ *  here after Mark Consumed / Mark Wasted always reflects the latest entry,
+ *  and crossing a month boundary while the app is open picks up the new
+ *  "most recent month" on next focus. */
+function useReport() {
+  const [state, setState] = useState<ReportState>({ status: 'loading' });
+
+  const load = useCallback(async () => {
+    setState({ status: 'loading' });
+    try {
+      const tz = getDeviceTimeZone();
+      const raw = await getMonthlyReport(tz);
+      const hasCurrentData = raw.current.wasted_events + raw.current.consumed_events > 0;
+      setState(
+        hasCurrentData
+          ? { status: 'ready', data: buildReportData(raw) }
+          : { status: 'empty', monthLabel: raw.current.label },
+      );
+    } catch (e) {
+      setState({
+        status: 'error',
+        message: e instanceof ApiError ? e.message : 'Could not load the monthly report.',
+      });
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  return { state, retry: load };
+}
 
 // ---------------------------------------------------------------------------
 // Overview tab — live data
@@ -1993,6 +2391,19 @@ export default function ActivityScreen() {
   // Patterns tab — live, see usePatterns() above.
   const { state: patternsState, retry: retryPatterns } = usePatterns();
 
+  // Trends tab — live, see useTrends() above.
+  const { state: trendsState, retry: retryTrends } = useTrends();
+
+  // Report tab — live, see useReport() above.
+  const { state: reportState, retry: retryReport } = useReport();
+
+  const reportMonthLabel =
+    reportState.status === 'ready'
+      ? reportState.data.monthLabel
+      : reportState.status === 'empty'
+        ? reportState.monthLabel
+        : null;
+
   const subtitleByTab: Record<InsightsTab, string> = {
     Overview:
       overviewState.status === 'ready' && overviewState.data.state === 'data'
@@ -2000,7 +2411,9 @@ export default function ActivityScreen() {
         : 'Understand your household food habits over time.',
     Patterns: 'See what is wasted most often — and why.',
     Trends: 'Track progress against your reduction goal.',
-    Report: `Your completed summary for ${MOCK_REPORT.monthLabel}.`,
+    Report: reportMonthLabel
+      ? `Your completed summary for ${reportMonthLabel}.`
+      : 'Your completed summary for last month.',
   };
   const subtitle = showAlternatives
     ? alternativesState.status === 'ready'
@@ -2144,8 +2557,26 @@ export default function ActivityScreen() {
             {activeTab === 'Trends' && (
               <>
                 <PeriodToggle active={trendsPeriod} onChange={setTrendsPeriod} />
-                {(() => {
-                  const series = MOCK_TRENDS[trendsPeriod];
+
+                {trendsState.status === 'loading' && <OverviewLoading />}
+
+                {trendsState.status === 'error' && (
+                  <OverviewError message={trendsState.message} onRetry={retryTrends} />
+                )}
+
+                {trendsState.status === 'ready' && !trendsState.hasData && (
+                  <View style={styles.illustrationCard}>
+                    <View style={styles.illustrationCircle} />
+                    <Text style={styles.illustrationTitle}>No trend yet</Text>
+                    <Text style={styles.illustrationBody}>
+                      Mark a few items as consumed or wasted and this chart
+                      will start tracking your waste week over week.
+                    </Text>
+                  </View>
+                )}
+
+                {trendsState.status === 'ready' && trendsState.hasData && (() => {
+                  const series = trendsState.data[trendsPeriod];
                   const periodWord = trendsPeriod === 'Weekly' ? 'week' : 'month';
                   const chartTitle =
                     trendsPeriod === 'Weekly'
@@ -2158,12 +2589,18 @@ export default function ActivityScreen() {
                         subtitle={series.rangeLabel}
                       />
                       <View style={styles.chartCard}>
-                        <TrendChart points={series.points} goal={series.goalKg} />
+                        <TrendChart
+                          points={series.points}
+                          goal={series.goalKg}
+                          periodKeys={series.periodKeys}
+                          period={trendsPeriod}
+                        />
                       </View>
                       <TrendsSummary series={series} periodWord={periodWord} />
                       <OnTrackCard
                         title={series.streakTitle}
                         body={series.streakNote}
+                        positive={series.streakTitle !== 'Above target'}
                       />
                     </>
                   );
@@ -2174,14 +2611,36 @@ export default function ActivityScreen() {
             {/* Report */}
             {activeTab === 'Report' && (
               <>
-                <ReportHeadline data={MOCK_REPORT} />
-                <ReportTotalsCard data={MOCK_REPORT} />
-                <ReportSectionTitle>Key findings</ReportSectionTitle>
-                <KeyFindingsCard
-                  categories={MOCK_REPORT.categories}
-                  reasons={MOCK_REPORT.reasons}
-                />
-                <ShareReportButton data={MOCK_REPORT} />
+                {reportState.status === 'loading' && <OverviewLoading />}
+
+                {reportState.status === 'error' && (
+                  <OverviewError message={reportState.message} onRetry={retryReport} />
+                )}
+
+                {reportState.status === 'empty' && (
+                  <View style={styles.illustrationCard}>
+                    <View style={styles.illustrationCircle} />
+                    <Text style={styles.illustrationTitle}>
+                      No report for {reportState.monthLabel} yet
+                    </Text>
+                    <Text style={styles.illustrationBody}>
+                      Mark items as consumed or wasted to build {reportState.monthLabel}'s report.
+                    </Text>
+                  </View>
+                )}
+
+                {reportState.status === 'ready' && (
+                  <>
+                    <ReportHeadline data={reportState.data} />
+                    <ReportTotalsCard data={reportState.data} />
+                    <ReportSectionTitle>Key findings</ReportSectionTitle>
+                    <KeyFindingsCard
+                      categories={reportState.data.categories}
+                      reasons={reportState.data.reasons}
+                    />
+                    <ShareReportButton data={reportState.data} />
+                  </>
+                )}
               </>
             )}
           </>

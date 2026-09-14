@@ -227,6 +227,39 @@ class WastePatternsOut(BaseModel):
     most_wasted_item: WastePatternItem | None
 
 
+class MonthlyReportMonth(BaseModel):
+    """One calendar month's worth of the Report tab, in the household's own
+    timezone (see monthly_report()'s docstring for why that's not optional).
+    Reuses WastePatternBucket for its category/reason bars -- both are the
+    same {label, count} "Top 5 + Other" shape as the Patterns tab, just
+    scoped to one month instead of all-time.
+    """
+
+    year: int
+    month: int
+    label: str  # e.g. "September 2026"
+    wasted_events: int
+    wasted_quantity: float
+    consumed_events: int
+    consumed_quantity: float
+    # consumed_quantity / (consumed+wasted quantity); None if NEITHER was
+    # logged that month -- distinct from 0%, which means everything logged
+    # that month was wasted.
+    utilisation_rate: float | None
+    top_waste_categories: list[WastePatternBucket]
+    top_waste_reasons: list[WastePatternBucket]
+
+
+class MonthlyReportOut(BaseModel):
+    """GET /v1/dashboard/monthly-report: the most recent calendar month the
+    household actually logged a consumed/wasted outcome in, plus the month
+    immediately before it -- see monthly_report()'s docstring for why
+    "current" isn't simply "today's calendar month"."""
+
+    current: MonthlyReportMonth
+    previous: MonthlyReportMonth
+
+
 # --- Diet preferences -------------------------------------------------------
 
 
