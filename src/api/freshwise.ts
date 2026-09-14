@@ -188,16 +188,18 @@ export const getWeeklyWaste = (weeks = 12) =>
  *  (no time-window query params -- unlike summary/weekly-waste above). */
 export const getWastePatterns = () => request<WastePatternsOut>('/v1/dashboard/waste-patterns');
 
-/** Report tab (ActivityScreen): the most recent calendar month the household
- *  actually logged a consumed/wasted outcome in, plus the month before it --
- *  see the backend's monthly_report() docstring for why "current" isn't
+/** Report tab (ActivityScreen): a specific calendar month (identified by
+ *  monthsBack, counting backward from the household's most recently logged
+ *  month -- 0 is the default/most recent), plus the month before it -- see
+ *  the backend's monthly_report() docstring for why "months_back=0" isn't
  *  simply "today's calendar month". `tz` should be getDeviceTimeZone() from
  *  data/timezone.ts -- omitting it buckets month boundaries by the SERVER's
  *  timezone, which can disagree with the household's own calendar right
  *  around a month boundary. */
-export const getMonthlyReport = (tz?: string) => {
+export const getMonthlyReport = (tz?: string, monthsBack = 0) => {
   const q = new URLSearchParams();
   if (tz) q.set('tz', tz);
+  if (monthsBack) q.set('months_back', String(monthsBack));
   const qs = q.toString();
   return request<MonthlyReportOut>(`/v1/dashboard/monthly-report${qs ? `?${qs}` : ''}`);
 };
