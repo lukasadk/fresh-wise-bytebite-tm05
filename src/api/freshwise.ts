@@ -9,6 +9,7 @@ import type {
   FoodItem,
   FoodItemStorage,
   FoodkeeperStorage,
+  MonthlyReportOut,
   OpenFoodFactsProduct,
   PriceReference,
   PriceReferenceState,
@@ -186,6 +187,20 @@ export const getWeeklyWaste = (weeks = 12) =>
  *  repeatedly-wasted item, computed over the household's entire waste history
  *  (no time-window query params -- unlike summary/weekly-waste above). */
 export const getWastePatterns = () => request<WastePatternsOut>('/v1/dashboard/waste-patterns');
+
+/** Report tab (ActivityScreen): the most recent calendar month the household
+ *  actually logged a consumed/wasted outcome in, plus the month before it --
+ *  see the backend's monthly_report() docstring for why "current" isn't
+ *  simply "today's calendar month". `tz` should be getDeviceTimeZone() from
+ *  data/timezone.ts -- omitting it buckets month boundaries by the SERVER's
+ *  timezone, which can disagree with the household's own calendar right
+ *  around a month boundary. */
+export const getMonthlyReport = (tz?: string) => {
+  const q = new URLSearchParams();
+  if (tz) q.set('tz', tz);
+  const qs = q.toString();
+  return request<MonthlyReportOut>(`/v1/dashboard/monthly-report${qs ? `?${qs}` : ''}`);
+};
 
 /** Alternatives view (ActivityScreen → Patterns → "View better alternatives").
  *
