@@ -36,8 +36,9 @@
       "policy": "appVersion"
     },
     "updates": {
-      "enabled": false,
-      "checkAutomatically": "NEVER"
+      "enabled": true,
+      "url": "https://u.expo.dev/6bc0972b-c6bd-42b0-a69b-ac5f603a0954",
+      "checkAutomatically": "ON_LOAD"
     },
     "ios": {}
   }
