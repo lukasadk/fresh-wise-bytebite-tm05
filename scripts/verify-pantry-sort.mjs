@@ -3,15 +3,38 @@
 // users spend the most time on.
 //
 //   node scripts/verify-pantry-sort.mjs
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { execSync } from 'node:child_process';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 
 mkdirSync('.verify-tmp', { recursive: true });
-execSync(
-  'npx tsc src/data/pantrySort.ts --ignoreConfig --outDir .verify-tmp ' +
-    '--module es2022 --target es2022 --moduleResolution bundler --skipLibCheck',
+const localTsc = join(
+  'node_modules',
+  'typescript',
+  'bin',
+  'tsc',
+);
+const tscCommand = existsSync(localTsc) ? process.execPath : 'npx';
+const tscArgs = existsSync(localTsc)
+  ? [localTsc]
+  : ['tsc'];
+execFileSync(
+  tscCommand,
+  [
+    ...tscArgs,
+    'src/data/pantrySort.ts',
+    '--ignoreConfig',
+    '--outDir',
+    '.verify-tmp',
+    '--module',
+    'es2022',
+    '--target',
+    'es2022',
+    '--moduleResolution',
+    'bundler',
+    '--skipLibCheck',
+  ],
   { stdio: 'inherit' },
 );
 writeFileSync('.verify-tmp/package.json', '{"type":"module"}');
