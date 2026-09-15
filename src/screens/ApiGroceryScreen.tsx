@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  UIManager,
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -47,7 +48,27 @@ type EditableItem = GroceryCandidate & {
 
 type Notice = { title: string; body: string };
 
-const NativePreviewImage = requireNativeComponent<{ sourceUri: string; style?: object }>('FreshWisePreviewImageView');
+const PREVIEW_IMAGE_VIEW_NAME = 'FreshWisePreviewImageView';
+
+function hasNativePreviewImageView(): boolean {
+  if (Platform.OS === 'web') return false;
+  const legacyManager = (UIManager as any)[PREVIEW_IMAGE_VIEW_NAME];
+  const fabricManager = typeof (UIManager as any).getViewManagerConfig === 'function'
+    ? (UIManager as any).getViewManagerConfig(PREVIEW_IMAGE_VIEW_NAME)
+    : null;
+  return !!legacyManager || !!fabricManager;
+}
+
+const NativePreviewImage = hasNativePreviewImageView()
+  ? requireNativeComponent<{ sourceUri: string; style?: object }>(PREVIEW_IMAGE_VIEW_NAME)
+  : null;
+
+function GroceryPreviewImage({ sourceUri, style }: { sourceUri: string; style?: object }) {
+  if (NativePreviewImage) {
+    return <NativePreviewImage sourceUri={sourceUri} style={style} />;
+  }
+  return <Image source={{ uri: sourceUri }} style={style} resizeMode="cover" />;
+}
 
 const BOX_COLOURS = ['#1F7A42', '#D9603B', '#C68A2E', '#2F86C9', '#7A68B3'];
 const IMAGE_PICKER_MEDIA_TYPE = ImagePicker.MediaTypeOptions.Images;
@@ -378,7 +399,7 @@ export default function ApiGroceryScreen({ navigation }: any) {
 
         {previewImageUri ? (
           <View collapsable={false} style={[styles.imageFrame, { aspectRatio: imageRatio }]}>
-            <NativePreviewImage sourceUri={previewImageUri} style={styles.image} />
+            <GroceryPreviewImage sourceUri={previewImageUri} style={styles.image} />
             {hasResults && mode === 'photo' ? items.map((item, index) => {
               if (!item.boundingBox) return null;
               const [x1, y1, x2, y2] = item.boundingBox;
