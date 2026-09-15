@@ -15,10 +15,25 @@
  * MarkWastedScreen (WasteRecordedScreen is just the confirmation screen for
  * the latter — the log write already happened by the time it's shown).
  * Patterns is also LIVE: it reads GET /v1/dashboard/waste-patterns (see
- * usePatterns() below) for the category/reason bar charts and the single
- * repeatedly-wasted item, computed over the household's entire waste
- * history. Its "View better alternatives" CTA opens a live FoodKeeper-backed
- * storage-alternatives view (see useAlternatives() below).
+ * usePatterns() below). Redesigned to be deliberately simple (Feature 99
+ * reference, see the screenshot this redesign was built from):
+ *   - Categories: a plain top-5-by-weight bar list, one category icon per
+ *     row (categoryIconFor() in icons/FoodIcons.tsx), NO rolled-up "Other"
+ *     row -- WastePatternsOut.top_waste_categories is already exactly 5.
+ *   - Reasons: numbered 1-5 by count (RankBadge), plus a single unnumbered
+ *     "Other" row sourced directly from other_reason_count. This is
+ *     deliberately NOT client-side "top 5 + other" bucketing -- that
+ *     approach used to produce two separate rows both labelled "Other"
+ *     whenever the waste_reason enum's own 'other' value ranked in the top
+ *     5 by itself AND there was unrelated overflow to roll up. The backend
+ *     now keeps "a real reason nobody picked much" and "the user picked
+ *     Other" permanently separate, so the frontend just renders both lists
+ *     as-is with no merging logic at all.
+ *   - "Key insight" card: tappable as a whole (chevron, no separate
+ *     button), icon looked up by the specific item NAME via foodIconFor()
+ *     (not just its category -- "Milk" gets the milk bottle specifically).
+ *     Opens a live FoodKeeper-backed storage-alternatives view on tap (see
+ *     useAlternatives() below).
  * Trends is also LIVE: it reads the same GET /v1/dashboard/weekly-waste as
  * Overview (see useTrends() below) and derives both the Weekly view and a
  * client-side-aggregated Monthly view from it — there's no monthly-waste
@@ -52,9 +67,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
+import { ChevronRight } from '../icons/NavIcons';
 import { getDashboardSummary, getWeeklyWaste, getWastePatterns, getAlternativesFromFoodkeeper } from '../api/freshwise';
 import type { FoodkeeperAlternative } from '../api/freshwise';
 import { ApiError } from '../api/client';
+import { categoryIconFor, foodIconFor } from '../icons/FoodIcons';
 import type { DashboardSummary, WeeklyWasteRow, WasteReason, WastePatternsOut } from '../api/types';
 
 // ---------------------------------------------------------------------------
@@ -84,21 +101,37 @@ type FrequencyDatum = {
   count: number;
 };
 
+/** One row in the "Most wasted categories" card -- kg, not a raw count, so
+ *  the bar reflects actual weight wasted rather than how many separate
+ *  waste events happened to be logged. */
+type CategoryWeightDatum = {
+  label: string;
+  kg: number;
+};
+
 type WasteInsight = {
-  eyebrow: string;
+  /** Raw item name (e.g. "Milk"), used both for the icon lookup and for
+   *  passing to getAlternativesFromFoodkeeper() -- kept as its own field
+   *  rather than parsed back out of `title`, which used to break for any
+   *  item name that itself contained the words " is ". */
+  itemName: string;
   title: string;
   body: string;
-  ctaLabel: string;
   /** The canonical_food_name of the most-wasted item, passed to
-   *  getAlternativesFromFoodkeeper() when the CTA is tapped. Null when the
+   *  getAlternativesFromFoodkeeper() when the card is tapped. Null when the
    *  backend's most_wasted_item doesn't carry one (shouldn't happen but
    *  guards against a schema change). */
   canonicalFoodName: string | null;
 };
 
 type PatternsData = {
-  categories: FrequencyDatum[];
+  categories: CategoryWeightDatum[];
+  /** Top 5 REAL reasons by count -- never includes the waste_reason enum's
+   *  own "other" value, which is reported separately via otherReasonCount
+   *  instead (see WasteInsight above for why merging risks a duplicate
+   *  "Other" row). */
   reasons: FrequencyDatum[];
+  otherReasonCount: number;
   insight: WasteInsight | null;
 };
 
@@ -597,43 +630,193 @@ const insightStyles = StyleSheet.create({
 // PATTERNS TAB components
 // ---------------------------------------------------------------------------
 
-function BarRow({
+const sectionStyles = StyleSheet.create({
+  wrap: { gap: spacing.md },
+  headingBlock: { gap: 2 },
+  heading: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.heading,
+    color: colors.textPrimary,
+  },
+  subheading: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  card: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+  },
+});
+
+// "Most wasted categories" -- literal top 5 by weight, no "Other" row (see
+// WastePatternsOut.top_waste_categories: the backend never rolls category
+// overflow into a synthetic bucket the way the OLD reasons logic used to).
+
+function CategoryWeightRow({
   label,
-  count,
-  maxCount,
-  color,
+  kg,
+  maxKg,
 }: {
   label: string;
-  count: number;
-  maxCount: number;
-  color: string;
+  kg: number;
+  maxKg: number;
 }) {
-  // Keep a small minimum width so low counts still render a visible sliver.
-  const pct = maxCount > 0 ? Math.max(6, (count / maxCount) * 100) : 6;
+  const Icon = categoryIconFor(label);
+  // Keep a small minimum width so low weights still render a visible sliver.
+  const pct = maxKg > 0 ? Math.max(6, (kg / maxKg) * 100) : 6;
   return (
-    <View style={barRowStyles.row}>
-      <Text style={barRowStyles.label} numberOfLines={1}>
+    <View style={weightRowStyles.row}>
+      <Icon size={28} />
+      <Text style={weightRowStyles.label} numberOfLines={1}>
         {label}
       </Text>
-      <View style={barRowStyles.track}>
+      <View style={weightRowStyles.track}>
         <View
           style={[
-            barRowStyles.fill,
-            { width: `${pct}%`, backgroundColor: color },
+            weightRowStyles.fill,
+            { width: `${pct}%`, backgroundColor: colors.statusToday },
           ]}
         />
       </View>
-      <Text style={barRowStyles.value}>{count}</Text>
+      <Text style={weightRowStyles.value}>{kg.toFixed(1)} kg</Text>
     </View>
   );
 }
 
-const barRowStyles = StyleSheet.create({
+const weightRowStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm + 2,
     paddingVertical: spacing.sm + 2,
+  },
+  label: {
+    flex: 1,
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+  track: {
+    flex: 1.4,
+    height: 8,
+    borderRadius: radii.pill,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+    borderRadius: radii.pill,
+  },
+  value: {
+    width: 50,
+    textAlign: 'right',
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+});
+
+function CategoryWeightCard({ categories }: { categories: CategoryWeightDatum[] }) {
+  const maxKg = categories.reduce((m, d) => Math.max(m, d.kg), 0);
+  return (
+    <View style={sectionStyles.wrap}>
+      <View style={sectionStyles.headingBlock}>
+        <Text style={sectionStyles.heading}>Most wasted categories</Text>
+        <Text style={sectionStyles.subheading}>Top 5 by weight</Text>
+      </View>
+      <View style={sectionStyles.card}>
+        {categories.map((c) => (
+          <CategoryWeightRow key={c.label} label={c.label} kg={c.kg} maxKg={maxKg} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// "Why food gets wasted" -- top 5 REAL reasons, numbered 1-5, plus a single
+// unnumbered "Other" row sourced directly from WastePatternsOut.other_reason_count.
+// Deliberately NOT merged/bucketed client-side: that's what used to produce two
+// separate rows both labelled "Other" whenever the enum's own 'other' reason
+// ranked in the top 5 *and* there was unrelated overflow to roll up. The
+// backend now keeps these two concepts permanently separate, so the frontend
+// just renders each list as-is.
+
+function RankBadge({ rank }: { rank: number }) {
+  return (
+    <View style={rankBadgeStyles.circle}>
+      <Text style={rankBadgeStyles.text}>{rank}</Text>
+    </View>
+  );
+}
+
+const rankBadgeStyles = StyleSheet.create({
+  circle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.primaryDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.sm,
+    color: colors.white,
+  },
+});
+
+function ReasonRow({
+  rank,
+  label,
+  count,
+  maxCount,
+}: {
+  /** 1-5 for a real reason, null for the unranked "Other" row. */
+  rank: number | null;
+  label: string;
+  count: number;
+  maxCount: number;
+}) {
+  const pct = maxCount > 0 ? Math.max(6, (count / maxCount) * 100) : 6;
+  return (
+    <View style={reasonRowStyles.row}>
+      <View style={reasonRowStyles.badgeSlot}>
+        {rank !== null && <RankBadge rank={rank} />}
+      </View>
+      <Text style={reasonRowStyles.label} numberOfLines={1}>
+        {label}
+      </Text>
+      <View style={reasonRowStyles.track}>
+        <View
+          style={[
+            reasonRowStyles.fill,
+            {
+              width: `${pct}%`,
+              backgroundColor: rank !== null ? colors.statusSoon : colors.sourceManual,
+            },
+          ]}
+        />
+      </View>
+      <Text style={reasonRowStyles.value}>{count}</Text>
+    </View>
+  );
+}
+
+const reasonRowStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+    paddingVertical: spacing.sm + 2,
+  },
+  badgeSlot: {
+    width: 22,
+    alignItems: 'center',
   },
   label: {
     width: 92,
@@ -661,129 +844,87 @@ const barRowStyles = StyleSheet.create({
   },
 });
 
-function FrequencyCard({
-  title,
-  subtitle,
-  data,
-  barColor,
-  otherColor,
+function ReasonsCard({
+  reasons,
+  otherCount,
 }: {
-  title: string;
-  subtitle: string;
-  data: FrequencyDatum[];
-  barColor: string;
-  otherColor: string;
+  reasons: FrequencyDatum[];
+  otherCount: number;
 }) {
-  const maxCount = data.reduce((m, d) => Math.max(m, d.count), 0);
+  const maxCount = Math.max(reasons[0]?.count ?? 0, otherCount);
   return (
-    <View style={frequencyStyles.wrap}>
-      <View style={frequencyStyles.headingBlock}>
-        <Text style={frequencyStyles.heading}>{title}</Text>
-        <Text style={frequencyStyles.subheading}>{subtitle}</Text>
+    <View style={sectionStyles.wrap}>
+      <View style={sectionStyles.headingBlock}>
+        <Text style={sectionStyles.heading}>Why food gets wasted</Text>
+        <Text style={sectionStyles.subheading}>Top reasons</Text>
       </View>
-      <View style={frequencyStyles.card}>
-        {data.map((d, i) => (
-          <BarRow
-            key={`${d.label}-${i}`}
-            label={d.label}
-            count={d.count}
-            maxCount={maxCount}
-            color={d.label === 'Other' ? otherColor : barColor}
-          />
+      <View style={sectionStyles.card}>
+        {reasons.map((r, i) => (
+          <ReasonRow key={r.label} rank={i + 1} label={r.label} count={r.count} maxCount={maxCount} />
         ))}
+        {otherCount > 0 && (
+          <ReasonRow rank={null} label="Other" count={otherCount} maxCount={maxCount} />
+        )}
       </View>
     </View>
   );
 }
 
-const frequencyStyles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  headingBlock: { gap: 2 },
-  heading: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.heading,
-    color: colors.textPrimary,
-  },
-  subheading: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs,
-  },
-});
+// "Key insight" card -- tappable as a whole (chevron affordance, no separate
+// button), icon looked up by the specific item NAME (foodIconFor), not just
+// its category, since it's a single repeatedly-wasted item, not a category
+// aggregate -- "Milk" gets the milk bottle, not a generic dairy icon.
 
-function WasteInsightCard({
+function KeyInsightCard({
   insight,
-  onPressCta,
+  onPress,
 }: {
   insight: WasteInsight;
-  onPressCta?: () => void;
+  onPress?: () => void;
 }) {
+  const Icon = foodIconFor(insight.itemName);
   return (
-    <View style={wasteInsightStyles.card}>
-      <Text style={wasteInsightStyles.eyebrow}>{insight.eyebrow}</Text>
-      <Text style={wasteInsightStyles.title}>{insight.title}</Text>
-      <Text style={wasteInsightStyles.body}>{insight.body}</Text>
-      <Pressable
-        style={({ pressed }) => [
-          wasteInsightStyles.button,
-          pressed && { opacity: 0.85 },
-        ]}
-        onPress={onPressCta}
-      >
-        <Text style={wasteInsightStyles.buttonLabel}>
-          {insight.ctaLabel} →
-        </Text>
-      </Pressable>
-    </View>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [keyInsightStyles.card, pressed && { opacity: 0.85 }]}
+    >
+      <Icon size={40} />
+      <View style={keyInsightStyles.body}>
+        <Text style={keyInsightStyles.eyebrow}>Key insight</Text>
+        <Text style={keyInsightStyles.title}>{insight.title}</Text>
+        <Text style={keyInsightStyles.subtitle}>{insight.body}</Text>
+      </View>
+      <ChevronRight size={20} color={colors.textSecondary} />
+    </Pressable>
   );
 }
 
-const wasteInsightStyles = StyleSheet.create({
+const keyInsightStyles = StyleSheet.create({
   card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     backgroundColor: colors.expiryWarnBg,
     borderWidth: 1,
     borderColor: colors.statusSoon,
     borderRadius: radii.lg,
     padding: spacing.lg,
-    gap: spacing.xs,
   },
+  body: { flex: 1, gap: 2 },
   eyebrow: {
-    fontFamily: fonts.bold,
+    fontFamily: fonts.semibold,
     fontSize: fontSize.xs,
-    letterSpacing: 0.5,
     color: colors.statusSoon,
   },
   title: {
     fontFamily: fonts.bold,
     fontSize: fontSize.title,
     color: colors.textPrimary,
-    marginTop: 2,
   },
-  body: {
+  subtitle: {
     fontFamily: fonts.regular,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: spacing.sm,
-  },
-  button: {
-    backgroundColor: colors.primaryDark,
-    borderRadius: radii.pill,
-    paddingVertical: spacing.md - 2,
-    alignItems: 'center',
-  },
-  buttonLabel: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.md,
-    color: colors.white,
   },
 });
 
@@ -1652,20 +1793,24 @@ function reasonRowLabel(label: string): string {
   return WASTE_REASON_ROW_LABEL[label as WasteReason] ?? label;
 }
 
-/** Maps the raw API response to the shapes FrequencyCard/WasteInsightCard
- *  already expect. No category eyebrow (e.g. "DAIRY INSIGHT") is invented —
- *  the backend's most_wasted_item only carries a name + repeat count, not a
- *  category, so the insight copy stays generic rather than guessing one. */
+/** Maps the raw API response to PatternsData. Deliberately no client-side
+ *  "top 5 + other" bucketing here -- the backend already returns categories
+ *  as a plain top-5-by-weight (no Other row) and reasons as top-5-real-
+ *  reasons plus a separately-counted other_reason_count, so this is a
+ *  straight field mapping, not a merge. */
 function buildPatternsData(raw: WastePatternsOut): PatternsData {
   return {
-    categories: raw.top_waste_categories.map((b) => ({ label: b.label, count: b.count })),
+    categories: raw.top_waste_categories.map((b) => ({ label: b.label, kg: b.quantity })),
     reasons: raw.top_waste_reasons.map((b) => ({ label: reasonRowLabel(b.label), count: b.count })),
+    otherReasonCount: raw.other_reason_count,
     insight: raw.most_wasted_item
       ? {
-          eyebrow: 'REPEAT WASTE',
-          title: `${raw.most_wasted_item.name} is repeatedly wasted`,
+          itemName: raw.most_wasted_item.name,
+          title: `${raw.most_wasted_item.name} is your #1 repeated waste`,
+          // Deliberately NOT "in the last 30 days" -- most_wasted_item is
+          // computed over the household's ENTIRE waste history (no time
+          // window), so claiming a 30-day window would misrepresent it.
           body: `Wasted ${raw.most_wasted_item.times_wasted}× so far, based on your recorded entries.`,
-          ctaLabel: 'View better alternatives',
           // canonical_food_name is the lookup key for FoodKeeper storage data.
           // The backend's most_wasted_item carries the raw item name as stored
           // in food_item.name -- which may differ from the canonical form the
@@ -2150,29 +2295,20 @@ export default function ActivityScreen() {
 
                 {patternsState.status === 'ready' && patternsState.totalEvents > 0 && (
                   <>
-                    <FrequencyCard
-                      title="Frequently wasted categories"
-                      subtitle="Top 5 + Other · sorted by frequency"
-                      data={patternsState.data.categories}
-                      barColor={colors.statusToday}
-                      otherColor={colors.sourceManual}
-                    />
-                    <FrequencyCard
-                      title="Common waste reasons"
-                      subtitle="Top 5 + Other · sorted by frequency"
-                      data={patternsState.data.reasons}
-                      barColor={colors.statusSoon}
-                      otherColor={colors.sourceManual}
+                    <CategoryWeightCard categories={patternsState.data.categories} />
+                    <ReasonsCard
+                      reasons={patternsState.data.reasons}
+                      otherCount={patternsState.data.otherReasonCount}
                     />
                     {patternsState.data.insight && (
-                      <WasteInsightCard
+                      <KeyInsightCard
                         insight={patternsState.data.insight}
-                        onPressCta={() => {
+                        onPress={() => {
                           const { insight } = patternsState.data;
                           if (!insight?.canonicalFoodName) return;
                           setShowAlternatives(true);
                           setSelectedAlternativeId(null);
-                          loadAlternatives(insight.title.split(' is ')[0], insight.canonicalFoodName);
+                          loadAlternatives(insight.itemName, insight.canonicalFoodName);
                         }}
                       />
                     )}
@@ -2253,10 +2389,7 @@ export default function ActivityScreen() {
                   // back from the patterns insight since that's still live.
                   if (patternsState.status === 'ready' && patternsState.data.insight?.canonicalFoodName) {
                     const { insight } = patternsState.data;
-                    loadAlternatives(
-                      insight.title.split(' is ')[0],
-                      insight.canonicalFoodName!,
-                    );
+                    loadAlternatives(insight.itemName, insight.canonicalFoodName!);
                   }
                 }}
               />

@@ -77,11 +77,17 @@ export type WeeklyWasteRow = {
   total_quantity_wasted: number;
 };
 
-/** One bar in the Patterns tab -- either a food category (free text, e.g.
- *  "Vegetables") or a waste_reason enum value ("expired", ...). Already
- *  top-5 + a rolled-up "Other" bucket, in that order, courtesy of the
- *  backend's _top5_plus_other(). */
-export type WastePatternBucket = {
+/** One category bar in the Patterns tab -- literal top 5 by total weight
+ *  wasted (kg), no rolled-up "Other" row at all. */
+export type WeightedCategoryBucket = {
+  label: string;
+  quantity: number;
+};
+
+/** One numbered reason row in the Patterns tab -- top 5 REAL reasons by
+ *  count. The waste_reason enum's own "other" value is never one of these;
+ *  see WastePatternsOut.other_reason_count instead. */
+export type RankedReasonBucket = {
   label: string;
   count: number;
 };
@@ -95,11 +101,16 @@ export type WastePatternItem = {
 };
 
 /** GET /v1/dashboard/waste-patterns. Computed over the household's ENTIRE
- *  waste history (no time window) -- "based on the user's entries so far". */
+ *  waste history (no time window) -- "based on the user's entries so far".
+ *  Deliberately simple: categories are a plain top-5-by-weight with nothing
+ *  past #5 shown, and the "other" waste reason is its own dedicated count
+ *  rather than a merged catch-all bucket (that's what used to produce two
+ *  rows both labelled "Other" in the reasons list). */
 export type WastePatternsOut = {
   total_waste_events: number;
-  top_waste_categories: WastePatternBucket[];
-  top_waste_reasons: WastePatternBucket[];
+  top_waste_categories: WeightedCategoryBucket[];
+  top_waste_reasons: RankedReasonBucket[];
+  other_reason_count: number;
   most_wasted_item: WastePatternItem | null;
 };
 
