@@ -9,12 +9,6 @@ pydantic-settings==2.6.1
 python-dotenv==1.0.1
 alembic==1.14.0
 apscheduler==3.10.4
-# python:3.12.7-slim (Dockerfile) has no system IANA tz database, so
-# zoneinfo.ZoneInfo(tz) in routers/dashboard.py's monthly_report() raises
-# ZoneInfoNotFoundError for any real zone (e.g. "Asia/Kuala_Lumpur") even
-# though "UTC" happens to work without it. This is the documented fallback
-# per PEP 615 -- see https://docs.python.org/3/library/zoneinfo.html.
-tzdata==2026.2
 
 # reference-data ingestion scripts
 pandas==2.2.3
