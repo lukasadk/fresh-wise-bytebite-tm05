@@ -16,14 +16,56 @@ from app.deps import get_current_user
 from app.models import UserProfile
 from app.schemas import (
     DashboardSummary,
-    RankedReasonBucket,
+    WastePatternBucket,
     WastePatternItem,
     WastePatternsOut,
-    WeightedCategoryBucket,
     WeeklyWasteRow,
 )
 
 router = APIRouter(prefix="/v1/dashboard", tags=["dashboard"])
+
+
+def _top5_plus_other(rows) -> list[WastePatternBucket]:
+    """Return top five rows plus one folded Other bucket.
+
+    The important edge case is a real row whose display label is already
+    "Other" (category "Other" or waste_reason enum value "other"). If there
+    are overflow rows, they must merge into that same bucket instead of
+    producing two rows with the same label.
+    """
+    buckets: list[WastePatternBucket] = []
+    overflow = 0
+
+    def display_label(raw: str | None) -> str:
+        label = (raw or "Other").strip() or "Other"
+        return "Other" if label.lower() == "other" else label
+
+    def add_to_other(count: int) -> None:
+        nonlocal overflow
+        existing = next((b for b in buckets if b.label == "Other"), None)
+        if existing is not None:
+            existing.count += count
+        else:
+            overflow += count
+
+    for row in rows:
+        label = display_label(row.label)
+        count = int(row.cnt or 0)
+        if len(buckets) < 5:
+            existing = next((b for b in buckets if b.label == label), None)
+            if existing is not None:
+                existing.count += count
+            else:
+                buckets.append(WastePatternBucket(label=label, count=count))
+        else:
+            if label == "Other":
+                add_to_other(count)
+            else:
+                add_to_other(count)
+
+    if overflow:
+        buckets.append(WastePatternBucket(label="Other", count=overflow))
+    return buckets
 
 
 @router.get("/weekly-waste", response_model=list[WeeklyWasteRow])
@@ -125,20 +167,15 @@ async def waste_patterns(
     user: UserProfile = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Patterns tab: top 5 wasted categories BY WEIGHT (kg), top 5 waste
-    reasons BY COUNT, and the single most repetitively wasted item -- all
+    """Patterns tab: top wasted categories/reasons BY COUNT, plus the single
+    most repetitively wasted item -- all
     computed over the household's entire logged history (no `days`/`weeks`
     param, unlike /summary and /weekly-waste above), since the point is
     "what's wasted most often so far", not a rolling window.
 
-    Deliberately simpler than a Top-5-plus-Other rollup (see the OLD version
-    of _top5_plus_other() that used to live here): that pattern let two rows
-    both display as "Other" whenever the real waste_reason value 'other'
-    ranked inside the top 5 AND there was overflow left to roll up. Here,
-    categories are a plain top-5-by-weight (nothing past #5 shown at all --
-    matches the redesigned UI's plain "Top 5 by weight", no catch-all row),
-    and 'other' is reported as its own dedicated count rather than a
-    synthetic bucket that could ever collide with a real label.
+    The response keeps the original Top-5-plus-Other contract because the
+    Pattern tests and older clients rely on it. The helper folds real "Other"
+    rows and overflow into a single row so React never sees duplicate keys.
     """
     total_wasted_events = (
         await db.execute(
@@ -158,13 +195,12 @@ async def waste_patterns(
         await db.execute(
             text(
                 """
-                SELECT COALESCE(fi.category, 'Other') AS label, SUM(cwl.quantity) AS qty
+                SELECT COALESCE(fi.category, 'Other') AS label, COUNT(*) AS cnt
                 FROM consumption_waste_log cwl
                 JOIN food_item fi ON fi.item_id = cwl.item_id
                 WHERE fi.user_id = :user_id AND cwl.status = 'wasted'
                 GROUP BY COALESCE(fi.category, 'Other')
-                ORDER BY qty DESC
-                LIMIT 5
+                ORDER BY cnt DESC, label ASC
                 """
             ),
             {"user_id": str(user.user_id)},
@@ -173,9 +209,7 @@ async def waste_patterns(
 
     # waste_reason is NOT NULL whenever status = 'wasted' (enforced by
     # ConsumptionWasteLogCreate's validator at write time), so no COALESCE
-    # needed here the way there is for category above. Not LIMIT-ed in SQL --
-    # the 'other' row needs to be pulled out in Python first (see below)
-    # before the remaining rows are truncated to 5.
+    # needed here the way there is for category above.
     reason_rows = (
         await db.execute(
             text(
@@ -185,17 +219,12 @@ async def waste_patterns(
                 JOIN food_item fi ON fi.item_id = cwl.item_id
                 WHERE fi.user_id = :user_id AND cwl.status = 'wasted'
                 GROUP BY cwl.waste_reason
-                ORDER BY cnt DESC
+                ORDER BY cnt DESC, label ASC
                 """
             ),
             {"user_id": str(user.user_id)},
         )
     ).all()
-
-    other_reason_count = sum(int(r.cnt) for r in reason_rows if r.label == "other")
-    ranked_reasons = [
-        RankedReasonBucket(label=r.label, count=int(r.cnt)) for r in reason_rows if r.label != "other"
-    ][:5]
 
     # Case-insensitive dedupe ("Milk" and "milk" are the same item) via
     # LOWER(TRIM(...)) as the grouping key. MIN(fi.name) picks a stable
@@ -221,15 +250,12 @@ async def waste_patterns(
 
     return WastePatternsOut(
         total_waste_events=int(total_wasted_events or 0),
-        top_waste_categories=[
-            WeightedCategoryBucket(label=r.label, quantity=float(r.qty or 0)) for r in category_rows
-        ],
-        top_waste_reasons=ranked_reasons,
-        other_reason_count=other_reason_count,
+        top_waste_categories=_top5_plus_other(category_rows),
+        top_waste_reasons=_top5_plus_other(reason_rows),
+        other_reason_count=0,
         most_wasted_item=(
             WastePatternItem(name=top_item_row.display_name, times_wasted=int(top_item_row.cnt))
             if top_item_row
             else None
         ),
     )
-

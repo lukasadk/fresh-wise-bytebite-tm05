@@ -77,19 +77,14 @@ export type WeeklyWasteRow = {
   total_quantity_wasted: number;
 };
 
-/** One category bar in the Patterns tab -- literal top 5 by total weight
- *  wasted (kg), no rolled-up "Other" row at all. */
-export type WeightedCategoryBucket = {
-  label: string;
-  quantity: number;
-};
-
-/** One numbered reason row in the Patterns tab -- top 5 REAL reasons by
- *  count. The waste_reason enum's own "other" value is never one of these;
- *  see WastePatternsOut.other_reason_count instead. */
-export type RankedReasonBucket = {
+/** One category/reason bucket in the Patterns tab -- top 5 by count plus a
+ *  folded "Other" row when more values exist. Some older deployed builds used
+ *  `quantity` for categories, so the UI parser accepts both while the stable
+ *  backend contract is `count`. */
+export type WastePatternBucket = {
   label: string;
   count: number;
+  quantity?: number;
 };
 
 /** The single food item wasted more often than anything else the household
@@ -102,14 +97,15 @@ export type WastePatternItem = {
 
 /** GET /v1/dashboard/waste-patterns. Computed over the household's ENTIRE
  *  waste history (no time window) -- "based on the user's entries so far".
- *  Deliberately simple: categories are a plain top-5-by-weight with nothing
- *  past #5 shown, and the "other" waste reason is its own dedicated count
- *  rather than a merged catch-all bucket (that's what used to produce two
- *  rows both labelled "Other" in the reasons list). */
+ *  Categories and reasons use the stable Top-5-plus-Other contract. Real
+ *  rows that already display as "Other" are folded together with overflow so
+ *  clients never receive duplicate "Other" rows. */
 export type WastePatternsOut = {
   total_waste_events: number;
-  top_waste_categories: WeightedCategoryBucket[];
-  top_waste_reasons: RankedReasonBucket[];
+  top_waste_categories: WastePatternBucket[];
+  top_waste_reasons: WastePatternBucket[];
+  /** Compatibility field for builds that separated reason "other". Current
+   *  backend folds that value into top_waste_reasons and returns 0 here. */
   other_reason_count: number;
   most_wasted_item: WastePatternItem | null;
 };
