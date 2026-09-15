@@ -212,35 +212,53 @@ export async function getGroceryAIStatus(): Promise<GroceryAIStatus> {
   };
 }
 
-async function imagePart(imageUri: string): Promise<Blob | Record<string, string>> {
-  const lower = imageUri.split('?')[0].toLocaleLowerCase();
-  const extension = lower.endsWith('.png') ? 'png' : lower.endsWith('.webp') ? 'webp' : 'jpg';
-  const type = extension === 'png' ? 'image/png' : extension === 'webp' ? 'image/webp' : 'image/jpeg';
-  const name = `grocery-image.${extension}`;
-  if (!isWebRuntime) {
-    return { uri: imageUri, name, type };
-  }
-  const response = await fetch(imageUri);
-  if (!response.ok) throw new Error('The selected image could not be read.');
-  return response.blob();
-}
+const SUPPORTED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
-function imageContentType(imageUri: string): 'image/jpeg' | 'image/png' | 'image/webp' {
+// Prefer the MIME type the OS/picker actually reported for the asset (Expo's
+// ImagePicker result carries this on `mimeType`) over guessing from the file
+// URI's extension or trusting `fetch().blob()`'s inferred type. Both guesses
+// are wrong whenever the URI has no recognizable extension -- e.g. Android
+// `content://` URIs, or an iOS `ph://`/cache URI -- in which case they
+// silently fall back to a generic/empty type even when the underlying asset
+// genuinely is a JPEG, and the backend's real format check then rejects it
+// with a "not JPEG/PNG/WebP" error that looks confusing next to a Photos app
+// that correctly reports the ORIGINAL asset as JPEG.
+function imageContentType(
+  imageUri: string,
+  mimeTypeHint?: string | null,
+): 'image/jpeg' | 'image/png' | 'image/webp' {
+  const hint = (mimeTypeHint ?? '').trim().toLocaleLowerCase();
+  if (SUPPORTED_MIME_TYPES.has(hint)) return hint as 'image/jpeg' | 'image/png' | 'image/webp';
   const lower = imageUri.split('?')[0].toLocaleLowerCase();
   if (lower.endsWith('.png')) return 'image/png';
   if (lower.endsWith('.webp')) return 'image/webp';
   return 'image/jpeg';
 }
 
+async function imagePart(imageUri: string, mimeTypeHint?: string | null): Promise<Blob> {
+  const response = await fetch(imageUri);
+  if (!response.ok) throw new Error('The selected image could not be read.');
+  const blob = await response.blob();
+  // If the fetched blob's own type isn't a supported image type (commonly
+  // empty, or 'application/octet-stream' for content:// / cache URIs), force
+  // the correct type instead of letting the multipart request go out
+  // mislabeled -- the server checks the declared Content-Type, not the
+  // fetch layer's best-effort guess.
+  const correctType = imageContentType(imageUri, mimeTypeHint);
+  if (SUPPORTED_MIME_TYPES.has((blob.type ?? '').toLocaleLowerCase())) return blob;
+  return new Blob([blob], { type: correctType });
+}
+
 export async function analyzeGroceryImage(
   imageUri: string,
   mode: GroceryRecognitionMode,
+  mimeTypeHint?: string | null,
 ): Promise<ApiGroceryAnalysis> {
   if (!isWebRuntime && hasNativeImageBase64Reader()) {
     const endpoint = mode === 'receipt'
       ? '/v1/api-recognition/receipt-json'
       : '/v1/api-recognition/analyze-json';
-    const contentType = imageContentType(imageUri);
+    const contentType = imageContentType(imageUri, mimeTypeHint);
     const imageBase64 = await readImageBase64(imageUri);
     const response = await withTimeout(`${configuredBaseUrl}${endpoint}`, {
       method: 'POST',
@@ -263,9 +281,10 @@ export async function analyzeGroceryImage(
   }
 
   const form = new FormData();
-  const part = await imagePart(imageUri);
-  if (isWebRuntime) form.append('file', part as Blob, 'grocery-image.jpg');
-  else form.append('file', part as any);
+  const part = await imagePart(imageUri, mimeTypeHint);
+  const uploadType = imageContentType(imageUri, mimeTypeHint);
+  const uploadExtension = uploadType === 'image/png' ? 'png' : uploadType === 'image/webp' ? 'webp' : 'jpg';
+  form.append('file', part, `grocery-image.${uploadExtension}`);
   const endpoint = mode === 'receipt'
     ? '/v1/api-recognition/receipt'
     : '/v1/api-recognition/analyze';

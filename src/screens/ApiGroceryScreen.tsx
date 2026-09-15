@@ -118,6 +118,7 @@ export default function ApiGroceryScreen({ navigation }: any) {
   const [serviceState, setServiceState] = useState<'checking' | 'ready' | 'unavailable'>('checking');
   const [serviceMessage, setServiceMessage] = useState('Checking the AI service…');
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageMimeType, setImageMimeType] = useState<string | null>(null);
   const [displayImageUri, setDisplayImageUri] = useState<string | null>(null);
   const [imageRatio, setImageRatio] = useState(3 / 4);
   const [items, setItems] = useState<EditableItem[]>([]);
@@ -186,6 +187,9 @@ export default function ApiGroceryScreen({ navigation }: any) {
         const cachedAsset = Platform.OS === 'android'
           ? await copyImageToAppCache(asset.uri)
           : { uri: asset.uri, width: asset.width, height: asset.height };
+        // Use the format the OS/picker actually reported for this asset, not
+        // a guess from the file URI's extension -- see apiRecognitionEngine.ts.
+        setImageMimeType((asset as { mimeType?: string }).mimeType ?? null);
         setImageUri(cachedAsset.uri);
         setDisplayImageUri(cachedAsset.uri);
         const width = Number(cachedAsset.width ?? asset.width);
@@ -211,7 +215,7 @@ export default function ApiGroceryScreen({ navigation }: any) {
     setNotice(null);
     setItems([]);
     try {
-      const result = await analyzeGroceryImage(imageUri, mode);
+      const result = await analyzeGroceryImage(imageUri, mode, imageMimeType);
       const nextDisplayUri = result.reviewImageUri ?? imageUri;
       setDisplayImageUri(nextDisplayUri);
       if (result.reviewImageUri) {
