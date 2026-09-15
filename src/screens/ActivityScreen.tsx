@@ -8,7 +8,7 @@
  *   EMPTY STATE — Leaf illustration placeholder, onboarding copy, CTA button,
  *                 "This week" zero-state, "What happens next?" hint card.
  *
- * Four tabs: Overview · Patterns · Trends · Report
+ * Three tabs: Overview · Patterns · Trends
  * Overview is LIVE: it reads GET /v1/dashboard/summary and
  * GET /v1/dashboard/weekly-waste (see useWeekSummary() below), which in turn
  * reflect every recordOutcome() call made from MarkConsumedScreen and
@@ -25,17 +25,19 @@
  * endpoint on the backend. "Goal" has no backend concept either, so the
  * dashed goal line and "On track"/"Above target" message are computed as the
  * period's own running average, not a hardcoded number.
- * Report is also LIVE (see useReport() below): it reports on the most
- * recently COMPLETED calendar month with real data (matching "Your
- * completed summary for ..."), read from GET /v1/dashboard/monthly-report --
- * which itself anchors on the household's MOST RECENT log entry rather than
- * blindly "today's calendar month", so a household that last logged
- * something in August still sees its August report in September, not an
- * empty one. Both this month's and the comparison month's category/reason
- * breakdowns come back from the SAME call, genuinely month-scoped (unlike an
- * earlier version of this hook, which had to approximate categories from
- * usePatterns()' all-time data since /v1/dashboard/summary has no
- * per-category breakdown at all).
+ *
+ * NOTE: There was previously a fourth "Report" tab (GET
+ * /v1/dashboard/monthly-report) with month-over-month comparisons and a
+ * ‹/› month navigator. It's been removed for now — the endpoint's code
+ * never made it past a local, unpushed branch, so it was never actually
+ * live on any deployed backend. Re-adding it means recreating: the
+ * monthly_report()/_month_summary() endpoint and MonthlyReportMonth/
+ * MonthlyReportOut schemas in the backend, getMonthlyReport() in
+ * api/freshwise.ts, MonthlyReportOut in api/types.ts, and the ReportData/
+ * ReportState/useReport()/MonthNavigator/ReportHeadline/ReportTotalsCard/
+ * ReportSectionTitle/KeyFindingsCard/ShareReportButton pieces here — check
+ * git log for "monthly-report" on this branch's history for the last working
+ * version before reintroducing it.
  *
  * NOTE: The donut chart (Overview) is drawn with plain View components, not
  * react-native-svg, so it keeps working in Expo Go without a native rebuild.
@@ -44,23 +46,22 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, Share, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import Svg, { Line, Polyline, Circle, Text as SvgText } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
-import { getDashboardSummary, getWeeklyWaste, getWastePatterns, getAlternativesFromFoodkeeper, getMonthlyReport } from '../api/freshwise';
+import { getDashboardSummary, getWeeklyWaste, getWastePatterns, getAlternativesFromFoodkeeper } from '../api/freshwise';
 import type { FoodkeeperAlternative } from '../api/freshwise';
 import { ApiError } from '../api/client';
-import { getDeviceTimeZone } from '../data/timezone';
-import type { DashboardSummary, WeeklyWasteRow, WasteReason, WastePatternsOut, MonthlyReportOut } from '../api/types';
+import type { DashboardSummary, WeeklyWasteRow, WasteReason, WastePatternsOut } from '../api/types';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type InsightsTab = 'Overview' | 'Patterns' | 'Trends' | 'Report';
+type InsightsTab = 'Overview' | 'Patterns' | 'Trends';
 
 type WeekSummary = {
   wasted_kg: number;
@@ -136,25 +137,6 @@ type TrendsSeries = {
 };
 
 type TrendsData = Record<TrendsPeriod, TrendsSeries>;
-
-// -- Report tab ---------------------------------------------------------------
-
-type ReportData = {
-  monthLabel: string;              // e.g. "August 2026" — the most recently completed calendar month
-  /** negative = less waste than the month before (good). Null when the
-   *  month before THAT had zero waste logged, making a % change undefined
-   *  rather than a misleading divide-by-zero substitute. */
-  deltaPct: number | null;
-  utilisationPct: number;          // 0–100
-  consumedKg: number;
-  wastedKg: number;
-  previousMonthWastedKg: number;
-  /** First word of the previous month's label (e.g. "July" from "July 2026") —
-   *  used in the headline banner's "than July" / "more than July" copy. */
-  previousMonthLabel: string;
-  categories: FrequencyDatum[];    // genuinely month-scoped — see GET /v1/dashboard/monthly-report
-  reasons: FrequencyDatum[];
-};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -310,7 +292,7 @@ function TabBar({
   active: InsightsTab;
   onPress: (t: InsightsTab) => void;
 }) {
-  const tabs: InsightsTab[] = ['Overview', 'Patterns', 'Trends', 'Report'];
+  const tabs: InsightsTab[] = ['Overview', 'Patterns', 'Trends'];
   return (
     <View style={tabStyles.row}>
       {tabs.map((tab) => {
@@ -1510,348 +1492,6 @@ const trendsHeadingStyles = StyleSheet.create({
 });
 
 // ---------------------------------------------------------------------------
-// REPORT TAB components
-// ---------------------------------------------------------------------------
-
-function MonthNavigator({
-  label,
-  onPrev,
-  onNext,
-  canGoNext,
-  disabled,
-}: {
-  label: string;
-  onPrev: () => void;
-  onNext: () => void;
-  canGoNext: boolean;
-  disabled: boolean;
-}) {
-  return (
-    <View style={monthNavStyles.card}>
-      <Pressable
-        onPress={disabled ? undefined : onPrev}
-        hitSlop={10}
-        style={monthNavStyles.arrowButton}
-      >
-        <Text style={[monthNavStyles.arrow, disabled && monthNavStyles.arrowDisabled]}>‹</Text>
-      </Pressable>
-      <Text style={monthNavStyles.label}>{label}</Text>
-      <Pressable
-        onPress={disabled || !canGoNext ? undefined : onNext}
-        hitSlop={10}
-        style={monthNavStyles.arrowButton}
-      >
-        <Text
-          style={[
-            monthNavStyles.arrow,
-            (disabled || !canGoNext) && monthNavStyles.arrowDisabled,
-          ]}
-        >
-          ›
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
-const monthNavStyles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.md,
-  },
-  arrowButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  arrow: {
-    fontFamily: fonts.bold,
-    fontSize: 22,
-    color: colors.textPrimary,
-    lineHeight: 24,
-  },
-  arrowDisabled: {
-    color: colors.border,
-  },
-  label: {
-    flex: 1,
-    textAlign: 'center',
-    fontFamily: fonts.bold,
-    fontSize: fontSize.title,
-    color: colors.textPrimary,
-  },
-});
-
-function ReportHeadline({ data }: { data: ReportData }) {
-  if (data.deltaPct === null) {
-    return (
-      <View style={reportHeadlineStyles.card}>
-        <Text style={[reportHeadlineStyles.title, { color: colors.textPrimary }]}>
-          {data.wastedKg.toFixed(1)} kg wasted in {data.monthLabel}
-        </Text>
-        <Text style={[reportHeadlineStyles.subtitle, { color: colors.textSecondary }]}>
-          Not enough history yet to compare against the month before.
-        </Text>
-      </View>
-    );
-  }
-  const isLess = data.deltaPct <= 0;
-  const pct = Math.abs(Math.round(data.deltaPct));
-  const accentColor = isLess ? colors.primary : colors.statusToday;
-  return (
-    <View style={reportHeadlineStyles.card}>
-      <Text style={[reportHeadlineStyles.title, { color: accentColor }]}>
-        {pct}% {isLess ? 'less' : 'more'} waste than last month
-      </Text>
-      <Text
-        style={[
-          reportHeadlineStyles.subtitle,
-          { color: isLess ? colors.textSecondary : accentColor },
-        ]}
-      >
-        {isLess
-          ? `than ${data.previousMonthLabel}`
-          : `You wasted ${pct}% more than ${data.previousMonthLabel}.`}
-      </Text>
-    </View>
-  );
-}
-
-const reportHeadlineStyles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.primaryTint,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    gap: 3,
-  },
-  title: {
-    fontFamily: fonts.bold,
-    fontSize: 22,
-  },
-  subtitle: {
-    fontFamily: fonts.semibold,
-    fontSize: fontSize.md,
-  },
-});
-
-function ReportTotalsCard({ data }: { data: ReportData }) {
-  // "August 2026" -> "August totals" -- first word of the month label, so
-  // the heading tracks whatever month the backend eventually reports.
-  const monthWord = data.monthLabel.split(' ')[0] || data.monthLabel;
-  return (
-    <View style={reportTotalsStyles.card}>
-      <DonutChart utilisation={data.utilisationPct / 100} size={110} thickness={14} />
-      <View style={reportTotalsStyles.right}>
-        <Text style={reportTotalsStyles.heading}>{monthWord} totals</Text>
-        <Text style={reportTotalsStyles.consumed}>
-          {data.consumedKg.toFixed(1)} kg consumed
-        </Text>
-        <Text style={reportTotalsStyles.wasted}>
-          {data.wastedKg.toFixed(1)} kg wasted
-        </Text>
-        <Text style={reportTotalsStyles.previous}>
-          Previous month: {data.previousMonthWastedKg.toFixed(1)} kg
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-const reportTotalsStyles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-  },
-  right: { flex: 1, gap: 3 },
-  heading: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.title,
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  consumed: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textPrimary,
-  },
-  wasted: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.statusToday,
-  },
-  previous: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-});
-
-function ReportSectionTitle({ children }: { children: string }) {
-  return <Text style={reportSectionTitleStyles.text}>{children}</Text>;
-}
-
-const reportSectionTitleStyles = StyleSheet.create({
-  text: {
-    fontFamily: fonts.serif,
-    fontSize: 24,
-    color: colors.textPrimary,
-  },
-});
-
-function KeyFindingsCard({
-  categories,
-  categoriesNote,
-  reasons,
-}: {
-  /** Null while Patterns hasn't loaded yet — renders without a categories
-   *  section rather than a misleading empty bar list. */
-  categories: FrequencyDatum[] | null;
-  /** Small caveat shown under the categories heading (e.g. "All-time").
-   *  See the Report render block for why this differs from `reasons`. */
-  categoriesNote?: string;
-  reasons: FrequencyDatum[];
-}) {
-  const hasCategories = categories !== null && categories.length > 0;
-  const catMax = hasCategories ? categories!.reduce((m, d) => Math.max(m, d.count), 0) : 0;
-  const reasonMax = reasons.reduce((m, d) => Math.max(m, d.count), 0);
-  return (
-    <View style={keyFindingsStyles.card}>
-      {hasCategories && (
-        <>
-          <Text style={keyFindingsStyles.subheading}>
-            Most wasted categories · Top 5 + Other
-          </Text>
-          {categoriesNote && (
-            <Text style={keyFindingsStyles.note}>{categoriesNote}</Text>
-          )}
-          <View>
-            {categories!.map((d) => (
-              <BarRow
-                key={d.label}
-                label={d.label}
-                count={d.count}
-                maxCount={catMax}
-                color={d.label === 'Other' ? colors.sourceManual : colors.statusToday}
-              />
-            ))}
-          </View>
-        </>
-      )}
-
-      <Text
-        style={[
-          keyFindingsStyles.subheading,
-          hasCategories && keyFindingsStyles.subheadingSpaced,
-        ]}
-      >
-        Common reasons · Top 5 + Other
-      </Text>
-      {reasons.length > 0 ? (
-        <View>
-          {reasons.map((d) => (
-            <BarRow
-              key={d.label}
-              label={d.label}
-              count={d.count}
-              maxCount={reasonMax}
-              color={d.label === 'Other' ? colors.sourceManual : colors.statusSoon}
-            />
-          ))}
-        </View>
-      ) : (
-        <Text style={keyFindingsStyles.note}>Nothing was marked wasted this month.</Text>
-      )}
-    </View>
-  );
-}
-
-const keyFindingsStyles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-  subheading: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.title,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  subheadingSpaced: {
-    marginTop: spacing.lg,
-  },
-  note: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-});
-
-function ShareReportButton({ data }: { data: ReportData }) {
-  const handleShare = async () => {
-    const deltaText =
-      data.deltaPct === null
-        ? 'No prior month to compare against yet.'
-        : `${Math.abs(Math.round(data.deltaPct))}% ${data.deltaPct <= 0 ? 'less' : 'more'} waste than last month.`;
-    try {
-      await Share.share({
-        message:
-          `FreshWise — ${data.monthLabel} waste report\n` +
-          `${deltaText} ` +
-          `Utilised ${Math.round(data.utilisationPct)}% of purchased food ` +
-          `(${data.consumedKg.toFixed(1)} kg consumed, ${data.wastedKg.toFixed(1)} kg wasted).`,
-      });
-    } catch {
-      // Share sheet dismissed or unavailable -- nothing to recover from here.
-    }
-  };
-
-  return (
-    <Pressable
-      onPress={handleShare}
-      style={({ pressed }) => [
-        shareReportStyles.button,
-        pressed && { opacity: 0.85 },
-      ]}
-    >
-      <Text style={shareReportStyles.label}>Share monthly report</Text>
-    </Pressable>
-  );
-}
-
-const shareReportStyles = StyleSheet.create({
-  button: {
-    backgroundColor: colors.primaryDark,
-    borderRadius: radii.pill,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  label: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.md,
-    color: colors.white,
-  },
-});
-
-// ---------------------------------------------------------------------------
 // EMPTY STATE components
 // ---------------------------------------------------------------------------
 
@@ -1984,9 +1624,9 @@ const overviewStateStyles = StyleSheet.create({
 });
 
 // ---------------------------------------------------------------------------
-// All four tabs are LIVE. Nothing below is mock data anymore -- see
-// useWeekSummary() / usePatterns() / useAlternatives() / useTrends() /
-// useReport() further down for each tab's data hook.
+// All three tabs are LIVE. Nothing below is mock data anymore -- see
+// useWeekSummary() / usePatterns() / useAlternatives() / useTrends()
+// further down for each tab's data hook.
 // ---------------------------------------------------------------------------
 
 // Patterns tab — LIVE, see usePatterns() further down. Backend endpoint:
@@ -2263,105 +1903,6 @@ function useTrends() {
 }
 
 // ---------------------------------------------------------------------------
-// Report tab — live data hook
-// ---------------------------------------------------------------------------
-//
-// GET /v1/dashboard/monthly-report returns the household's most recently
-// logged calendar month ("current") and the one before it ("previous") in a
-// single call -- both fully month-scoped, including category/reason
-// breakdowns, since the backend computes them directly off
-// consumption_waste_log rather than approximating from a rolling window.
-// "Current" is whichever month the household actually marked something
-// consumed/wasted in via MarkConsumedScreen/MarkWastedScreen most recently --
-// not necessarily today's calendar month, matching "Your completed summary
-// for ..." rather than showing an empty in-progress month. The device's own
-// IANA timezone is sent so month boundaries match the household's calendar,
-// not the server's (see data/timezone.ts).
-
-function buildReportData(raw: MonthlyReportOut): ReportData {
-  const cur = raw.current;
-  const prev = raw.previous;
-
-  const denom = cur.wasted_quantity + cur.consumed_quantity;
-  const utilisationPct = denom > 0 ? (cur.consumed_quantity / denom) * 100 : 0;
-
-  // No previous-month waste to divide by -> no meaningful percentage change,
-  // rather than a misleading 0% ("unchanged") or a divide-by-zero stand-in.
-  const deltaPct =
-    prev.wasted_quantity > 0
-      ? ((cur.wasted_quantity - prev.wasted_quantity) / prev.wasted_quantity) * 100
-      : null;
-
-  return {
-    monthLabel: cur.label,
-    deltaPct,
-    utilisationPct,
-    consumedKg: cur.consumed_quantity,
-    wastedKg: cur.wasted_quantity,
-    previousMonthWastedKg: prev.wasted_quantity,
-    previousMonthLabel: prev.label.split(' ')[0] || prev.label,
-    categories: cur.top_waste_categories.map((b) => ({ label: b.label, count: b.count })),
-    reasons: cur.top_waste_reasons.map((b) => ({ label: reasonRowLabel(b.label), count: b.count })),
-  };
-}
-
-type ReportState =
-  | { status: 'loading' }
-  | { status: 'error'; message: string }
-  | { status: 'empty'; monthLabel: string } // nothing logged in the target month
-  | { status: 'ready'; data: ReportData };
-
-/** Same focus-refetch pattern as useWeekSummary()/usePatterns() -- returning
- *  here after Mark Consumed / Mark Wasted always reflects the latest entry,
- *  and crossing a month boundary while the app is open picks up the new
- *  "most recent month" on next focus.
- *
- *  monthOffset (0 = the household's most recently logged month, 1 = the one
- *  before that, etc.) drives the ‹/› MonthNavigator. Unlike a focus change,
- *  paging months happens WHILE the tab is already focused, so a plain effect
- *  keyed on monthOffset covers that case; useFocusEffect still handles
- *  "came back from another screen with new data" on top of it. Both can fire
- *  once each on first mount -- an extra GET on load is a small price for not
- *  needing a coordination flag between the two triggers. */
-function useReport(monthOffset: number) {
-  const [state, setState] = useState<ReportState>({ status: 'loading' });
-
-  const load = useCallback(async () => {
-    setState({ status: 'loading' });
-    try {
-      const tz = getDeviceTimeZone();
-      const raw = await getMonthlyReport(tz, monthOffset);
-      const hasCurrentData = raw.current.wasted_events + raw.current.consumed_events > 0;
-      setState(
-        hasCurrentData
-          ? { status: 'ready', data: buildReportData(raw) }
-          : { status: 'empty', monthLabel: raw.current.label },
-      );
-    } catch (e) {
-      setState({
-        status: 'error',
-        message: e instanceof ApiError ? e.message : 'Could not load the monthly report.',
-      });
-    }
-  }, [monthOffset]);
-
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
-
-  // Handles paging with the MonthNavigator arrows -- see docstring above for
-  // why this is needed alongside useFocusEffect rather than instead of it.
-  React.useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monthOffset]);
-
-  return { state, retry: load };
-}
-
-// ---------------------------------------------------------------------------
 // Overview tab — live data
 // ---------------------------------------------------------------------------
 //
@@ -2494,19 +2035,6 @@ export default function ActivityScreen() {
   // Trends tab — live, see useTrends() above.
   const { state: trendsState, retry: retryTrends } = useTrends();
 
-  // Report tab — which month is being viewed (0 = most recently logged).
-  const [monthOffset, setMonthOffset] = useState(0);
-
-  // Report tab — live, see useReport() above.
-  const { state: reportState, retry: retryReport } = useReport(monthOffset);
-
-  const reportMonthLabel =
-    reportState.status === 'ready'
-      ? reportState.data.monthLabel
-      : reportState.status === 'empty'
-        ? reportState.monthLabel
-        : null;
-
   const subtitleByTab: Record<InsightsTab, string> = {
     Overview:
       overviewState.status === 'ready' && overviewState.data.state === 'data'
@@ -2514,9 +2042,6 @@ export default function ActivityScreen() {
         : 'Understand your household food habits over time.',
     Patterns: 'See what is wasted most often — and why.',
     Trends: 'Track progress against your reduction goal.',
-    Report: reportMonthLabel
-      ? `Your completed summary for ${reportMonthLabel}.`
-      : 'Your completed summary for last month.',
   };
   const subtitle = showAlternatives
     ? alternativesState.status === 'ready'
@@ -2541,7 +2066,6 @@ export default function ActivityScreen() {
             setShowAlternatives(false);
             resetAlternatives();
             setSelectedAlternativeId(null);
-            setMonthOffset(0);
             setActiveTab(tab);
           }}
         />
@@ -2709,50 +2233,6 @@ export default function ActivityScreen() {
                     </>
                   );
                 })()}
-              </>
-            )}
-
-            {/* Report */}
-            {activeTab === 'Report' && (
-              <>
-                <MonthNavigator
-                  label={reportMonthLabel ?? '···'}
-                  onPrev={() => setMonthOffset((o) => o + 1)}
-                  onNext={() => setMonthOffset((o) => Math.max(0, o - 1))}
-                  canGoNext={monthOffset > 0}
-                  disabled={reportState.status === 'loading'}
-                />
-
-                {reportState.status === 'loading' && <OverviewLoading />}
-
-                {reportState.status === 'error' && (
-                  <OverviewError message={reportState.message} onRetry={retryReport} />
-                )}
-
-                {reportState.status === 'empty' && (
-                  <View style={styles.illustrationCard}>
-                    <View style={styles.illustrationCircle} />
-                    <Text style={styles.illustrationTitle}>
-                      No report for {reportState.monthLabel} yet
-                    </Text>
-                    <Text style={styles.illustrationBody}>
-                      Mark items as consumed or wasted to build {reportState.monthLabel}'s report.
-                    </Text>
-                  </View>
-                )}
-
-                {reportState.status === 'ready' && (
-                  <>
-                    <ReportHeadline data={reportState.data} />
-                    <ReportTotalsCard data={reportState.data} />
-                    <ReportSectionTitle>Top wasted categories</ReportSectionTitle>
-                    <KeyFindingsCard
-                      categories={reportState.data.categories}
-                      reasons={reportState.data.reasons}
-                    />
-                    <ShareReportButton data={reportState.data} />
-                  </>
-                )}
               </>
             )}
           </>

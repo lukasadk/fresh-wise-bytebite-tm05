@@ -80,9 +80,7 @@ export type WeeklyWasteRow = {
 /** One bar in the Patterns tab -- either a food category (free text, e.g.
  *  "Vegetables") or a waste_reason enum value ("expired", ...). Already
  *  top-5 + a rolled-up "Other" bucket, in that order, courtesy of the
- *  backend's _top5_plus_other(). Reused as-is by MonthlyReportMonth below --
- *  both the Patterns and Report tabs' bar rows are the same {label, count}
- *  shape. */
+ *  backend's _top5_plus_other(). */
 export type WastePatternBucket = {
   label: string;
   count: number;
@@ -103,27 +101,6 @@ export type WastePatternsOut = {
   top_waste_categories: WastePatternBucket[];
   top_waste_reasons: WastePatternBucket[];
   most_wasted_item: WastePatternItem | null;
-};
-
-/** One calendar month's worth of the Report tab. "current" isn't always
- *  today's calendar month -- see the backend's monthly_report() docstring:
- *  it's whichever month contains the household's most recent log entry. */
-export type MonthlyReportMonth = {
-  year: number;
-  month: number;
-  label: string; // e.g. "September 2026"
-  wasted_events: number;
-  wasted_quantity: number;
-  consumed_events: number;
-  consumed_quantity: number;
-  utilisation_rate: number | null;
-  top_waste_categories: WastePatternBucket[];
-  top_waste_reasons: WastePatternBucket[];
-};
-
-export type MonthlyReportOut = {
-  current: MonthlyReportMonth;
-  previous: MonthlyReportMonth;
 };
 
 export type FoodkeeperStorage = {
