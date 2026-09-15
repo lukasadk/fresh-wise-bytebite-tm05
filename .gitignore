@@ -64,3 +64,9 @@ desktop.ini
 
 # Scratch output from scripts/verify-storage-guidance.mjs
 .verify-tmp/
+
+# Local AI model downloads/restores. Keep model weights out of normal Git.
+ai model/downloads/
+ai model/models/
+ai model/**/*.safetensors
+ai model/**/*.bin
