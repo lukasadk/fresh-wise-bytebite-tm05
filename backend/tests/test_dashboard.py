@@ -125,6 +125,53 @@ async def test_most_wasted_item_name_matching_is_case_insensitive(client: AsyncC
     assert top["times_wasted"] == 2
 
 
+async def test_other_category_in_top5_does_not_duplicate_rollup_bucket(
+    client: AsyncClient, registered_device: str
+):
+    # A genuine "Other" category (either typed literally, or left blank and
+    # COALESCE'd server-side) ranks in the top 5 by count, AND there's a 6th+
+    # category to roll up -- naively this used to produce TWO buckets both
+    # labelled "Other" in the same response, which crashed the frontend's
+    # keyed list rendering. The counts must fold into one bucket instead.
+    categories = ["Other", "Fruit", "Vegetables", "Bakery", "Protein", "Snacks"]
+    for i, cat in enumerate(categories):
+        times = 6 - i  # Other=6, Fruit=5, ..., Snacks=1
+        for _ in range(times):
+            item = await _add_item(client, registered_device, name=f"{cat} item", category=cat)
+            await _waste(client, registered_device, item, "spoiled")
+
+    resp = await client.get("/v1/dashboard/waste-patterns", headers={"X-Device-Id": registered_device})
+    buckets = resp.json()["top_waste_categories"]
+
+    labels = [b["label"] for b in buckets]
+    assert labels.count("Other") == 1, f"expected exactly one 'Other' bucket, got {buckets}"
+    # Other's own 6 + Snacks' 1 (the rolled-up 6th place) = 7.
+    other_bucket = next(b for b in buckets if b["label"] == "Other")
+    assert other_bucket["count"] == 7
+
+
+async def test_other_waste_reason_in_top5_does_not_duplicate_rollup_bucket(
+    client: AsyncClient, registered_device: str
+):
+    # Same bug, other side: the waste_reason enum's own lowercase "other"
+    # value ranks in the top 5, colliding with the rollup's "Other" bucket
+    # once the frontend capitalises it for display.
+    reasons = ["other", "expired", "spoiled", "forgot_about_it", "bought_too_much", "changed_plans"]
+    for i, reason in enumerate(reasons):
+        times = 6 - i
+        for _ in range(times):
+            item = await _add_item(client, registered_device, name=f"item for {reason}")
+            await _waste(client, registered_device, item, reason)
+
+    resp = await client.get("/v1/dashboard/waste-patterns", headers={"X-Device-Id": registered_device})
+    buckets = resp.json()["top_waste_reasons"]
+
+    labels = [b["label"] for b in buckets]
+    assert labels.count("Other") == 1, f"expected exactly one 'Other' bucket, got {buckets}"
+    other_bucket = next(b for b in buckets if b["label"] == "Other")
+    assert other_bucket["count"] == 7  # other's own 6 + changed_plans' rolled-up 1
+
+
 async def test_waste_patterns_isolated_between_devices(client: AsyncClient, registered_device: str):
     item = await _add_item(client, registered_device, name="Milk", category="Dairy")
     await _waste(client, registered_device, item, "expired")

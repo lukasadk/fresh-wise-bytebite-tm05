@@ -682,9 +682,9 @@ function FrequencyCard({
         <Text style={frequencyStyles.subheading}>{subtitle}</Text>
       </View>
       <View style={frequencyStyles.card}>
-        {data.map((d) => (
+        {data.map((d, i) => (
           <BarRow
-            key={d.label}
+            key={`${d.label}-${i}`}
             label={d.label}
             count={d.count}
             maxCount={maxCount}
