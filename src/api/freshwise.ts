@@ -16,6 +16,7 @@ import type {
   RecipeRecommendation,
   UserProfile,
   WasteReason,
+  WastePatternsOut,
   WeeklyWasteRow,
 } from './types';
 
@@ -190,6 +191,155 @@ export const getDashboardSummary = (days = 30) =>
 
 export const getWeeklyWaste = (weeks = 12) =>
   request<WeeklyWasteRow[]>(`/v1/dashboard/weekly-waste?weeks=${weeks}`);
+
+/** Patterns tab (ActivityScreen): top waste categories/reasons and the single
+ *  repeatedly-wasted item, computed over the household's entire waste history
+ *  (no time-window query params -- unlike summary/weekly-waste above). */
+export const getWastePatterns = () => request<WastePatternsOut>('/v1/dashboard/waste-patterns');
+
+/** Alternatives view (ActivityScreen → Patterns → "View better alternatives").
+ *
+ *  There is no dedicated "alternatives" endpoint -- instead this function
+ *  re-uses the existing FoodKeeper reference lookup to derive alternatives
+ *  from the same dataset that already powers storage guidance elsewhere in
+ *  the app. The logic:
+ *
+ *  1. Fetch all FoodKeeper rows whose canonical_food_name matches the
+ *     most-wasted item (lookupStorage already does this).
+ *  2. Convert each row into an AlternativeOption by picking the storage
+ *     method with the longest available shelf life (freeze > refrigerate >
+ *     pantry) and formatting it as a human-readable meta string.
+ *  3. Sort by shelf-life descending so the row with the longest life is
+ *     always first ("Best match").
+ *  4. If the lookup returns nothing (item name has no FoodKeeper match, e.g.
+ *     a very local item), return an empty array -- the caller renders an
+ *     appropriate empty state rather than crashing.
+ *
+ *  This means the alternatives ARE real FoodKeeper data, not dummy content,
+ *  but they reflect storage alternatives (pantry / fridge / freezer) for the
+ *  same item, not product substitutes. That matches what the Figma shows:
+ *  "UHT Milk", "Powdered Milk", "Frozen Milk Portions" are all different
+ *  storage forms of "milk". Once a dedicated alternatives backend endpoint
+ *  exists, replace this function entirely. */
+export type FoodkeeperAlternative = {
+  id: string;
+  title: string;
+  meta: string;
+  why: string;
+  shelfLifeDays: number;  // used for sort/bestMatch; not displayed
+  bestMatch?: boolean;
+};
+
+/** Duration metrics from FoodKeeper normalised to days for sorting. */
+function toDays(value: number, metric: string | null): number {
+  const m = (metric ?? '').toLowerCase();
+  if (m.includes('year')) return value * 365;
+  if (m.includes('month')) return value * 30;
+  if (m.includes('week')) return value * 7;
+  return value; // already days
+}
+
+/** Human-friendly storage label for the meta line. */
+function storageLabel(method: 'pantry' | 'refrigerate' | 'freeze'): string {
+  return method === 'pantry'
+    ? 'Room temperature'
+    : method === 'refrigerate'
+    ? 'Refrigerated'
+    : 'Frozen storage';
+}
+
+/** Human-friendly duration string, e.g. "3–6 months" or "Up to 2 weeks". */
+function durationLabel(min: number | null, max: number | null, metric: string | null): string {
+  const m = metric ?? '';
+  if (min !== null && max !== null && min !== max) return `${min}–${max} ${m.toLowerCase()}`;
+  const val = max ?? min;
+  if (val === null) return 'varies';
+  return `Up to ${val} ${m.toLowerCase()}`;
+}
+
+/** Why this storage method is worth considering (short rationale). */
+function storageWhy(method: 'pantry' | 'refrigerate' | 'freeze', tips: string | null): string {
+  if (tips && tips.length < 80) return tips;
+  return method === 'pantry'
+    ? 'Keep at room temperature, no refrigeration needed'
+    : method === 'refrigerate'
+    ? 'Keeps fresh when refrigerated'
+    : 'Freeze to extend shelf life significantly';
+}
+
+export async function getAlternativesFromFoodkeeper(
+  canonicalFoodName: string,
+): Promise<FoodkeeperAlternative[]> {
+  const rows = await lookupStorage(canonicalFoodName);
+  if (!rows.length) return [];
+
+  type StorageMethod = 'pantry' | 'refrigerate' | 'freeze';
+
+  // Build one candidate per (row × storage-method) combination that has data.
+  const candidates: FoodkeeperAlternative[] = [];
+
+  for (const row of rows) {
+    const label = row.name_subtitle
+      ? `${row.name} (${row.name_subtitle})`
+      : (row.name ?? canonicalFoodName);
+
+    // Check each storage method. Prefer dop_* columns (date-of-purchase)
+    // when the plain columns are null -- fresh produce is dop-only.
+    const methods: { method: StorageMethod; min: number | null; max: number | null; metric: string | null; tips: string | null }[] = [
+      {
+        method: 'pantry',
+        min: row.pantry_min ?? row.dop_pantry_min,
+        max: row.pantry_max ?? row.dop_pantry_max,
+        metric: row.pantry_metric ?? row.dop_pantry_metric,
+        tips: row.pantry_tips,
+      },
+      {
+        method: 'refrigerate',
+        min: row.refrigerate_min ?? row.dop_refrigerate_min,
+        max: row.refrigerate_max ?? row.dop_refrigerate_max,
+        metric: row.refrigerate_metric ?? row.dop_refrigerate_metric,
+        tips: row.refrigerate_tips,
+      },
+      {
+        method: 'freeze',
+        min: row.freeze_min ?? row.dop_freeze_min,
+        max: row.freeze_max ?? row.dop_freeze_max,
+        metric: row.freeze_metric ?? row.dop_freeze_metric,
+        tips: row.freeze_tips,
+      },
+    ];
+
+    for (const { method, min, max, metric, tips } of methods) {
+      if (max === null && min === null) continue; // no data for this method
+      const shelfLifeDays = toDays(max ?? min!, metric);
+      candidates.push({
+        id: `${row.foodkeeper_id}-${method}`,
+        title: label,
+        meta: `${storageLabel(method)} · ${durationLabel(min, max, metric)}`,
+        why: storageWhy(method, tips),
+        shelfLifeDays,
+      });
+    }
+  }
+
+  if (!candidates.length) return [];
+
+  // Sort longest shelf life first, dedupe by id.
+  const seen = new Set<string>();
+  const sorted = candidates
+    .sort((a, b) => b.shelfLifeDays - a.shelfLifeDays)
+    .filter((c) => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    })
+    .slice(0, 5); // cap at 5 so the list doesn't sprawl
+
+  // Mark the longest-shelf-life option as best match.
+  if (sorted.length > 0) sorted[0].bestMatch = true;
+
+  return sorted;
+}
 
 // --- Recipes ---------------------------------------------------------------
 

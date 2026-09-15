@@ -31,6 +31,11 @@ export type PantryItem = {
   quantity: number;
   unit: string;
   purchaseDate: string | null; // ISO
+  /** When the item was added to the pantry (the API's `created_at`), as opposed
+   *  to when it was bought. Drives the "Recently added" sort: purchase_date is
+   *  user-entered and defaults to today, so two items added days apart can share
+   *  one, which would make that ordering meaningless. */
+  addedAt: string | null;
   expiryDate: string | null; // ISO
   daysToExpiry: number | null;
   status: FoodItem['status'];
@@ -60,6 +65,7 @@ export function toPantryItem(f: FoodItem): PantryItem {
     quantity: Number(f.quantity),
     unit: f.unit ?? '',
     purchaseDate: f.purchase_date ?? null,
+    addedAt: f.created_at ?? null,
     expiryDate: f.expiry_date ?? null,
     daysToExpiry: f.days_to_expiry,
     status: f.status,

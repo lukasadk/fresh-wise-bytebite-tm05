@@ -1,8 +1,9 @@
 """Waste Insights Dashboard -- Epic 2: "what I waste, how much, why, and
-how it changes over time." Reads from the `weekly_waste_summary` VIEW
-defined in erd-schema.sql (raw SQL here since it's a plain read-only view
-with a composite grouping key, not worth mapping as an ORM entity) plus
-a rolled-up summary computed directly off consumption_waste_log.
+how it changes over time." `weekly_waste` reads from the `weekly_waste_summary`
+VIEW defined in erd-schema.sql (raw SQL here since it's a plain read-only view
+with a composite grouping key, not worth mapping as an ORM entity). The rest
+compute directly off consumption_waste_log, since each needs a filter (a
+rolling window; all-time) the view doesn't expose.
 """
 from datetime import datetime, timedelta, timezone
 
@@ -13,7 +14,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db
 from app.deps import get_current_user
 from app.models import UserProfile
-from app.schemas import DashboardSummary, WeeklyWasteRow
+from app.schemas import (
+    DashboardSummary,
+    RankedReasonBucket,
+    WastePatternItem,
+    WastePatternsOut,
+    WeightedCategoryBucket,
+    WeeklyWasteRow,
+)
 
 router = APIRouter(prefix="/v1/dashboard", tags=["dashboard"])
 
@@ -110,3 +118,118 @@ async def dashboard_summary(
             {"waste_reason": r.waste_reason, "count": int(r.cnt), "quantity": float(r.qty or 0)} for r in reasons
         ],
     )
+
+
+@router.get("/waste-patterns", response_model=WastePatternsOut)
+async def waste_patterns(
+    user: UserProfile = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Patterns tab: top 5 wasted categories BY WEIGHT (kg), top 5 waste
+    reasons BY COUNT, and the single most repetitively wasted item -- all
+    computed over the household's entire logged history (no `days`/`weeks`
+    param, unlike /summary and /weekly-waste above), since the point is
+    "what's wasted most often so far", not a rolling window.
+
+    Deliberately simpler than a Top-5-plus-Other rollup (see the OLD version
+    of _top5_plus_other() that used to live here): that pattern let two rows
+    both display as "Other" whenever the real waste_reason value 'other'
+    ranked inside the top 5 AND there was overflow left to roll up. Here,
+    categories are a plain top-5-by-weight (nothing past #5 shown at all --
+    matches the redesigned UI's plain "Top 5 by weight", no catch-all row),
+    and 'other' is reported as its own dedicated count rather than a
+    synthetic bucket that could ever collide with a real label.
+    """
+    total_wasted_events = (
+        await db.execute(
+            text(
+                """
+                SELECT COUNT(*) AS cnt
+                FROM consumption_waste_log cwl
+                JOIN food_item fi ON fi.item_id = cwl.item_id
+                WHERE fi.user_id = :user_id AND cwl.status = 'wasted'
+                """
+            ),
+            {"user_id": str(user.user_id)},
+        )
+    ).scalar_one()
+
+    category_rows = (
+        await db.execute(
+            text(
+                """
+                SELECT COALESCE(fi.category, 'Other') AS label, SUM(cwl.quantity) AS qty
+                FROM consumption_waste_log cwl
+                JOIN food_item fi ON fi.item_id = cwl.item_id
+                WHERE fi.user_id = :user_id AND cwl.status = 'wasted'
+                GROUP BY COALESCE(fi.category, 'Other')
+                ORDER BY qty DESC
+                LIMIT 5
+                """
+            ),
+            {"user_id": str(user.user_id)},
+        )
+    ).all()
+
+    # waste_reason is NOT NULL whenever status = 'wasted' (enforced by
+    # ConsumptionWasteLogCreate's validator at write time), so no COALESCE
+    # needed here the way there is for category above. Not LIMIT-ed in SQL --
+    # the 'other' row needs to be pulled out in Python first (see below)
+    # before the remaining rows are truncated to 5.
+    reason_rows = (
+        await db.execute(
+            text(
+                """
+                SELECT cwl.waste_reason AS label, COUNT(*) AS cnt
+                FROM consumption_waste_log cwl
+                JOIN food_item fi ON fi.item_id = cwl.item_id
+                WHERE fi.user_id = :user_id AND cwl.status = 'wasted'
+                GROUP BY cwl.waste_reason
+                ORDER BY cnt DESC
+                """
+            ),
+            {"user_id": str(user.user_id)},
+        )
+    ).all()
+
+    other_reason_count = sum(int(r.cnt) for r in reason_rows if r.label == "other")
+    ranked_reasons = [
+        RankedReasonBucket(label=r.label, count=int(r.cnt)) for r in reason_rows if r.label != "other"
+    ][:5]
+
+    # Case-insensitive dedupe ("Milk" and "milk" are the same item) via
+    # LOWER(TRIM(...)) as the grouping key. MIN(fi.name) picks a stable
+    # display casing (alphabetically first of whatever's been logged) rather
+    # than showing the raw grouping key.
+    top_item_row = (
+        await db.execute(
+            text(
+                """
+                SELECT MIN(fi.name) AS display_name, COUNT(*) AS cnt
+                FROM consumption_waste_log cwl
+                JOIN food_item fi ON fi.item_id = cwl.item_id
+                WHERE fi.user_id = :user_id AND cwl.status = 'wasted'
+                GROUP BY LOWER(TRIM(fi.name))
+                HAVING COUNT(*) >= 2
+                ORDER BY cnt DESC, display_name ASC
+                LIMIT 1
+                """
+            ),
+            {"user_id": str(user.user_id)},
+        )
+    ).first()
+
+    return WastePatternsOut(
+        total_waste_events=int(total_wasted_events or 0),
+        top_waste_categories=[
+            WeightedCategoryBucket(label=r.label, quantity=float(r.qty or 0)) for r in category_rows
+        ],
+        top_waste_reasons=ranked_reasons,
+        other_reason_count=other_reason_count,
+        most_wasted_item=(
+            WastePatternItem(name=top_item_row.display_name, times_wasted=int(top_item_row.cnt))
+            if top_item_row
+            else None
+        ),
+    )
+

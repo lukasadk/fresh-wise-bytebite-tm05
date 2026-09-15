@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import { ALL_FILTER, categoryForFilter, deriveFilters, isFilterStillValid } from '../data/pantryFilters';
+import { DEFAULT_SORT, SORT_SHORT_LABEL, SortKey, compareItems, isDescending } from '../data/pantrySort';
+import SortPicker from '../components/SortPicker';
 import { SearchBar, FilterPill } from '../components/PantryControls';
 import AlertBanner from '../components/AlertBanner';
 import FoodRow from '../components/FoodRow';
@@ -99,7 +101,8 @@ export default function PantryScreen({ navigation, route }: any) {
     setBulkError(null);
   };
 
-  const [sortOrder, setSortOrder] = useState<'soonest' | 'latest'>('soonest');
+  const [sortKey, setSortKey] = useState<SortKey>(DEFAULT_SORT);
+  const [sortPickerVisible, setSortPickerVisible] = useState(false);
 
   // Each item's daysLeft, computed once per items/render rather than recomputed
   // per sort comparison.
@@ -139,15 +142,28 @@ export default function PantryScreen({ navigation, route }: any) {
       return matchesQuery && matchesCategory;
     });
 
-    const sorted = [...filtered].sort((a, b) => {
-      // No expiry date sorts last regardless of direction -- there's no
-      // meaningful "soonest"/"latest" position for it.
-      const aDays = a.expiry.daysLeft ?? Infinity;
-      const bDays = b.expiry.daysLeft ?? Infinity;
-      return sortOrder === 'soonest' ? aDays - bDays : bDays - aDays;
-    });
+    // Ordering lives in data/pantrySort.ts so the six options (expiry, name and
+    // amount, each both ways) can be verified without rendering a screen.
+    // Undated items still sort last under every option, as they did here.
+    const sorted = [...filtered].sort((a, b) =>
+      compareItems(
+        {
+          name: a.item.name,
+          quantity: a.item.quantity,
+          daysLeft: a.expiry.daysLeft ?? null,
+          addedAt: a.item.addedAt,
+        },
+        {
+          name: b.item.name,
+          quantity: b.item.quantity,
+          daysLeft: b.expiry.daysLeft ?? null,
+          addedAt: b.item.addedAt,
+        },
+        sortKey
+      )
+    );
     return sorted.map((x) => x.item);
-  }, [itemsWithExpiry, sortOrder, query, activeFilter]);
+  }, [itemsWithExpiry, sortKey, query, activeFilter]);
 
   // "Needs attention" = anything not safely >3 days out (urgent or warn level) --
   // matches the same thresholds the border/dot colours use, see pantryItems.ts.
@@ -230,13 +246,11 @@ export default function PantryScreen({ navigation, route }: any) {
           <View style={styles.headerBlock}>
             <View style={styles.headerRow}>
               <Text style={styles.title}>My Pantry</Text>
+              {/* Select used to sit here beside "+". It now lives down beside the
+                  item count, next to the list it acts on -- usability testing
+                  found it easy to miss up here, and it reads as an "add"-family
+                  action when paired with the + button. */}
               <View style={styles.headerButtons}>
-                <Pressable
-                  style={styles.selectToggleButton}
-                  onPress={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
-                >
-                  <Text style={styles.selectToggleText}>{selectMode ? 'Cancel' : 'Select'}</Text>
-                </Pressable>
                 <Pressable style={styles.addButton} onPress={() => navigation.navigate('AddFood')}>
                   <Plus size={22} color={colors.white} />
                 </Pressable>
@@ -287,19 +301,26 @@ export default function PantryScreen({ navigation, route }: any) {
             ) : null}
 
             <View style={styles.listHeaderRow}>
-              <Text style={styles.itemCount}>
-                {itemsLoading ? 'Loading…' : `${sortedItems.length} item${sortedItems.length === 1 ? '' : 's'}`}
-              </Text>
+              <View style={styles.listHeaderLeft}>
+                <Text style={styles.itemCount}>
+                  {itemsLoading ? 'Loading…' : `${sortedItems.length} item${sortedItems.length === 1 ? '' : 's'}`}
+                </Text>
+                {items.length > 0 ? (
+                  <Pressable
+                    style={styles.selectToggleInline}
+                    onPress={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+                  >
+                    <Text style={styles.selectToggleText}>{selectMode ? 'Cancel' : 'Select'}</Text>
+                  </Pressable>
+                ) : null}
+              </View>
               <View style={styles.headerControls}>
-                <Pressable
-                  style={styles.sortRow}
-                  onPress={() => setSortOrder((prev) => (prev === 'soonest' ? 'latest' : 'soonest'))}
-                >
-                  <Text style={styles.sortLabel}>{sortOrder === 'soonest' ? 'Expiry soonest' : 'Expiry latest'}</Text>
-                  {sortOrder === 'soonest' ? (
-                    <ChevronDown size={16} color={colors.primary} />
-                  ) : (
+                <Pressable style={styles.sortRow} onPress={() => setSortPickerVisible(true)}>
+                  <Text style={styles.sortLabel}>{SORT_SHORT_LABEL[sortKey]}</Text>
+                  {isDescending(sortKey) ? (
                     <ChevronUp size={16} color={colors.primary} />
+                  ) : (
+                    <ChevronDown size={16} color={colors.primary} />
                   )}
                 </Pressable>
                 <View style={styles.viewToggle}>
@@ -414,6 +435,13 @@ export default function PantryScreen({ navigation, route }: any) {
         </View>
       ) : null}
 
+      <SortPicker
+        visible={sortPickerVisible}
+        selected={sortKey}
+        onSelect={setSortKey}
+        onClose={() => setSortPickerVisible(false)}
+      />
+
       <ConfirmDialog
         visible={confirmDeleteVisible}
         title={`Delete ${selectedIds.size} item${selectedIds.size === 1 ? '' : 's'}?`}
@@ -497,16 +525,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
-  selectToggleButton: {
-    height: 39,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.pill,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   selectToggleText: {
     fontFamily: fonts.bold,
     fontSize: 14,
@@ -548,6 +566,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  listHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  selectToggleInline: {
+    paddingVertical: 4,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   itemCount: {
     fontFamily: fonts.bold,
     fontSize: 16,
@@ -562,6 +593,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    // A bare green label read as decoration rather than a control, and gave no
+    // hint that the ordering had been changed from the default.
+    paddingVertical: 4,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primaryTint,
+    borderWidth: 1,
+    borderColor: colors.primaryPale,
   },
   sortLabel: {
     fontFamily: fonts.semibold,

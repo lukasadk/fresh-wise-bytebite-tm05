@@ -196,6 +196,67 @@ class DashboardSummary(BaseModel):
     top_waste_reasons: list[dict]  # [{"waste_reason": "...", "count": n, "quantity": n}]
 
 
+class WastePatternBucket(BaseModel):
+    """One bar in the Patterns tab -- either a food category (free text, e.g.
+    'Vegetables') or a waste_reason value. Top-5 by count + a rolled-up
+    'Other' bucket for everything past the 5th, in that order."""
+
+    label: str
+    count: int
+
+
+class WastePatternItem(BaseModel):
+    """The single food item wasted more often than any other, matched
+    case-insensitively ("Milk" and "milk" are the same item). Only ever
+    populated when the repeat count is >= 2 -- a single occurrence isn't a
+    pattern worth flagging."""
+
+    name: str
+    times_wasted: int
+
+
+class WeightedCategoryBucket(BaseModel):
+    """One category bar in the Patterns tab -- literal top 5 by total weight
+    wasted (kg), full stop. Unlike the Report tab's category breakdown
+    (MonthlyReportMonth.top_waste_categories, still Top-5-plus-Other via
+    _top5_plus_other() below), there is NO 6th 'everything else' row here --
+    the redesigned Patterns UI only ever shows exactly what it says: the top
+    5 categories, ranked by weight."""
+
+    label: str
+    quantity: float
+
+
+class RankedReasonBucket(BaseModel):
+    """One numbered reason row in the Patterns tab -- top 5 REAL reasons by
+    count, where 'real' deliberately EXCLUDES the waste_reason enum's own
+    'other' value. 'other' is reported separately via
+    WastePatternsOut.other_reason_count instead of being folded into a
+    synthetic overflow bucket, which is what let two rows both display as
+    "Other" in the old Top-5-plus-Other version of this endpoint."""
+
+    label: str
+    count: int
+
+
+class WastePatternsOut(BaseModel):
+    """GET /v1/dashboard/waste-patterns. Computed over the household's ENTIRE
+    waste history (no time window) -- "based on the user's entries so far".
+
+    Deliberately simpler than the Report tab's Top-5-plus-Other pattern (see
+    _top5_plus_other() below, still used by monthly_report/_month_summary):
+    categories are a plain top-5-by-weight with nothing past #5 shown at
+    all, and the 'other' waste reason is its own dedicated count rather than
+    a merged catch-all bucket that could collide with a real 'other' row.
+    """
+
+    total_waste_events: int
+    top_waste_categories: list[WeightedCategoryBucket]
+    top_waste_reasons: list[RankedReasonBucket]
+    other_reason_count: int
+    most_wasted_item: WastePatternItem | None
+
+
 # --- Diet preferences -------------------------------------------------------
 
 

@@ -33,6 +33,17 @@ export const TomatoIcon = makeImageIcon(require('../../assets/food-icons/tomato.
 export const SoupIcon = makeImageIcon(require('../../assets/food-icons/soup.png'));
 export const SpinachIcon = makeImageIcon(require('../../assets/food-icons/spinach.png'));
 
+// The remaining six assets in /assets/food-icons are the "anime style" CATEGORY
+// icon set (Feature 99 reference) -- one per AddFoodScreen.CATEGORIES value,
+// distinct from the item-NAME-keyword icons above. Dairy and Vegetables reuse
+// MilkIcon/SpinachIcon rather than needing their own category-specific asset.
+export const ProteinIcon = makeImageIcon(require('../../assets/food-icons/protein.png'));
+export const FruitIcon = makeImageIcon(require('../../assets/food-icons/fruit.png'));
+export const PantryFoodIcon = makeImageIcon(require('../../assets/food-icons/pantry.png'));
+export const FrozenIcon = makeImageIcon(require('../../assets/food-icons/frozen.png'));
+export const BeveragesIcon = makeImageIcon(require('../../assets/food-icons/beverages.png'));
+export const OtherCategoryIcon = makeImageIcon(require('../../assets/food-icons/other.png'));
+
 export function ChickenIcon({ size = 48 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
@@ -115,4 +126,33 @@ export function foodIconFor(name: string, category?: string) {
   if (cat === 'vegetables') return SpinachIcon;
 
   return GenericFoodIcon;
+}
+
+/** Maps one of AddFoodScreen's 8 fixed CATEGORIES values to its icon -- for
+ *  contexts that only have a category, not a specific item name (the
+ *  Patterns tab's category-weight bars, which aggregate across many items
+ *  at once). Case-insensitive; anything outside the fixed 8 falls back to
+ *  OtherCategoryIcon rather than the unrelated GenericFoodIcon, since a
+ *  category context always carries SOME categorical meaning even if it's
+ *  an unexpected value (the category column is free-text in the DB, even
+ *  though the UI only ever writes one of the 8). */
+export function categoryIconFor(category: string) {
+  switch (category.trim().toLowerCase()) {
+    case 'dairy':
+      return MilkIcon;
+    case 'protein':
+      return ProteinIcon;
+    case 'vegetables':
+      return SpinachIcon;
+    case 'fruit':
+      return FruitIcon;
+    case 'pantry':
+      return PantryFoodIcon;
+    case 'frozen':
+      return FrozenIcon;
+    case 'beverages':
+      return BeveragesIcon;
+    default:
+      return OtherCategoryIcon;
+  }
 }
