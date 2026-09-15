@@ -123,11 +123,27 @@ def _top5_plus_other(rows: list[tuple[str, int]]) -> list[WastePatternBucket]:
     """rows must already be ordered by count DESC. Anything past the 5th
     place collapses into one trailing 'Other' bucket, dropped entirely if
     there's nothing left to roll up (e.g. exactly 5 or fewer distinct labels
-    -- an empty 'Other: 0' row would be misleading, not just redundant)."""
+    -- an empty 'Other: 0' row would be misleading, not just redundant).
+
+    One of the top 5 rows can ALREADY be labelled 'Other' (a category
+    literally typed as "Other", or every uncategorised item getting
+    COALESCE'd to 'Other'; for waste reasons, the raw enum value 'other'
+    itself) -- if that happened AND there's also overflow to roll up, naively
+    appending a second 'Other' bucket produces two entries with the same
+    label, which crashes the frontend's keyed list rendering. Folding both
+    into a single trailing bucket (case-insensitively, so the reasons enum's
+    lowercase 'other' is caught too) keeps the output honestly one row per
+    distinct label."""
     top5, rest = rows[:5], rows[5:]
-    buckets = [WastePatternBucket(label=label, count=count) for label, count in top5]
-    if rest:
-        buckets.append(WastePatternBucket(label="Other", count=sum(count for _, count in rest)))
+    other_total = sum(count for _, count in rest)
+    buckets: list[WastePatternBucket] = []
+    for label, count in top5:
+        if label.lower() == "other":
+            other_total += count
+        else:
+            buckets.append(WastePatternBucket(label=label, count=count))
+    if other_total > 0:
+        buckets.append(WastePatternBucket(label="Other", count=other_total))
     return buckets
 
 
