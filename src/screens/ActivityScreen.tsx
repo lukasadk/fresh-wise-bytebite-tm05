@@ -672,7 +672,7 @@ function CategoryWeightRow({
   return (
     <View style={weightRowStyles.row}>
       <Icon size={28} />
-      <Text style={weightRowStyles.label} numberOfLines={1}>
+      <Text style={weightRowStyles.label}>
         {label}
       </Text>
       <View style={weightRowStyles.track}>
@@ -696,6 +696,9 @@ const weightRowStyles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
   },
   label: {
+    // flex:1 lets the label take up leftover space and wrap naturally.
+    // No numberOfLines cap — a category name like "Condiments & Sauces"
+    // wraps to two lines on a narrow screen instead of truncating.
     flex: 1,
     fontFamily: fonts.semibold,
     fontSize: fontSize.md,
@@ -788,7 +791,7 @@ function ReasonRow({
       <View style={reasonRowStyles.badgeSlot}>
         {rank !== null && <RankBadge rank={rank} />}
       </View>
-      <Text style={reasonRowStyles.label} numberOfLines={1}>
+      <Text style={reasonRowStyles.label}>
         {label}
       </Text>
       <View style={reasonRowStyles.track}>
@@ -819,7 +822,11 @@ const reasonRowStyles = StyleSheet.create({
     alignItems: 'center',
   },
   label: {
-    width: 92,
+    // Was: width: 92 — a hardcoded pixel width that truncated on screens
+    // narrower than ~360dp (common on budget Android phones). flex:1 lets
+    // the label claim whatever space is left after the badge and count
+    // columns, and wraps rather than clips on narrow devices.
+    flex: 1,
     fontFamily: fonts.semibold,
     fontSize: fontSize.md,
     color: colors.textPrimary,
@@ -1025,12 +1032,10 @@ function AlternativeCard({
     >
       <RadioDot selected={selected} />
       <View style={alternativeStyles.body}>
-        <View style={alternativeStyles.titleRow}>
-          <Text style={alternativeStyles.title}>{option.title}</Text>
-          {option.bestMatch && (
-            <Text style={alternativeStyles.bestMatch}>Best match</Text>
-          )}
-        </View>
+        {option.bestMatch && (
+          <Text style={alternativeStyles.bestMatch}>Best match</Text>
+        )}
+        <Text style={alternativeStyles.title}>{option.title}</Text>
         <Text style={alternativeStyles.meta}>{option.meta}</Text>
         <Text style={alternativeStyles.why}>Why: {option.why}</Text>
       </View>
@@ -1055,20 +1060,24 @@ const alternativeStyles = StyleSheet.create({
     borderColor: colors.border,
   },
   body: { flex: 1, gap: 4 },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  bestMatch: {
+    // Sits above the title as a small label badge so the title
+    // always gets its full flex:1 width and never truncates.
+    alignSelf: 'flex-start',
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.xs,
+    color: colors.primary,
+    backgroundColor: colors.primaryTint,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.sm,
+    overflow: 'hidden',
+    marginBottom: 2,
   },
   title: {
     fontFamily: fonts.bold,
     fontSize: fontSize.title,
     color: colors.textPrimary,
-  },
-  bestMatch: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
   },
   meta: {
     fontFamily: fonts.regular,
@@ -1796,13 +1805,56 @@ function reasonRowLabel(label: string): string {
 /** Maps the raw API response to PatternsData. Deliberately no client-side
  *  "top 5 + other" bucketing here -- the backend already returns categories
  *  as a plain top-5-by-weight (no Other row) and reasons as top-5-real-
- *  reasons plus a separately-counted other_reason_count, so this is a
- *  straight field mapping, not a merge. */
+ *  reasons plus a separately-counted other_reason_count, so this is meant
+ *  to be a straight field mapping, not a merge.
+ *
+ *  The defensive merging below exists ONLY because the deployed API and
+ *  this file's WastePatternsOut type can drift out of sync (this has
+ *  already happened once -- see git blame): an older deployed version of
+ *  GET /v1/dashboard/waste-patterns used `count` instead of `quantity` for
+ *  categories, and likely used an old top-5-plus-Other pattern for BOTH
+ *  categories and reasons (not just reasons) -- which can produce two
+ *  array entries that both resolve to the label "Other" (a genuine
+ *  category/reason someone actually has, colliding with an old-style
+ *  overflow bucket). Rather than special-case just that one label, both
+ *  lists are unconditionally deduped by label via a Map -- ANY duplicate
+ *  label gets its values summed into one row, so there is no way for two
+ *  rows to ever share a React key, regardless of what's actually driving
+ *  the duplication. */
 function buildPatternsData(raw: WastePatternsOut): PatternsData {
+  const categoryTotals = new Map<string, number>();
+  for (const b of raw.top_waste_categories) {
+    const anyB = b as any;
+    const kg = typeof anyB.quantity === 'number' ? anyB.quantity : Number(anyB.count ?? 0);
+    categoryTotals.set(b.label, (categoryTotals.get(b.label) ?? 0) + kg);
+  }
+  const categories: CategoryWeightDatum[] = [...categoryTotals.entries()].map(([label, kg]) => ({
+    label,
+    kg,
+  }));
+
+  let otherReasonCount = raw.other_reason_count ?? 0;
+  const reasonTotals = new Map<string, number>();
+  for (const b of raw.top_waste_reasons) {
+    const label = reasonRowLabel(b.label);
+    if (label.toLowerCase() === 'other') {
+      // Folded into the single dedicated Other count instead of the ranked
+      // list, however the backend spelled it (raw enum 'other' or an
+      // already-formatted "Other").
+      otherReasonCount += b.count;
+    } else {
+      reasonTotals.set(label, (reasonTotals.get(label) ?? 0) + b.count);
+    }
+  }
+  const reasons: FrequencyDatum[] = [...reasonTotals.entries()].map(([label, count]) => ({
+    label,
+    count,
+  }));
+
   return {
-    categories: raw.top_waste_categories.map((b) => ({ label: b.label, kg: b.quantity })),
-    reasons: raw.top_waste_reasons.map((b) => ({ label: reasonRowLabel(b.label), count: b.count })),
-    otherReasonCount: raw.other_reason_count,
+    categories,
+    reasons,
+    otherReasonCount,
     insight: raw.most_wasted_item
       ? {
           itemName: raw.most_wasted_item.name,
