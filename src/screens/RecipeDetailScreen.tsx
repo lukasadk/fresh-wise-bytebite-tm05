@@ -115,6 +115,20 @@ export default function RecipeDetailScreen() {
             )) : <Text style={styles.mutedText}>No detailed steps were returned.</Text>}
           </View>
         </View>
+
+        {available.length > 0 ? (
+          <Pressable
+            style={({ pressed }) => [styles.cookedButton, pressed && { opacity: 0.9 }]}
+            onPress={() =>
+              navigation.navigate('RecipeConsume', {
+                recipeTitle: titleOf(recipe),
+                ingredientNames: available,
+              })
+            }
+          >
+            <Text style={styles.cookedButtonText}>Mark as cooked</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -282,5 +296,16 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 13,
     color: colors.textSecondary,
+  },
+  cookedButton: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+  },
+  cookedButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.white,
   },
 });

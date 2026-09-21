@@ -99,6 +99,7 @@ export default function HomeScreen({ navigation }: any) {
           <QuickAction
             icon={<LayoutGrid size={22} color={colors.primary} />}
             label="Scan Groceries"
+            onPress={() => navigation.navigate('PhotoGrocery')}
           />
           <QuickAction
             icon={<Plus size={24} color={colors.primary} />}

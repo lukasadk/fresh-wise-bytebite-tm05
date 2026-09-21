@@ -71,7 +71,7 @@ function GroceryPreviewImage({ sourceUri, style }: { sourceUri: string; style?: 
 }
 
 const BOX_COLOURS = ['#1F7A42', '#D9603B', '#C68A2E', '#2F86C9', '#7A68B3'];
-const IMAGE_PICKER_MEDIA_TYPE = ImagePicker.MediaTypeOptions.Images;
+const IMAGE_PICKER_MEDIA_TYPE: ImagePicker.MediaType[] = ['images'];
 
 function toIsoDate(date: Date): string {
   const year = date.getFullYear();

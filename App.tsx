@@ -28,11 +28,13 @@ import PantryScreen from './src/screens/PantryScreen';
 import UseFirstScreen from './src/screens/UseFirstScreen';
 import AddFoodScreen from './src/screens/AddFoodScreen';
 import PhotoGroceryScreen from './src/screens/ApiGroceryScreen';
+import SmartAddFoodScreen from './src/screens/SmartAddFoodScreen';
 import FoodDetailScreen from './src/screens/FoodDetailScreen';
 import RecordOutcomeScreen from './src/screens/RecordOutcomeScreen';
 import MarkConsumedScreen from './src/screens/MarkConsumedScreen';
 import MarkWastedScreen from './src/screens/MarkWastedScreen';
 import WasteRecordedScreen from './src/screens/WasteRecordedScreen';
+import RecipeConsumeScreen from './src/screens/RecipeConsumeScreen';
 import BottomNav from './src/components/BottomNav';
 import LandingScreen from './src/components/LandingScreen';
 import ConfirmDialog from './src/components/ConfirmDialog';
@@ -263,9 +265,11 @@ export default function App() {
                   <Stack.Screen name="Main" component={MainTabs} />
                   <Stack.Group screenOptions={{ presentation: 'modal' }}>
                     <Stack.Screen name="AddFood" component={AddFoodScreen} />
+                    <Stack.Screen name="SmartAddFood" component={SmartAddFoodScreen} />
                     <Stack.Screen name="PhotoGrocery" component={PhotoGroceryScreen} />
                     <Stack.Screen name="FoodDetail" component={FoodDetailScreen} />
                     <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} />
+                    <Stack.Screen name="RecipeConsume" component={RecipeConsumeScreen} />
                     <Stack.Screen name="RecordOutcome" component={RecordOutcomeScreen} />
                     <Stack.Screen name="MarkConsumed" component={MarkConsumedScreen} />
                     <Stack.Screen name="MarkWasted" component={MarkWastedScreen} />
