@@ -5,6 +5,6 @@ __pycache__/
 tests/
 .pytest_cache/
 src/wastewise_grocery_vlm/static/downloads/
-# Keep the current friend-test APK available, but do not upload the superseded
-# notification-only build with every backend deployment.
-app/static/downloads/FreshWise-Native-ExpoNotifications-v20260917.apk
+# APK artifacts are distributed separately; keeping them out of the API image
+# makes backend deploys small and avoids re-uploading a 39 MB binary each time.
+app/static/downloads/
