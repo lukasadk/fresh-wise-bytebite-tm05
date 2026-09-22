@@ -61,6 +61,11 @@ export default function FoodRow({
       <View style={styles.textCol}>
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>{name}</Text>
+          {highlighted ? (
+            <View style={styles.updatedTag}>
+              <Text style={styles.updatedTagText}>Updated</Text>
+            </View>
+          ) : null}
           {source ? (
             <View
               style={[
@@ -78,6 +83,7 @@ export default function FoodRow({
       <View style={styles.expiryCol}>
         {expiryLevel ? <View style={[styles.dot, { backgroundColor: borderColor }]} /> : null}
         <ExpiryPill label={expiryLabel} level={expiryLevel} />
+        {!selectMode ? <Text style={styles.swipeHint}>Swipe for recipe →</Text> : null}
       </View>
     </Pressable>
   );
@@ -102,6 +108,27 @@ const styles = StyleSheet.create({
   },
   rowHighlighted: {
     backgroundColor: colors.rowHighlightBg,
+    // NOT the borderWidth shorthand -- that would set all four sides,
+    // silently overriding the expiry-status borderLeftWidth/borderLeftColor
+    // already applied earlier in this row's style array (see the inline
+    // { borderLeftWidth: 4, borderLeftColor } a few lines up in the JSX).
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderTopColor: colors.primary,
+    borderRightColor: colors.primary,
+    borderBottomColor: colors.primary,
+  },
+  updatedTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+  },
+  updatedTagText: {
+    fontFamily: fonts.semibold,
+    fontSize: 9,
+    color: colors.white,
   },
   checkbox: {
     width: 22,
@@ -159,5 +186,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  swipeHint: {
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    color: colors.textSecondary,
   },
 });

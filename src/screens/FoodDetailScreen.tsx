@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -36,6 +36,7 @@ const METHOD_STYLE: Record<StorageMethodKey, { Icon: IconComponent; color: strin
 
 export default function FoodDetailScreen({ navigation, route }: any) {
   const { item, loading, error } = usePantryItem(route?.params?.id);
+  const insets = useSafeAreaInsets();
   const justAdded = !!route?.params?.justAdded;
   const justEdited = !!route?.params?.justEdited;
   const [removing, setRemoving] = useState(false);
@@ -112,8 +113,11 @@ export default function FoodDetailScreen({ navigation, route }: any) {
     setRemoveError(null);
     setRemoving(true);
     try {
+      // item.name is captured here in the closure, from BEFORE the delete --
+      // safe to use even though the item is about to stop existing server-side.
+      const removedName = item.name;
       await deletePantryItem(item.id);
-      navigation.navigate('Main', { screen: 'Pantry' });
+      navigation.navigate('Main', { screen: 'Pantry', params: { removed: removedName } });
     } catch (err) {
       setRemoveError(err instanceof ApiError ? err.message : "Couldn't remove this item — try again.");
     } finally {
@@ -129,7 +133,10 @@ export default function FoodDetailScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.xl }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerRow}>
           <BackButton onPress={handleBack} />
           <Pressable
@@ -150,6 +157,13 @@ export default function FoodDetailScreen({ navigation, route }: any) {
           </View>
         </View>
 
+        <Pressable
+          style={({ pressed }) => [styles.findRecipesLink, pressed && { opacity: 0.7 }]}
+          onPress={() => navigation.navigate('Recipes')}
+        >
+          <Text style={styles.findRecipesLinkText}>Find recipes with this item →</Text>
+        </Pressable>
+
         <View style={styles.useFirstBanner}>
           <Text style={styles.bannerEyebrow}>USE FIRST</Text>
           <View style={styles.bannerBottomRow}>
@@ -165,11 +179,6 @@ export default function FoodDetailScreen({ navigation, route }: any) {
           <DetailRow label="Purchased" value={formatDisplayDate(item.purchaseDate)} />
           <View style={styles.divider} />
           <DetailRow label="Expires" value={formatDisplayDate(item.expiryDate)} />
-          <View style={styles.divider} />
-          <DetailRow
-            label="Stored in"
-            value={item.storage ? STORAGE_LABELS[item.storage] ?? item.storage : 'Not specified'}
-          />
         </View>
 
         <Text style={styles.sectionTitle}>Storage guidance</Text>
@@ -193,6 +202,12 @@ export default function FoodDetailScreen({ navigation, route }: any) {
                       ) : null}
                     </View>
                     <Text style={styles.guidanceBody}>{method.body}</Text>
+                    {method.tip ? (
+                      <View style={styles.tipCallout}>
+                        <Sparkles size={13} color={colors.primary} />
+                        <Text style={styles.tipText}>Tip: {method.tip}</Text>
+                      </View>
+                    ) : null}
                   </View>
                 </View>
                 );
@@ -276,10 +291,10 @@ export default function FoodDetailScreen({ navigation, route }: any) {
 
         {removeError ? <Text style={styles.removeError}>{removeError}</Text> : null}
         <Pressable
-          style={({ pressed }) => [styles.removeLink, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [styles.removeButton, pressed && { opacity: 0.85 }]}
           onPress={removing ? undefined : () => setConfirmRemoveVisible(true)}
         >
-          <Text style={styles.removeLinkText}>{removing ? 'Removing…' : 'Remove item'}</Text>
+          <Text style={styles.removeButtonText}>{removing ? 'Removing…' : 'Remove item'}</Text>
         </Pressable>
       </ScrollView>
 
@@ -293,8 +308,8 @@ export default function FoodDetailScreen({ navigation, route }: any) {
 
       <ConfirmDialog
         visible={confirmRemoveVisible}
-        title="Remove this item?"
-        message={`"${item.name}" will be permanently removed from your pantry. This can't be undone.`}
+        title={`Remove ${item.name}?`}
+        message="This item will be removed from your active pantry. This action does not record the food as consumed or wasted."
         confirmLabel="Remove"
         onConfirm={confirmRemove}
         onCancel={() => setConfirmRemoveVisible(false)}
@@ -330,9 +345,9 @@ const styles = StyleSheet.create({
     height: 39,
     paddingHorizontal: spacing.lg,
     borderRadius: radii.pill,
-    backgroundColor: colors.card,
+    backgroundColor: colors.primaryTint,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.primaryPale,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -358,6 +373,14 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 14,
     color: colors.textSecondary,
+  },
+  findRecipesLink: {
+    marginTop: -spacing.md,
+  },
+  findRecipesLinkText: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.primary,
   },
   useFirstBanner: {
     backgroundColor: colors.primary,
@@ -482,6 +505,19 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     lineHeight: 18,
   },
+  tipCallout: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: spacing.xs,
+  },
+  tipText: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textSecondary,
+  },
   outcomeLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -494,14 +530,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
   },
-  removeLink: {
+  removeButton: {
+    alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.expiryUrgentBg,
+    borderWidth: 1,
+    borderColor: colors.errorText,
   },
-  removeLinkText: {
+  removeButtonText: {
     fontFamily: fonts.bold,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.errorText,
   },
   removeError: {

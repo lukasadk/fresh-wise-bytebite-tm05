@@ -15,7 +15,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://freshwise-api-iteration-2.up.railway.app"
+        "EXPO_PUBLIC_API_BASE_URL": "https://freshwise-api-iteration-2.up.railway.app",
+        "EXPO_PUBLIC_GROCERY_AI_API_URL": "https://wastewise-ai-api-production.up.railway.app"
       },
       "channel": "preview",
       "environment": "preview"
@@ -25,7 +26,8 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://freshwise-api-iteration-2.up.railway.app"
+        "EXPO_PUBLIC_API_BASE_URL": "https://freshwise-api-iteration-2.up.railway.app",
+        "EXPO_PUBLIC_GROCERY_AI_API_URL": "https://wastewise-ai-api-production.up.railway.app"
       },
       "channel": "production",
       "environment": "production"

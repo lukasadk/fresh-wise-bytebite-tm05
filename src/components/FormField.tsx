@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import DateTimePicker, {
   DateTimePickerAndroid,
-  DateTimePickerEvent,
+  DateTimePickerChangeEvent,
 } from '@react-native-community/datetimepicker';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import { ChevronDown, Check, Calendar } from '../icons/NavIcons';
@@ -178,9 +178,16 @@ export function DateField({ value, onChange, placeholder = 'Select date', maximu
         display: 'calendar',
         minimumDate: min,
         maximumDate: max,
-        onChange: (event: DateTimePickerEvent, selected?: Date) => {
-          if (event.type === 'set' && selected) onChange(selected);
+        // onChange is deprecated in favour of onValueChange/onDismiss --
+        // onValueChange only fires when the user actually confirms a date
+        // (the old event.type === 'set' check is no longer needed, that's
+        // exactly what onDismiss below now covers instead), onDismiss fires
+        // on cancel and intentionally does nothing here, same as the old
+        // code's no-op for a non-'set' event.
+        onValueChange: (event: DateTimePickerChangeEvent, date: Date) => {
+          onChange(date);
         },
+        onDismiss: () => {},
       });
       return;
     }
@@ -226,9 +233,10 @@ export function DateField({ value, onChange, placeholder = 'Select date', maximu
             textColor={colors.textPrimary}
             maximumDate={max}
             minimumDate={min}
-            onChange={(_, selected) => {
+            onValueChange={(_, selected) => {
               if (isValidDate(selected)) setDraftDate(startOfDay(selected));
             }}
+            onDismiss={() => {}}
             style={styles.iosPicker}
           />
           <View style={styles.iosPickerActions}>
