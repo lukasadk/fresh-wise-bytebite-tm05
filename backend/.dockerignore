@@ -5,3 +5,6 @@ __pycache__/
 tests/
 .pytest_cache/
 src/wastewise_grocery_vlm/static/downloads/
+# Keep the current friend-test APK available, but do not upload the superseded
+# notification-only build with every backend deployment.
+app/static/downloads/FreshWise-Native-ExpoNotifications-v20260917.apk
