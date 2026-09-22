@@ -26,8 +26,10 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # Reachable without the API key: the health probe (platforms and uptime checks
-# hit it) and CORS preflight, which browsers send without custom headers.
+# hit it), static downloads, and CORS preflight, which browsers send without
+# custom headers.
 PUBLIC_PATHS = {"/health"}
+PUBLIC_PATH_PREFIXES = ("/static/",)
 
 
 def client_ip(request: Request, trust_proxy: bool) -> str:
@@ -55,7 +57,12 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
         self.header_name = header_name
 
     async def dispatch(self, request: Request, call_next):
-        if not self.api_key or request.method == "OPTIONS" or request.url.path in PUBLIC_PATHS:
+        if (
+            not self.api_key
+            or request.method == "OPTIONS"
+            or request.url.path in PUBLIC_PATHS
+            or request.url.path.startswith(PUBLIC_PATH_PREFIXES)
+        ):
             return await call_next(request)
 
         presented = request.headers.get(self.header_name, "")
@@ -90,7 +97,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._last_sweep = now
 
     async def dispatch(self, request: Request, call_next):
-        if self.limit <= 0 or request.url.path in PUBLIC_PATHS:
+        if (
+            self.limit <= 0
+            or request.url.path in PUBLIC_PATHS
+            or request.url.path.startswith(PUBLIC_PATH_PREFIXES)
+        ):
             return await call_next(request)
 
         now = time.monotonic()

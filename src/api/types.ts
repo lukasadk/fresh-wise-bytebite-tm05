@@ -217,7 +217,12 @@ export type RecipeRecommendation = {
   reason?: string;
   available_ingredients?: string[];
   priority_ingredients?: string[];
+  ingredient_quantities?: string[];
   steps?: string[];
+  image_url?: string | null;
+  image_alt?: string | null;
+  prep_minutes?: number | null;
+  cook_minutes?: number | null;
   source?: string;
   ai_enhanced?: boolean;
   score?: number;

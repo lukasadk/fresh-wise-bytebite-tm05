@@ -39,6 +39,7 @@ import ConfirmDialog from './src/components/ConfirmDialog';
 import { colors, fonts, radii, spacing } from './src/theme/theme';
 import { registerDevice } from './src/api/freshwise';
 import { isFreshInstall, checkClipboardForDeviceId, adoptDeviceId, copyDeviceIdToClipboard } from './src/api/device';
+import { registerPushNotificationsAsync } from './src/notifications/pushRegistration';
 import {
   canEnterApp,
   STARTUP_FONT_FAIL_OPEN_MS,
@@ -102,6 +103,8 @@ export default function App() {
   // src/api/freshwise.ts's registerDevice() and backend/README.md's "Identity model".
   const [deviceReady, setDeviceReady] = useState(UI_PREVIEW_MODE);
   const deviceInitStarted = useRef(UI_PREVIEW_MODE);
+  const [profileRegistered, setProfileRegistered] = useState(UI_PREVIEW_MODE);
+  const pushRegistrationStarted = useRef(UI_PREVIEW_MODE);
 
   // If a clipboard-restore candidate is found (see below), startup pauses here
   // until the user answers this prompt -- neither registerDevice() nor
@@ -127,6 +130,7 @@ export default function App() {
     setDeviceReady(true);
     void registerDevice()
       .then(() => {
+        setProfileRegistered(true);
         // Opportunistic, not gated behind any explicit user action: every
         // successful launch leaves a valid id sitting in the clipboard, so
         // whenever a reinstall becomes necessary (SDK bump, etc.) one is
@@ -202,6 +206,16 @@ export default function App() {
   // tapped. This is what lets its fade-out play in full instead of being cut
   // short by the overlay disappearing mid-animation.
   const [landingDismissed, setLandingDismissed] = useState(UI_PREVIEW_MODE);
+
+  useEffect(() => {
+    if (UI_PREVIEW_MODE || !landingDismissed || !profileRegistered || pushRegistrationStarted.current) return;
+    pushRegistrationStarted.current = true;
+    registerPushNotificationsAsync().catch(() => {
+      // Notifications are helpful but not required for the pantry/AI flows.
+      // The in-app Amber/Coral banner remains the web fallback and the mobile
+      // fallback if the user declines OS-level push permission.
+    });
+  }, [landingDismissed, profileRegistered]);
 
   // Starts at 0 and fades to 1 -- but critically, the main app tree below is
   // mounted (at opacity 0, not interactive) as soon as appReady is true,

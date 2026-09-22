@@ -1,0 +1,12 @@
+{
+  "api_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "api_model": "qwen3-vl-flash",
+  "api_recipe_model": "qwen-plus",
+  "api_key_required": true,
+  "api_prompt_path": "models/config/api_grocery_prompt.txt",
+  "api_receipt_prompt_path": "models/config/api_receipt_prompt.txt",
+  "api_timeout_seconds": 120.0,
+  "api_json_mode": true,
+  "api_image_max_edge": 2048,
+  "api_max_tokens": 3072
+}

@@ -1,0 +1,362 @@
+[
+  {
+    "recipe_id": "my-001",
+    "title": "Nasi Goreng Kampung",
+    "ingredients": ["rice", "egg", "anchovy", "choy sum", "garlic", "shallot", "chilli", "soy sauce"],
+    "ingredient_quantities": ["2 cups cold cooked rice", "2 eggs", "30 g dried anchovies", "1 cup chopped choy sum", "2 garlic cloves, minced", "2 shallots, sliced", "1 red chilli, sliced", "1 tbsp soy sauce", "1 tbsp cooking oil"],
+    "steps": [
+      "Separate the cold rice grains with damp fingers and prepare all ingredients before heating the wok.",
+      "Heat 1 tablespoon oil in a wok over medium-high heat for 45 seconds, then fry the anchovies for 2 minutes until crisp; remove and reserve.",
+      "Add the shallots, garlic, and chilli to the same wok and stir-fry for 60 to 90 seconds until fragrant without burning the garlic.",
+      "Add the choy sum stems first, cook for 1 minute, then add the leaves and cook for another 30 seconds.",
+      "Add the rice and stir-fry over high heat for 3 minutes, pressing out any clumps, then add 1 tablespoon soy sauce around the edge of the wok.",
+      "Push the rice aside, scramble the eggs in the empty space for 60 seconds, then combine everything and return the crisp anchovies before serving hot."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "A bowl of Malaysian-style fried rice with egg and vegetables",
+    "prep_minutes": 10,
+    "cook_minutes": 10,
+    "tags": ["malaysian", "rice", "uses-leftovers", "quick"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-002",
+    "title": "Mee Goreng Mamak",
+    "ingredients": ["noodles", "egg", "tofu", "choy sum", "tomato", "garlic", "chilli sauce", "soy sauce"],
+    "ingredient_quantities": ["300 g yellow noodles", "2 eggs", "150 g firm tofu, cubed", "1 cup chopped choy sum", "1 tomato, cut into wedges", "2 garlic cloves, minced", "1 tbsp chilli sauce", "1 tbsp soy sauce", "1 tsp sugar", "1 tbsp cooking oil"],
+    "steps": [
+      "Rinse the yellow noodles briefly under warm water, drain thoroughly, and mix the chilli sauce, soy sauce, sugar, and 2 tablespoons water in a bowl.",
+      "Heat the oil in a wok over medium-high heat and brown the tofu for 3 to 4 minutes, turning until at least two sides are golden.",
+      "Add the garlic and choy sum stems; stir-fry for 60 seconds, then add the tomato and choy sum leaves.",
+      "Push the vegetables aside, add the eggs, and scramble for about 45 seconds until softly set.",
+      "Add the noodles and prepared sauce, increase to high heat, and toss continuously for 2 to 3 minutes until the noodles are evenly coated and steaming.",
+      "Taste one noodle, add 1 tablespoon water if the mixture is dry, and serve immediately while the vegetables remain slightly crisp."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "A wok-fried noodle dish with tofu, egg, and vegetables",
+    "prep_minutes": 12,
+    "cook_minutes": 10,
+    "tags": ["malaysian", "mamak", "noodles", "vegetarian-option"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-003",
+    "title": "Ayam Masak Kicap",
+    "ingredients": ["chicken", "onion", "garlic", "ginger", "soy sauce", "chilli", "potato"],
+    "ingredient_quantities": ["400 g boneless chicken thigh, cut into 3 cm pieces", "1 medium onion, sliced", "3 garlic cloves, minced", "2 cm ginger, julienned", "2 tbsp sweet soy sauce", "1 tbsp light soy sauce", "1 red chilli, sliced", "1 medium potato, cut into 2 cm cubes", "150 ml water", "1 tbsp cooking oil"],
+    "steps": [
+      "Pat the chicken dry, cut it into even pieces, and wash hands and the cutting board immediately after handling raw poultry.",
+      "Heat the oil in a deep frying pan over medium-high heat and brown the chicken for 4 minutes, turning so at least two sides colour.",
+      "Add the onion, garlic, ginger, and chilli; cook for 2 minutes until the onion begins to soften.",
+      "Add the potato, sweet soy sauce, light soy sauce, and 150 ml water, then stir and bring to a gentle boil.",
+      "Cover, reduce to medium-low heat, and simmer for 15 to 18 minutes, stirring twice, until the potato is tender.",
+      "Check the thickest chicken piece reaches 75 C with no pink centre; uncover and simmer for 2 minutes to thicken the sauce before serving."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "Malaysian soy-braised chicken served with potatoes and rice",
+    "prep_minutes": 12,
+    "cook_minutes": 28,
+    "tags": ["malaysian", "chicken", "one-pan", "rice-companion"],
+    "servings": 3
+  },
+  {
+    "recipe_id": "my-004",
+    "title": "Kari Ayam Kentang",
+    "ingredients": ["chicken", "potato", "curry powder", "coconut milk", "onion", "garlic", "ginger"],
+    "ingredient_quantities": ["500 g chicken thigh, cut into pieces", "2 medium potatoes, cut into 3 cm cubes", "2 tbsp Malaysian meat curry powder", "200 ml coconut milk", "1 onion, diced", "3 garlic cloves, minced", "2 cm ginger, grated", "300 ml water", "1 tbsp cooking oil", "1/2 tsp salt"],
+    "steps": [
+      "Mix the curry powder with 3 tablespoons water to form a smooth paste and prepare the chicken and potatoes separately.",
+      "Heat the oil in a pot over medium heat; cook the onion for 4 minutes until translucent, then add garlic and ginger for 1 minute.",
+      "Add the curry paste and cook for 2 minutes, stirring constantly, until the oil begins to separate and the spices smell toasted.",
+      "Add the chicken and stir for 4 minutes until the outside is no longer pink, then add the potatoes and 300 ml water.",
+      "Cover and simmer on medium-low heat for 18 minutes, then add the coconut milk and salt without allowing a hard boil.",
+      "Simmer uncovered for 7 minutes until the potato is tender, the sauce coats a spoon, and the chicken reaches 75 C; rest for 5 minutes before serving."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "A bowl of Malaysian chicken and potato curry",
+    "prep_minutes": 15,
+    "cook_minutes": 36,
+    "tags": ["malaysian", "curry", "chicken", "one-pot"],
+    "servings": 4
+  },
+  {
+    "recipe_id": "my-005",
+    "title": "Sambal Telur",
+    "ingredients": ["egg", "onion", "tomato", "chilli", "garlic", "tamarind"],
+    "ingredient_quantities": ["4 large eggs", "1 onion, thinly sliced", "1 tomato, diced", "2 tbsp chilli paste", "2 garlic cloves, minced", "1 tsp tamarind paste", "100 ml water", "1 tsp sugar", "1/2 tsp salt", "1 tbsp cooking oil"],
+    "steps": [
+      "Place the eggs in a saucepan, cover with cold water, bring to a boil, and simmer for 9 minutes; transfer to cold water and peel.",
+      "Mix the tamarind paste with 100 ml water and set it beside the stove with the measured sugar and salt.",
+      "Heat the oil over medium heat and cook the onion for 4 minutes until soft, then add the garlic for 30 seconds.",
+      "Add the chilli paste and cook for 3 minutes, stirring frequently, until it darkens slightly and no longer smells raw.",
+      "Add the tomato, tamarind water, sugar, and salt; simmer for 6 to 8 minutes until the sambal is thick enough to leave a trail when stirred.",
+      "Add the peeled eggs, turn them gently in the sambal for 2 minutes, and serve with rice."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "Boiled eggs coated in a red sambal sauce",
+    "prep_minutes": 10,
+    "cook_minutes": 22,
+    "tags": ["malaysian", "egg", "sambal", "spicy"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-006",
+    "title": "Kangkung Belacan",
+    "ingredients": ["kangkung", "garlic", "chilli", "shrimp paste", "shallot"],
+    "ingredient_quantities": ["300 g kangkung", "2 garlic cloves", "2 shallots", "1 red chilli", "1 tsp belacan or shrimp paste", "1 tsp sugar", "1 tbsp cooking oil", "2 tbsp water"],
+    "steps": [
+      "Wash the kangkung in two changes of water, drain well, and separate the thicker stems from the leaves.",
+      "Pound or finely chop the garlic, shallots, chilli, and belacan into a coarse paste.",
+      "Heat the oil in a wok over high heat for 45 seconds, add the paste, and stir-fry for 60 to 90 seconds until fragrant.",
+      "Add the kangkung stems and 2 tablespoons water; toss for 1 minute.",
+      "Add the leaves and sugar, then stir-fry for another 60 to 90 seconds until wilted but still bright green.",
+      "Remove immediately from the wok to prevent overcooking and serve hot."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "Bright green stir-fried water spinach with chilli",
+    "prep_minutes": 10,
+    "cook_minutes": 5,
+    "tags": ["malaysian", "vegetable", "quick", "belacan"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-007",
+    "title": "Sup Sayur Telur",
+    "ingredients": ["egg", "choy sum", "carrot", "garlic", "stock", "spring onion"],
+    "ingredient_quantities": ["2 eggs, beaten", "150 g choy sum, chopped", "1 small carrot, thinly sliced", "2 garlic cloves, minced", "750 ml low-salt stock", "1 spring onion, sliced", "1/4 tsp white pepper", "1 tsp soy sauce"],
+    "steps": [
+      "Wash the vegetables, slice the carrot no thicker than 3 mm, and separate the choy sum stems from the leaves.",
+      "Bring the stock to a boil in a medium saucepan, add the garlic and carrot, and simmer for 4 minutes.",
+      "Add the choy sum stems and cook for 2 minutes, then add the leaves and soy sauce.",
+      "Reduce to a gentle simmer and slowly pour in the beaten eggs in a thin stream while stirring once around the pot.",
+      "Leave undisturbed for 30 seconds, then stir gently to form egg ribbons and cook for another minute.",
+      "Add the white pepper and spring onion, taste before adding any salt, and serve immediately."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "A clear vegetable soup with egg ribbons",
+    "prep_minutes": 10,
+    "cook_minutes": 10,
+    "tags": ["malaysian", "soup", "vegetable", "egg"],
+    "servings": 3
+  },
+  {
+    "recipe_id": "my-008",
+    "title": "Fried Bee Hoon",
+    "ingredients": ["brown rice vermicelli", "egg", "carrot", "choy sum", "tofu", "garlic", "soy sauce"],
+    "ingredient_quantities": ["200 g rice vermicelli", "2 eggs", "1 small carrot, julienned", "1 cup chopped choy sum", "150 g firm tofu, sliced", "2 garlic cloves, minced", "1.5 tbsp soy sauce", "1 tsp sesame oil", "2 tbsp cooking oil", "100 ml water"],
+    "steps": [
+      "Soak the rice vermicelli in room-temperature water for 8 to 10 minutes until flexible but not soft, then drain thoroughly.",
+      "Mix the soy sauce, sesame oil, and 100 ml water in a bowl; prepare all vegetables before heating the wok.",
+      "Heat 1 tablespoon oil over medium-high heat, brown the tofu for 3 minutes, and remove it from the wok.",
+      "Add the remaining oil and garlic, stir for 30 seconds, then scramble the eggs until just set.",
+      "Add the carrot and choy sum stems for 2 minutes, then add the leaves, noodles, tofu, and sauce.",
+      "Toss over high heat for 3 to 4 minutes until the liquid is absorbed and the noodles are tender without becoming mushy."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "Fried rice vermicelli with egg, tofu, and vegetables",
+    "prep_minutes": 15,
+    "cook_minutes": 12,
+    "tags": ["malaysian", "noodles", "vegetarian", "family"],
+    "servings": 3
+  },
+  {
+    "recipe_id": "my-009",
+    "title": "Tomato Egg Rice",
+    "ingredients": ["tomato", "egg", "rice", "garlic", "soy sauce"],
+    "ingredient_quantities": ["2 cups cooked rice", "3 eggs", "3 medium tomatoes, cut into wedges", "1 garlic clove, minced", "1 tsp soy sauce", "1/2 tsp sugar", "2 tbsp cooking oil", "3 tbsp water"],
+    "steps": [
+      "Beat the eggs with 1 tablespoon water and prepare the tomatoes before heating the pan.",
+      "Heat 1 tablespoon oil over medium heat, add the eggs, and fold for 45 to 60 seconds until softly set; remove to a plate.",
+      "Add the remaining oil and garlic to the pan and cook for 20 seconds without browning.",
+      "Add the tomatoes, sugar, soy sauce, and 2 tablespoons water; cover and cook for 4 minutes until the tomatoes release their juice.",
+      "Return the eggs and fold gently for 1 minute so they absorb the tomato sauce without breaking apart.",
+      "Divide the hot rice between two bowls, spoon the tomato egg mixture over it, and serve immediately."
+    ],
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/7/76/Telur_goreng_tomato_kacau_dengan_nasi.jpg",
+    "image_alt": "Soft scrambled eggs and tomatoes served over rice",
+    "prep_minutes": 8,
+    "cook_minutes": 8,
+    "tags": ["malaysian-home", "egg", "tomato", "quick"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-010",
+    "title": "Tauhu Goreng Kicap",
+    "ingredients": ["tofu", "soy sauce", "cucumber", "chilli", "garlic", "peanut"],
+    "ingredient_quantities": ["300 g firm tofu, drained", "1.5 tbsp sweet soy sauce", "1 tsp light soy sauce", "1/2 cucumber, julienned", "1 red chilli, sliced", "1 garlic clove, minced", "2 tbsp roasted peanuts, crushed", "2 tbsp cooking oil", "2 tbsp water"],
+    "steps": [
+      "Pat the tofu dry and cut it into 2 cm cubes so the surface browns instead of steaming.",
+      "Mix the sweet soy sauce, light soy sauce, garlic, chilli, and 2 tablespoons water in a small bowl.",
+      "Heat the oil over medium-high heat and fry the tofu for 6 to 8 minutes, turning every 2 minutes until golden on several sides.",
+      "Reduce to medium heat, pour in the sauce, and toss for 60 to 90 seconds until it becomes glossy and coats the tofu.",
+      "Transfer the tofu to a plate and top with the cucumber and crushed peanuts.",
+      "Serve immediately so the tofu remains crisp; keep extra sauce separate if storing leftovers."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "Golden fried tofu with cucumber, chilli, and peanuts",
+    "prep_minutes": 10,
+    "cook_minutes": 10,
+    "tags": ["malaysian", "tofu", "vegetarian", "quick"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-011",
+    "title": "Bubur Ayam",
+    "ingredients": ["rice", "chicken", "ginger", "garlic", "spring onion", "stock"],
+    "ingredient_quantities": ["3/4 cup jasmine rice, rinsed", "250 g boneless chicken thigh", "1.5 litres low-salt stock", "3 cm ginger, sliced", "2 garlic cloves, crushed", "2 spring onions, sliced", "1 tbsp light soy sauce", "1/4 tsp white pepper"],
+    "steps": [
+      "Rinse the rice until the water is mostly clear, then place it in a large pot with the stock, ginger, and garlic.",
+      "Bring to a boil, reduce to the lowest simmer, and cook partly covered for 30 minutes, stirring every 8 minutes to prevent sticking.",
+      "Add the whole chicken pieces and simmer for 12 to 15 minutes until their centres reach 75 C.",
+      "Remove and shred the chicken with two forks, then return it to the pot.",
+      "Continue simmering for 8 to 10 minutes until the rice breaks down and the porridge is creamy; add hot water if it becomes too thick.",
+      "Stir in soy sauce and white pepper, divide into bowls, and garnish with spring onion."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "Malaysian chicken rice porridge topped with spring onion",
+    "prep_minutes": 10,
+    "cook_minutes": 55,
+    "tags": ["malaysian", "porridge", "chicken", "comfort-food"],
+    "servings": 4
+  },
+  {
+    "recipe_id": "my-012",
+    "title": "Sardin Masak Tomato",
+    "ingredients": ["sardine", "tomato", "onion", "chilli", "garlic", "tamarind"],
+    "ingredient_quantities": ["1 can sardines in tomato sauce, about 425 g", "1 tomato, cut into wedges", "1 onion, sliced", "1 red chilli, sliced", "2 garlic cloves, minced", "1 tsp tamarind paste", "80 ml water", "1 tsp cooking oil"],
+    "steps": [
+      "Open the sardine can, keep the fish pieces whole, and mix the tamarind paste with 80 ml water.",
+      "Heat the oil over medium heat and cook the onion for 3 minutes until softened.",
+      "Add the garlic and chilli and cook for 30 seconds, then add the fresh tomato wedges.",
+      "Pour in the canned tomato sauce and tamarind water and simmer for 4 minutes until slightly thickened.",
+      "Add the sardines carefully, spoon sauce over them, and simmer for 3 minutes without vigorous stirring so they do not break apart.",
+      "Serve hot with rice and refrigerate any leftovers within 2 hours."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "Fish simmered in a tomato, onion, and chilli sauce",
+    "prep_minutes": 8,
+    "cook_minutes": 12,
+    "tags": ["malaysian", "fish", "canned-food", "quick"],
+    "servings": 3
+  },
+  {
+    "recipe_id": "my-013",
+    "title": "Nasi Lemak Quick Plate",
+    "ingredients": ["rice", "coconut milk", "egg", "cucumber", "anchovy", "peanut", "sambal"],
+    "ingredient_quantities": ["1.5 cups jasmine rice", "200 ml coconut milk", "250 ml water", "2 eggs", "1/2 cucumber, sliced", "30 g dried anchovies", "30 g roasted peanuts", "4 tbsp prepared sambal", "1/2 tsp salt"],
+    "steps": [
+      "Rinse the rice until the water is nearly clear, then combine it with coconut milk, water, and salt in a rice cooker or covered pot.",
+      "Cook using the normal rice setting, or bring to a boil and simmer covered on low heat for 15 minutes; rest covered for 10 minutes.",
+      "Meanwhile, boil the eggs for 9 minutes, cool them in cold water, peel, and halve.",
+      "Dry-fry the anchovies in a small pan over medium heat for 3 to 4 minutes until crisp, stirring frequently.",
+      "Warm the prepared sambal until steaming and slice the cucumber just before serving.",
+      "Fluff the rice and assemble each plate with egg, cucumber, anchovies, peanuts, and 2 tablespoons sambal."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "A Malaysian nasi lemak plate with egg, cucumber, anchovies, and sambal",
+    "prep_minutes": 12,
+    "cook_minutes": 30,
+    "tags": ["malaysian", "nasi-lemak", "rice", "breakfast"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-014",
+    "title": "Curry Mee",
+    "ingredients": ["noodles", "curry powder", "coconut milk", "tofu", "choy sum", "egg", "stock"],
+    "ingredient_quantities": ["300 g yellow noodles", "2 tbsp curry powder", "200 ml coconut milk", "600 ml low-salt stock", "150 g tofu puffs or firm tofu", "1 cup chopped choy sum", "2 eggs", "1 tbsp cooking oil", "1/2 tsp salt"],
+    "steps": [
+      "Boil the eggs for 9 minutes, cool, peel, and halve; blanch the noodles for 30 seconds and divide between two bowls.",
+      "Mix the curry powder with 3 tablespoons water to form a paste.",
+      "Heat the oil in a saucepan over medium heat and fry the curry paste for 2 minutes until fragrant.",
+      "Add the stock and tofu, bring to a gentle boil, and simmer for 6 minutes.",
+      "Add the coconut milk and choy sum and simmer gently for 3 minutes; do not boil hard or the coconut milk may split.",
+      "Taste and add up to 1/2 teaspoon salt, ladle the hot broth over the noodles, and top each bowl with egg."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "A bowl of Malaysian curry noodles with tofu, greens, and egg",
+    "prep_minutes": 12,
+    "cook_minutes": 15,
+    "tags": ["malaysian", "curry", "noodles", "soup"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-015",
+    "title": "Ikan Masak Asam",
+    "ingredients": ["fish", "tomato", "tamarind", "chilli", "okra", "onion", "garlic"],
+    "ingredient_quantities": ["400 g firm white fish fillets", "2 tomatoes, cut into wedges", "1 tbsp tamarind paste", "2 red chillies, sliced", "6 okra, trimmed", "1 onion, sliced", "2 garlic cloves, minced", "400 ml water", "1 tbsp cooking oil", "1/2 tsp salt"],
+    "steps": [
+      "Pat the fish dry, cut into large pieces, and mix the tamarind paste with 400 ml water.",
+      "Heat the oil in a wide pan over medium heat and cook the onion for 3 minutes, then add garlic and chilli for 30 seconds.",
+      "Add the tomato wedges and cook for 3 minutes until they begin to soften.",
+      "Pour in the tamarind water, bring to a simmer, and cook uncovered for 5 minutes.",
+      "Add the okra and fish in one layer, cover, and simmer gently for 6 to 8 minutes without vigorous stirring.",
+      "Check that the fish is opaque and flakes easily at the thickest point, add salt, and serve immediately."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "Fish and okra in a Malaysian sour tamarind broth",
+    "prep_minutes": 12,
+    "cook_minutes": 20,
+    "tags": ["malaysian", "fish", "tamarind", "one-pan"],
+    "servings": 3
+  },
+  {
+    "recipe_id": "my-016",
+    "title": "Masak Lemak Cili Api",
+    "ingredients": ["chicken", "coconut milk", "turmeric", "chilli", "lemongrass", "garlic"],
+    "ingredient_quantities": ["450 g boneless chicken thigh, cut into pieces", "250 ml coconut milk", "1 tsp ground turmeric", "3 bird's-eye chillies", "1 lemongrass stalk, bruised", "2 garlic cloves", "200 ml water", "1/2 tsp salt"],
+    "steps": [
+      "Blend or pound the chillies, garlic, turmeric, and 3 tablespoons water into a smooth paste.",
+      "Place the paste, lemongrass, and remaining water in a saucepan and simmer over medium heat for 3 minutes.",
+      "Add the chicken pieces, stir to coat, and simmer covered for 12 minutes, turning once.",
+      "Add the coconut milk and salt and reduce the heat so the sauce only bubbles gently.",
+      "Cook uncovered for 8 to 10 minutes, stirring every 2 minutes, until the sauce slightly thickens.",
+      "Confirm the thickest chicken piece reaches 75 C, remove the lemongrass, and rest for 3 minutes before serving."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "Malaysian chicken in a yellow coconut and chilli sauce",
+    "prep_minutes": 12,
+    "cook_minutes": 28,
+    "tags": ["malaysian", "negeri-sembilan-style", "chicken", "coconut"],
+    "servings": 3
+  },
+  {
+    "recipe_id": "my-017",
+    "title": "Roti John",
+    "ingredients": ["bread", "egg", "chicken", "onion", "chilli sauce", "mayonnaise"],
+    "ingredient_quantities": ["1 small baguette or 2 long bread rolls", "3 eggs", "150 g minced chicken", "1/2 onion, finely diced", "1 tbsp chilli sauce", "1 tbsp mayonnaise", "1/4 tsp salt", "1 tsp cooking oil"],
+    "steps": [
+      "Split the bread lengthwise without cutting all the way through and mix the eggs, minced chicken, onion, and salt in a bowl.",
+      "Heat the oil on a flat pan over medium heat and spread the egg mixture into a rectangle the size of the bread.",
+      "Press the cut side of the bread onto the wet mixture and cook for 3 minutes until the egg is set underneath.",
+      "Flip the bread and cook for another 3 to 4 minutes until the chicken mixture reaches 75 C.",
+      "Transfer to a board, drizzle with chilli sauce and mayonnaise, and close the bread.",
+      "Cut into four pieces and serve immediately while the outside is crisp and the centre is hot."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1484723091739-30a097e8f929?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "A Malaysian Roti John egg and chicken sandwich",
+    "prep_minutes": 10,
+    "cook_minutes": 8,
+    "tags": ["malaysian", "street-food", "bread", "egg"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-018",
+    "title": "Stir-Fried Choy Sum with Garlic",
+    "ingredients": ["choy sum", "garlic", "oyster sauce", "soy sauce"],
+    "ingredient_quantities": ["300 g choy sum", "3 garlic cloves, thinly sliced", "1 tbsp oyster sauce", "1 tsp soy sauce", "2 tbsp water", "1 tbsp cooking oil"],
+    "steps": [
+      "Wash the choy sum thoroughly, drain, and separate the 4 cm stem pieces from the leaves.",
+      "Mix the oyster sauce, soy sauce, and 2 tablespoons water in a small bowl.",
+      "Heat the oil in a wok over high heat for 45 seconds and fry the garlic for 20 to 30 seconds until pale gold.",
+      "Add the stems and stir-fry for 90 seconds, keeping them moving so the garlic does not burn.",
+      "Add the leaves and prepared sauce and toss for another 60 to 90 seconds until the leaves wilt but remain bright green.",
+      "Transfer immediately to a serving plate and serve hot; do not leave the vegetables in the hot wok."
+    ],
+    "image_url": "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=80",
+    "image_alt": "Garlic stir-fried choy sum served on a plate",
+    "prep_minutes": 8,
+    "cook_minutes": 5,
+    "tags": ["malaysian-chinese", "vegetable", "quick", "side-dish"],
+    "servings": 2
+  }
+]

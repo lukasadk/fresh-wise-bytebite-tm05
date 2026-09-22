@@ -4,6 +4,7 @@
 import { request } from './client';
 import { API_BASE_URL, API_KEY, API_KEY_HEADER } from './config';
 import { getDeviceId } from './device';
+import { selectMalaysianRecipeHints } from '../data/malaysianRecipeRag';
 import type {
   ConsumptionWasteLog,
   DashboardSummary,
@@ -29,6 +30,122 @@ const groceryAiServiceKey = (process.env.EXPO_PUBLIC_GROCERY_AI_SERVICE_KEY ?? '
 const groceryAiTimeoutMs = 60_000;
 const groceryAiSharesMainApi = groceryAiBaseUrl === API_BASE_URL.replace(/\/+$/, '');
 
+type RecipeRagOptions = {
+  limit?: number;
+  language?: 'en' | 'zh';
+  useAi?: boolean;
+  cuisineProfile?: 'malaysia';
+  focusFoodName?: string;
+};
+
+function normaliseRecipeText(value: string | null | undefined): string {
+  return String(value ?? '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function textMentionsNeedle(text: string, needle: string): boolean {
+  const normalText = normaliseRecipeText(text);
+  const normalNeedle = normaliseRecipeText(needle);
+  if (!normalText || !normalNeedle) return false;
+  return normalText.includes(normalNeedle) || normalNeedle.includes(normalText);
+}
+
+function ingredientIsOnHand(ingredient: string, inventoryNames: string[]): boolean {
+  return inventoryNames.some((name) => textMentionsNeedle(ingredient, name));
+}
+
+function priorityUsageScore(recipe: RecipeRecommendation, focusFoodName?: string): number {
+  const priority = recipe.priority_ingredients ?? recipe.expiring_ingredients_matched ?? [];
+  const matched = recipe.available_ingredients ?? recipe.matched_ingredients ?? [];
+  const focusHit = focusFoodName
+    ? [...priority, ...matched, recipe.title ?? '', recipe.recipe_name ?? ''].some((value) =>
+        textMentionsNeedle(value, focusFoodName),
+      )
+    : false;
+  return priority.length * 10 + matched.length + (focusHit ? 100 : 0) + Number(recipe.score ?? 0);
+}
+
+function rankRecipeRecommendations(
+  recipes: RecipeRecommendation[],
+  focusFoodName?: string,
+): RecipeRecommendation[] {
+  return [...recipes].sort(
+    (a, b) => priorityUsageScore(b, focusFoodName) - priorityUsageScore(a, focusFoodName),
+  );
+}
+
+function localMalaysianRecipeRecommendations(
+  inventory: FoodItem[],
+  limit = 3,
+  focusFoodName?: string,
+): RecipeRecommendation[] {
+  const rankedInventory = focusFoodName
+    ? [...inventory].sort((a, b) => {
+        const aHit = textMentionsNeedle(a.canonical_food_name || a.name, focusFoodName) ? 1 : 0;
+        const bHit = textMentionsNeedle(b.canonical_food_name || b.name, focusFoodName) ? 1 : 0;
+        return bHit - aHit;
+      })
+    : inventory;
+  return selectMalaysianRecipeHints(rankedInventory, Math.max(limit * 3, 8)).map((hint, index) => {
+    const inventoryNames = rankedInventory.map((item) => item.canonical_food_name || item.name).filter(Boolean);
+    const available = hint.ingredients.filter((ingredient) => ingredientIsOnHand(ingredient, inventoryNames));
+    const matched = available;
+    const priority = (focusFoodName
+      ? hint.priorityUses.filter((ingredient) => textMentionsNeedle(ingredient, focusFoodName))
+      : []
+    ).concat(hint.priorityUses).filter((value, valueIndex, values) => values.indexOf(value) === valueIndex).slice(0, 3);
+    const score = Math.max(0.6, 1 - index * 0.08);
+    return {
+      recipe_id: `local-malaysia-${index + 1}-${hint.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      recipe_name: hint.title,
+      title: hint.title,
+      reason: matched.length
+        ? `Local Malaysian fallback using ${matched.slice(0, 3).join(', ')} from your pantry.`
+        : 'Local Malaysian fallback selected from the retrieved recipe library.',
+      available_ingredients: matched,
+      priority_ingredients: priority.length ? priority : matched.slice(0, 2),
+      ingredient_quantities: hint.ingredientQuantities ?? [],
+      steps: hint.steps,
+      image_url: hint.imageUrl ?? null,
+      image_alt: hint.imageAlt ?? `Serving suggestion for ${hint.title}`,
+      prep_minutes: hint.prepMinutes ?? null,
+      cook_minutes: hint.cookMinutes ?? null,
+      source: 'local_malaysian_rag',
+      ai_enhanced: false,
+      score,
+      ingredient_tokens: hint.ingredients,
+      tags: ['Malaysian', 'Local RAG'],
+      servings: 2,
+      serving_size: null,
+      matched_ingredients: matched,
+      missing_ingredients: hint.ingredients.filter((ingredient) => !matched.includes(ingredient)).slice(0, 4),
+      expiring_ingredients_matched: priority,
+      coverage_score: score,
+      expiry_weight_score: 0,
+      total_score: score,
+    };
+  }).sort((a, b) => priorityUsageScore(b, focusFoodName) - priorityUsageScore(a, focusFoodName)).slice(0, limit);
+}
+
+function ensureThreeRecipeRecommendations(
+  recipes: RecipeRecommendation[],
+  inventory: FoodItem[],
+  limit = 3,
+  focusFoodName?: string,
+): RecipeRecommendation[] {
+  const next = rankRecipeRecommendations(recipes, focusFoodName).slice(0, limit);
+  if (next.length >= limit) return next;
+  const seen = new Set(next.map((recipe) => (recipe.title || recipe.recipe_name || '').toLowerCase()));
+  for (const recipe of localMalaysianRecipeRecommendations(inventory, limit, focusFoodName)) {
+    const title = (recipe.title || recipe.recipe_name || '').toLowerCase();
+    if (!seen.has(title)) {
+      next.push(recipe);
+      seen.add(title);
+    }
+    if (next.length >= limit) break;
+  }
+  return rankRecipeRecommendations(next, focusFoodName).slice(0, limit);
+}
+
 // --- Identity -------------------------------------------------------------
 
 /** Call ONCE on app start, before anything else. Creates the profile for this
@@ -44,7 +161,7 @@ export async function registerDevice(householdSize = 1, location?: string): Prom
 
 export const getMe = () => request<UserProfile>('/v1/users/me');
 
-export const updateMe = (patch: { household_size?: number; location?: string }) =>
+export const updateMe = (patch: { household_size?: number; location?: string; push_token?: string | null }) =>
   request<UserProfile>('/v1/users/me', { method: 'PATCH', body: patch });
 
 /** Deletes the profile and cascades every item, log and preference. There is
@@ -353,7 +470,7 @@ export function getRecipeRecommendations(opts: { dietTags?: string[]; limit?: nu
 
 export async function getRagRecipeRecommendations(
   inventory: FoodItem[],
-  opts: { limit?: number; language?: 'en' | 'zh'; useAi?: boolean } = {},
+  opts: RecipeRagOptions = {},
 ): Promise<RecipeRecommendation[]> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), groceryAiTimeoutMs);
@@ -372,6 +489,38 @@ export async function getRagRecipeRecommendations(
         limit: opts.limit ?? 3,
         language: opts.language ?? 'en',
         use_ai: opts.useAi ?? true,
+        cuisine_profile: opts.cuisineProfile ?? 'malaysia',
+        locale: 'Malaysia',
+        focus_food: opts.focusFoodName ? { name: opts.focusFoodName } : null,
+        cuisine_guidance: {
+          style: 'Malaysian everyday home cooking',
+          priority: [
+            opts.focusFoodName
+              ? `rank recipes that use "${opts.focusFoodName}" first`
+              : 'rank recipes by priority-ingredient usage first',
+            'select only from retrieved local_recipe_hints or server knowledge-base candidates',
+            'do not invent a recipe outside the retrieved candidates',
+            'do not add unsupported major ingredients that are not present in the chosen candidate',
+            'preserve important cooking steps from the chosen candidate',
+            'prefer familiar Malaysian pantry meals before generic Western recipes',
+            'cover Malay, Chinese Malaysian, Indian Malaysian, mamak, student-friendly, and quick household cooking styles',
+            'use rice, noodles, eggs, chicken, fish, tofu, vegetables, soy sauce, chilli, curry powder, sambal, santan, and garlic/shallot combinations when available',
+            'keep recipes practical for a student or household kitchen in Malaysia',
+            'avoid pork and alcohol unless the pantry item explicitly contains them',
+            'return exactly three recipe cards when enough pantry items are available',
+          ],
+          examples: [
+            'nasi goreng',
+            'mee goreng',
+            'ayam masak kicap',
+            'kari ayam',
+            'sup sayur',
+            'telur dadar',
+            'fried rice with egg and vegetables',
+            'sambal-style stir fry',
+          ],
+        },
+        local_recipe_hints: selectMalaysianRecipeHints(inventory, 24),
         inventory: inventory.map((item) => ({
           name: item.canonical_food_name || item.name,
           quantity: item.quantity,
@@ -389,9 +538,21 @@ export async function getRagRecipeRecommendations(
       throw new Error(detail);
     }
     const rawRecommendations = Array.isArray(payload?.recommendations) ? payload.recommendations : [];
-    return rawRecommendations.map((recipe: any): RecipeRecommendation => {
+    const inventoryNames = inventory.map((item) => item.canonical_food_name || item.name).filter(Boolean);
+    const mapped = rawRecommendations.map((recipe: any): RecipeRecommendation => {
       const title = typeof recipe?.title === 'string' ? recipe.title : recipe?.recipe_name ?? 'Untitled recipe';
-      const available = Array.isArray(recipe?.available_ingredients) ? recipe.available_ingredients : [];
+      const ingredients = (
+        Array.isArray(recipe?.ingredients) ? recipe.ingredients
+          : Array.isArray(recipe?.ingredient_tokens) ? recipe.ingredient_tokens
+            : Array.isArray(recipe?.available_ingredients) ? recipe.available_ingredients
+              : []
+      ).map(String).filter(Boolean);
+      const available = Array.isArray(recipe?.available_ingredients) && recipe.available_ingredients.length
+        ? recipe.available_ingredients.map(String).filter(Boolean)
+        : ingredients.filter((ingredient: string) => ingredientIsOnHand(ingredient, inventoryNames));
+      const missing = Array.isArray(recipe?.missing_ingredients) && recipe.missing_ingredients.length
+        ? recipe.missing_ingredients.map(String).filter(Boolean)
+        : ingredients.filter((ingredient: string) => !ingredientIsOnHand(ingredient, inventoryNames));
       return {
         recipe_id: String(recipe?.recipe_id ?? title),
         recipe_name: title,
@@ -399,27 +560,37 @@ export async function getRagRecipeRecommendations(
         reason: typeof recipe?.reason === 'string' ? recipe.reason : '',
         available_ingredients: available,
         priority_ingredients: Array.isArray(recipe?.priority_ingredients) ? recipe.priority_ingredients : [],
+        ingredient_quantities: Array.isArray(recipe?.ingredient_quantities)
+          ? recipe.ingredient_quantities.map(String).filter(Boolean)
+          : [],
         steps: Array.isArray(recipe?.steps) ? recipe.steps.map(String).filter(Boolean) : [],
+        image_url: typeof recipe?.image_url === 'string' && recipe.image_url.trim() ? recipe.image_url.trim() : null,
+        image_alt: typeof recipe?.image_alt === 'string' && recipe.image_alt.trim()
+          ? recipe.image_alt.trim()
+          : `Serving suggestion for ${title}`,
+        prep_minutes: Number.isFinite(Number(recipe?.prep_minutes)) ? Number(recipe.prep_minutes) : null,
+        cook_minutes: Number.isFinite(Number(recipe?.cook_minutes)) ? Number(recipe.cook_minutes) : null,
         source: typeof recipe?.source === 'string' ? recipe.source : 'mini_recipe_rag',
         ai_enhanced: recipe?.ai_enhanced === true,
         score: Number.isFinite(Number(recipe?.score)) ? Number(recipe.score) : 0,
-        ingredient_tokens: available,
+        ingredient_tokens: ingredients.length ? ingredients : available,
         tags: Array.isArray(recipe?.tags) ? recipe.tags.map(String).filter(Boolean) : [],
         servings: Number.isFinite(Number(recipe?.servings)) ? Number(recipe.servings) : null,
         serving_size: null,
         matched_ingredients: available,
-        missing_ingredients: Array.isArray(recipe?.missing_ingredients) ? recipe.missing_ingredients : [],
+        missing_ingredients: missing,
         expiring_ingredients_matched: Array.isArray(recipe?.priority_ingredients) ? recipe.priority_ingredients : [],
         coverage_score: Number.isFinite(Number(recipe?.score)) ? Number(recipe.score) : 0,
         expiry_weight_score: 0,
         total_score: Number.isFinite(Number(recipe?.score)) ? Number(recipe.score) : 0,
       };
     });
+    return ensureThreeRecipeRecommendations(mapped, inventory, opts.limit ?? 3, opts.focusFoodName);
   } catch (error: any) {
     if (error?.name === 'AbortError') {
-      throw new Error('Recipe AI timed out. Please try again.');
+      return localMalaysianRecipeRecommendations(inventory, opts.limit ?? 3, opts.focusFoodName);
     }
-    throw new Error(`Could not load AI recipe recommendations from ${groceryAiBaseUrl}.`, { cause: error });
+    return localMalaysianRecipeRecommendations(inventory, opts.limit ?? 3, opts.focusFoodName);
   } finally {
     clearTimeout(timer);
   }

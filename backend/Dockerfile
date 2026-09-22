@@ -3,7 +3,8 @@
 FROM python:3.12.7-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/srv/src:/srv
 
 WORKDIR /srv
 
@@ -12,6 +13,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app/ ./app/
+COPY src/ ./src/
+COPY models/ ./models/
+COPY data/ ./data/
 COPY scripts/ ./scripts/
 
 # Non-root: if the API is ever compromised, it shouldn't own the container.

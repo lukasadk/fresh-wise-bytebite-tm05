@@ -16,6 +16,8 @@ import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.annotations.ReactProp;
 
 import java.io.InputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.ExecutorService;
@@ -90,6 +92,11 @@ public class FreshWisePreviewImageViewManager extends SimpleViewManager<FreshWis
         return BitmapFactory.decodeStream(input);
       } finally {
         connection.disconnect();
+      }
+    }
+    if ("file".equalsIgnoreCase(scheme)) {
+      try (InputStream input = new FileInputStream(new File(uri.getPath()))) {
+        return BitmapFactory.decodeStream(input);
       }
     }
 

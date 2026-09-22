@@ -13,6 +13,32 @@
 把密钥加密后连同客户端解密材料一起提交并不安全，APK 可以被反编译。App
 只调用网关，网关才使用模型密钥。
 
+## 现在采用的配置方式
+
+GitHub 仓库只保留公开 URL 和空占位符。组员拉代码后，即使不配置模型密钥，
+也不会泄漏任何付费 key；真正调用模型时，由 Railway 后端读取自己的变量。
+
+前端 `.env` 只能这样写：
+
+```dotenv
+EXPO_PUBLIC_API_BASE_URL=https://wastewise-ai-api-production.up.railway.app
+EXPO_PUBLIC_API_KEY=
+EXPO_PUBLIC_GROCERY_AI_API_URL=https://wastewise-ai-api-production.up.railway.app
+EXPO_PUBLIC_GROCERY_AI_SERVICE_KEY=
+```
+
+其中 `EXPO_PUBLIC_API_KEY` 和 `EXPO_PUBLIC_GROCERY_AI_SERVICE_KEY` 都会被打进
+APK，只能当作公开的客户端标识/限流开关，不能当作真正密钥。
+
+Railway 后端变量才放模型供应商 key：
+
+```dotenv
+WW_API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+WW_API_MODEL=qwen-vl-plus
+WW_API_RECIPE_MODEL=qwen-plus
+WW_API_KEY=在签发平台重新生成的密钥
+```
+
 ## 本地服务器
 
 真实值放在被 `.gitignore` 排除的

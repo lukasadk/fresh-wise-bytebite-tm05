@@ -1,16 +1,23 @@
+import mimetypes
+from pathlib import Path
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 
 from app.auto_waste import run_daily_auto_waste_expired
 from app.config import get_settings
-from app.db import AsyncSessionLocal
+from app.db import AsyncSessionLocal, engine
 from app.notifications import run_daily_expiry_check
 from app.routers import dashboard, diet, logs, pantry, recipes, reference, users
 from app.security import ApiKeyMiddleware, RateLimitMiddleware
+from wastewise_grocery_vlm.main import app as grocery_ai_app
 
 settings = get_settings()
+mimetypes.add_type("application/vnd.android.package-archive", ".apk")
 
 # Interactive docs are handy in development but hand an attacker a map of
 # every endpoint on a public host, so they're switched off in production.
@@ -60,6 +67,21 @@ app.include_router(diet.router)
 app.include_router(recipes.router)
 app.include_router(reference.router)
 
+AI_GATEWAY_ROUTE_PREFIXES = (
+    "/v1/api-recognition/",
+    "/v1/recipe-rag/",
+    "/v1/photo-entries/",
+    "/v1/expiry-estimates",
+)
+for route in grocery_ai_app.router.routes:
+    route_path = getattr(route, "path", "")
+    if route_path.startswith(AI_GATEWAY_ROUTE_PREFIXES):
+        app.router.routes.append(route)
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 
 async def _run_auto_waste_job() -> None:
     async with AsyncSessionLocal() as db:
@@ -87,8 +109,27 @@ async def _run_daily_jobs() -> None:
 scheduler = AsyncIOScheduler()
 
 
+async def _apply_initial_schema_if_needed() -> None:
+    if not settings.auto_apply_schema:
+        return
+
+    schema_path = Path(__file__).resolve().parent / "schema" / "erd-schema.sql"
+    if not schema_path.exists():
+        raise RuntimeError(f"AUTO_APPLY_SCHEMA is enabled, but {schema_path} is missing.")
+
+    async with engine.begin() as conn:
+        exists = await conn.scalar(text("SELECT to_regclass('public.user_profile') IS NOT NULL"))
+        if exists:
+            return
+
+        raw = await conn.get_raw_connection()
+        await raw.driver_connection.execute(schema_path.read_text(encoding="utf-8"))
+        print("[startup] applied initial database schema")
+
+
 @app.on_event("startup")
 async def start_scheduler():
+    await _apply_initial_schema_if_needed()
     # Runs once daily at 08:00 server time. Change the hour to whatever suits
     # actual usage -- there's nothing special about 8am beyond "a reasonable
     # default for a morning check."

@@ -175,6 +175,13 @@ export default function PantryScreen({ navigation, route }: any) {
     attentionItems.length > 0
       ? [...attentionItems].sort((a, b) => (a.expiry.daysLeft ?? Infinity) - (b.expiry.daysLeft ?? Infinity))[0].expiry.rowExpiryLabel.toLowerCase()
       : null;
+  const attentionHasUrgent = attentionItems.some((x) => x.expiry.expiryLevel === 'urgent');
+  const attentionNames = attentionItems
+    .slice()
+    .sort((a, b) => (a.expiry.daysLeft ?? Infinity) - (b.expiry.daysLeft ?? Infinity))
+    .slice(0, 3)
+    .map(({ item }) => item.name)
+    .join(', ');
 
   const hasActiveFilter = query.trim().length > 0 || activeFilter !== ALL_FILTER;
 
@@ -295,8 +302,10 @@ export default function PantryScreen({ navigation, route }: any) {
               <AlertBanner title="Can't reach the API" subtitle={itemsError} />
             ) : attentionItems.length > 0 ? (
               <AlertBanner
+                level={attentionHasUrgent ? 'urgent' : 'warn'}
                 title={`${attentionItems.length} item${attentionItems.length === 1 ? '' : 's'} need${attentionItems.length === 1 ? 's' : ''} attention`}
-                subtitle={`Closest expiry: ${closestAttentionLabel}`}
+                subtitle={`Use or check: ${attentionNames}. Closest expiry: ${closestAttentionLabel}`}
+                onPress={() => navigation.navigate('UseFirst')}
               />
             ) : null}
 

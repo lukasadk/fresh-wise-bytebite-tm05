@@ -1,0 +1,149 @@
+{
+  "about": "Image-source catalogue for FreshWise recipe RAG. Always check the individual source page before redistribution because Wikimedia licences are file-specific.",
+  "recommended_datasets": [
+    {
+      "name": "Malaysian Food Images",
+      "url": "https://huggingface.co/datasets/lowyisan/malaysian_food_images",
+      "license": "Not declared on the dataset card; do not redistribute binaries without permission",
+      "coverage": "11,000 images across 11 Malaysian and Malaysian-adjacent food categories; 500 row labels are used as RAG grounding metadata"
+    },
+    {
+      "name": "Malaysian Cuisine Image Dataset",
+      "url": "https://huggingface.co/datasets/ychwodhrey/malaysian-cuisine",
+      "license": "Apache-2.0",
+      "coverage": "Fewer than 1,000 images across 10 Malaysian food categories"
+    },
+    {
+      "name": "Wikimedia Commons — Cuisine of Malaysia",
+      "url": "https://commons.wikimedia.org/wiki/Category:Cuisine_of_Malaysia",
+      "license": "Varies by image; verify each file page",
+      "coverage": "More than 800 Malaysian cuisine media files and related subcategories"
+    },
+    {
+      "name": "Malaysia Food 11",
+      "url": "https://www.kaggle.com/datasets/karkengchan/malaysia-food-11",
+      "license": "Check the dataset page before use",
+      "coverage": "Eleven Malaysian food image classes"
+    },
+    {
+      "name": "Unsplash Food Images",
+      "url": "https://unsplash.com/s/photos/malaysian-food",
+      "license": "Unsplash License",
+      "coverage": "General food photography used as a fallback when an exact dish image is unavailable"
+    }
+  ],
+  "integrated_images": [
+    {
+      "id": "commons-nasi-ayam-kicap",
+      "recipe_id": "my-019",
+      "file_title": "Nasi Ayam Kicap.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Nasi_Ayam_Kicap.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "commons-ayam-percik-kelantan",
+      "recipe_id": "my-020",
+      "file_title": "AyamPercikKelantan.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:AyamPercikKelantan.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "commons-nasi-kerabu",
+      "recipe_id": "my-021",
+      "file_title": "Nasi Kerabu J&K Restaurant.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Nasi_Kerabu_J%26K_Restaurant.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "commons-laksa-johor",
+      "recipe_id": "my-022",
+      "file_title": "Laksa Johor Roza Roslan 2.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Laksa_Johor_Roza_Roslan_2.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "commons-char-kway-teow",
+      "recipe_id": "my-023",
+      "file_title": "Char kway teow at Permatang Tok Jaya.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Char_kway_teow_(kuetiau_goreng)_of_Dann_Char_Kuey_Teow_at_Permatang_Tok_Jaya,_SPU_20240915_183329.jpg",
+      "license": "CC0"
+    },
+    {
+      "id": "commons-maggi-goreng",
+      "recipe_id": "my-024",
+      "file_title": "Maggi Goreng.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Maggi_Goreng.jpg",
+      "license": "CC BY 2.0"
+    },
+    {
+      "id": "commons-roti-telur",
+      "recipe_id": "my-025",
+      "file_title": "Roti telur bawang planta.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Roti_telur_bawang_planta.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "commons-murtabak",
+      "recipe_id": "my-026",
+      "file_title": "Martabak Aceh.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Martabak_Aceh.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "commons-rendang-ayam",
+      "recipe_id": "my-027",
+      "file_title": "Rendang Ayam Cili Api Negeri Sembilan.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Rendang_Ayam_Cili_Api_Negeri_Sembilan.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "commons-ikan-bakar",
+      "recipe_id": "my-028",
+      "file_title": "Gurame bakar kecap 2.JPG",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Gurame_bakar_kecap_2.JPG",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "commons-sayur-lodeh",
+      "recipe_id": "my-029",
+      "file_title": "Sayur Lodeh Ibu Sulastri.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Sayur_Lodeh_Ibu_Sulastri.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "commons-cucur-jagung",
+      "recipe_id": "my-030",
+      "file_title": "Pelas Jagung in Bojonegoro.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Pelas_Jagung_in_Bojonegoro.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "commons-tomato-egg-rice",
+      "recipe_id": "my-009",
+      "file_title": "Telur goreng tomato kacau dengan nasi.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Telur_goreng_tomato_kacau_dengan_nasi.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "commons-potato-rice",
+      "recipe_id": "combination:potato+egg+rice",
+      "file_title": "Potato rice.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Potato_rice.jpg",
+      "license": "CC BY-SA 3.0"
+    },
+    {
+      "id": "commons-egg-fried-rice",
+      "recipe_id": "combination:egg+rice",
+      "file_title": "Egg Fried rice.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Egg_Fried_rice.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "generated-potato-egg-rice-v2",
+      "recipe_id": "combination:potato+egg+rice",
+      "file_title": "potato-egg-rice-v2.jpg",
+      "source_page": "FreshWise project-generated asset",
+      "license": "Project asset; generated with the built-in image generation tool"
+    }
+  ]
+}

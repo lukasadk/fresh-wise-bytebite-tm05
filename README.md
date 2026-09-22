@@ -59,6 +59,14 @@ npx expo start
 
 Scan the QR code with Expo Go (iOS/Android), or press `i` / `a` for a simulator.
 
+If `npx` is not on PATH on Windows, run the local binary after installing
+dependencies:
+
+```cmd
+cd /d D:\fresh-wise-bytebite-tm05
+.\node_modules\.bin\expo.cmd start --localhost --port 19009
+```
+
 ### Grocery photo and receipt recognition
 
 The photo-entry screen now calls a server-side WasteWise FastAPI gateway. The
@@ -72,10 +80,11 @@ estimated expiry date, and quantity. Nothing enters the pantry until the user
 confirms it. Printed expiry OCR and a rule-based approximate expiry remain
 separate data fields so an estimate cannot masquerade as text read from a pack.
 
-Configure the public gateway URL in a local, ignored `.env`:
+The committed defaults point at the public Railway gateway:
 
 ```dotenv
-EXPO_PUBLIC_GROCERY_AI_API_URL=https://your-wastewise-gateway.example
+EXPO_PUBLIC_API_BASE_URL=https://wastewise-ai-api-production.up.railway.app
+EXPO_PUBLIC_GROCERY_AI_API_URL=https://wastewise-ai-api-production.up.railway.app
 ```
 
 Never put the upstream model key in `EXPO_PUBLIC_*`, React Native code, Android

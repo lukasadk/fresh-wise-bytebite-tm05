@@ -1,16 +1,19 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  Image,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChefHat, ChevronRight, Leaf, RefreshCcw, Sparkles } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { ChefHat, CheckCircle2, ChevronRight, Clock3, Leaf, RefreshCcw, Sparkles } from 'lucide-react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import { getRagRecipeRecommendations, listPantry } from '../api/freshwise';
 import type { FoodItem, RecipeRecommendation } from '../api/types';
@@ -24,8 +27,48 @@ function shortIngredients(values: string[], fallback: string): string {
   return values.slice(0, 3).join(', ') + (values.length > 3 ? ` +${values.length - 3}` : '');
 }
 
+function list(values: string[] | null | undefined): string[] {
+  return Array.isArray(values) ? values.map(String).filter(Boolean) : [];
+}
+
+function IngredientChecklist({
+  title,
+  values,
+  tone,
+}: {
+  title: string;
+  values: string[];
+  tone: 'available' | 'missing';
+}) {
+  const shown = values.slice(0, 5);
+  return (
+    <View style={styles.checklistBlock}>
+      <Text style={[styles.checklistTitle, tone === 'missing' && styles.missingChecklistTitle]}>{title}</Text>
+      {shown.length ? shown.map((value) => (
+        <View key={`${title}-${value}`} style={styles.checkRow}>
+          {tone === 'available' ? (
+            <CheckCircle2 size={14} color={colors.statusFresh} strokeWidth={2.4} />
+          ) : (
+            <View style={styles.missingDot} />
+          )}
+          <Text style={[styles.checkText, tone === 'missing' && styles.missingCheckText]}>{value}</Text>
+        </View>
+      )) : (
+        <Text style={styles.emptyChecklistText}>
+          {tone === 'available' ? 'No exact pantry match reported.' : 'No major missing ingredients.'}
+        </Text>
+      )}
+    </View>
+  );
+}
+
 export default function RecipesScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const { width } = useWindowDimensions();
+  const focusFoodName = typeof route.params?.focusFoodName === 'string' ? route.params.focusFoodName : null;
+  const isWebLayout = Platform.OS === 'web';
+  const mobileCardWidth = Math.max(278, Math.min(330, width - spacing.xxl * 2));
   const [recipes, setRecipes] = React.useState<RecipeRecommendation[]>([]);
   const [inventory, setInventory] = React.useState<FoodItem[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -48,6 +91,8 @@ export default function RecipesScreen() {
         limit: 3,
         language: 'en',
         useAi: true,
+        cuisineProfile: 'malaysia',
+        focusFoodName: focusFoodName ?? undefined,
       });
       setRecipes(recommended.slice(0, 3));
     } catch (e: any) {
@@ -56,7 +101,7 @@ export default function RecipesScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [focusFoodName]);
 
   React.useEffect(() => {
     load();
@@ -77,9 +122,11 @@ export default function RecipesScreen() {
           </View>
           <View style={styles.heroCopy}>
             <Text style={styles.eyebrow}>AI recipe RAG</Text>
-            <Text style={styles.title}>Cook what expires first</Text>
+            <Text style={styles.title}>{focusFoodName ? `Cook ${focusFoodName} first` : 'Cook Malaysian meals first'}</Text>
             <Text style={styles.subtitle}>
-              Three focused suggestions from your pantry. Tap a card to see the full recipe.
+              {focusFoodName
+                ? `Top 3 grounded recipe suggestions that prioritise ${focusFoodName}. Tap a card to see the full recipe.`
+                : 'Three Malaysian-style suggestions from your pantry. Tap a card to see the full recipe.'}
             </Text>
           </View>
         </View>
@@ -99,7 +146,7 @@ export default function RecipesScreen() {
           <View style={styles.stateCard}>
             <ActivityIndicator color={colors.primary} />
             <Text style={styles.stateTitle}>Building recommendations...</Text>
-            <Text style={styles.stateText}>Checking your pantry and matching a small recipe knowledge base.</Text>
+            <Text style={styles.stateText}>Checking your pantry and matching Malaysian-style recipe ideas.</Text>
           </View>
         ) : error ? (
           <View style={[styles.stateCard, styles.errorCard]}>
@@ -119,47 +166,84 @@ export default function RecipesScreen() {
             <Text style={styles.stateText}>
               {inventory.length === 0
                 ? 'Scan groceries or add pantry items, then this page will recommend meals around what you already have.'
-                : `You have ${inventory.length} item${inventory.length === 1 ? '' : 's'} saved, but the small recipe RAG needs a recognisable cooking ingredient such as milk, egg, rice, noodles, chicken, vegetables, fruit, or sauce.`}
+                : `You have ${inventory.length} item${inventory.length === 1 ? '' : 's'} saved, but the Malaysian recipe RAG needs a recognisable cooking ingredient such as rice, noodles, egg, chicken, fish, tofu, vegetables, sambal, soy sauce, curry powder, or coconut milk.`}
             </Text>
           </View>
         ) : (
           <View style={styles.recipeSection}>
             <Text style={styles.sectionTitle}>Top 3 recommendations</Text>
-            {recipes.map((recipe, index) => {
-              const priority = recipe.priority_ingredients ?? recipe.expiring_ingredients_matched ?? [];
-              const matched = recipe.available_ingredients ?? recipe.matched_ingredients ?? [];
-              return (
-                <Pressable
-                  key={`${recipe.recipe_id}-${index}`}
-                  style={({ pressed }) => [styles.recipeCard, pressed && styles.recipeCardPressed]}
-                  onPress={() => navigation.navigate('RecipeDetail', { recipe })}
-                >
-                  <View style={styles.rankBadge}>
-                    <Text style={styles.rankText}>{index + 1}</Text>
-                  </View>
-                  <View style={styles.recipeMain}>
+            <ScrollView
+              horizontal={!isWebLayout}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={[styles.recipeCards, isWebLayout && styles.recipeCardsWeb]}
+              snapToInterval={!isWebLayout ? mobileCardWidth + spacing.md : undefined}
+              decelerationRate="fast"
+            >
+              {recipes.map((recipe, index) => {
+                const priority = list(recipe.priority_ingredients ?? recipe.expiring_ingredients_matched);
+                const matched = list(recipe.available_ingredients ?? recipe.matched_ingredients);
+                const missing = list(recipe.missing_ingredients);
+                const steps = list(recipe.steps).slice(0, 4);
+                const totalMinutes = Number(recipe.prep_minutes ?? 0) + Number(recipe.cook_minutes ?? 0);
+                return (
+                  <Pressable
+                    key={`${recipe.recipe_id}-${index}`}
+                    style={({ pressed }) => [
+                      styles.recipeCard,
+                      isWebLayout ? styles.recipeCardWeb : { width: mobileCardWidth },
+                      pressed && styles.recipeCardPressed,
+                    ]}
+                    onPress={() => navigation.navigate('RecipeDetail', { recipe })}
+                  >
+                    {recipe.image_url ? (
+                      <Image
+                        source={{ uri: recipe.image_url }}
+                        style={styles.recipeImage}
+                        resizeMode="cover"
+                        accessibilityLabel={recipe.image_alt || `Serving suggestion for ${recipeTitle(recipe)}`}
+                      />
+                    ) : null}
                     <View style={styles.recipeHeader}>
+                      <View style={styles.rankBadge}>
+                        <Text style={styles.rankText}>{index + 1}</Text>
+                      </View>
                       <Text style={styles.recipeName}>{recipeTitle(recipe)}</Text>
                       <ChevronRight size={19} color={colors.primary} strokeWidth={2.4} />
                     </View>
-                    <Text style={styles.recipeReason} numberOfLines={2}>
+                    <Text style={styles.recipeReason}>
                       {recipe.reason || `Uses ${shortIngredients(matched, 'your pantry items')}.`}
                     </Text>
                     <View style={styles.chipRow}>
                       <View style={styles.chip}>
                         <Leaf size={13} color={colors.primary} />
-                        <Text style={styles.chipText}>{shortIngredients(matched, 'Pantry match')}</Text>
+                        <Text style={styles.chipText}>Priority: {shortIngredients(priority, focusFoodName || 'Use first')}</Text>
                       </View>
-                      {priority.length > 0 ? (
-                        <View style={[styles.chip, styles.warnChip]}>
-                          <Text style={styles.warnChipText}>Use first: {shortIngredients(priority, 'soon')}</Text>
+                      {totalMinutes > 0 ? (
+                        <View style={styles.chip}>
+                          <Clock3 size={13} color={colors.primary} />
+                          <Text style={styles.chipText}>{totalMinutes} min</Text>
                         </View>
                       ) : null}
                     </View>
-                  </View>
-                </Pressable>
-              );
-            })}
+                    <View style={styles.checklists}>
+                      <IngredientChecklist title="Available" values={matched} tone="available" />
+                      <IngredientChecklist title="Missing" values={missing} tone="missing" />
+                    </View>
+                    <View style={styles.stepsPreview}>
+                      <Text style={styles.stepsTitle}>Cooking steps</Text>
+                      {steps.length ? steps.map((step, stepIndex) => (
+                        <View key={`${recipe.recipe_id}-step-${stepIndex}`} style={styles.stepRow}>
+                          <Text style={styles.stepNumber}>{stepIndex + 1}</Text>
+                          <Text style={styles.stepText}>{step}</Text>
+                        </View>
+                      )) : (
+                        <Text style={styles.emptyChecklistText}>Tap to see recipe details.</Text>
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
         )}
       </ScrollView>
@@ -255,8 +339,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textPrimary,
   },
-  recipeCard: {
+  recipeCards: {
+    gap: spacing.md,
+    paddingRight: spacing.xxl,
+  },
+  recipeCardsWeb: {
+    width: '100%',
     flexDirection: 'row',
+    paddingRight: 0,
+  },
+  recipeCard: {
     gap: spacing.md,
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -269,9 +361,19 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 2,
   },
+  recipeCardWeb: {
+    flex: 1,
+    minWidth: 0,
+  },
   recipeCardPressed: {
     transform: [{ scale: 0.99 }],
     opacity: 0.9,
+  },
+  recipeImage: {
+    width: '100%',
+    height: 160,
+    borderRadius: radii.lg,
+    backgroundColor: colors.primaryTint,
   },
   rankBadge: {
     width: 34,
@@ -303,7 +405,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   recipeReason: {
-    fontFamily: fonts.regular,
+    fontFamily: fonts.storyItalic,
     fontSize: 13,
     lineHeight: 19,
     color: colors.textSecondary,
@@ -334,6 +436,82 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontSize: 11,
     color: colors.expiryWarnText,
+  },
+  checklists: {
+    gap: spacing.sm,
+  },
+  checklistBlock: {
+    gap: 6,
+  },
+  checklistTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.statusFresh,
+  },
+  missingChecklistTitle: {
+    color: colors.sourceManual,
+  },
+  checkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  missingDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.sourceManual,
+  },
+  checkText: {
+    flex: 1,
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.statusFresh,
+  },
+  missingCheckText: {
+    color: colors.sourceManual,
+  },
+  emptyChecklistText: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textSecondary,
+  },
+  stepsPreview: {
+    borderTopWidth: 1,
+    borderTopColor: colors.borderSoft,
+    paddingTop: spacing.md,
+    gap: spacing.sm,
+  },
+  stepsTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textPrimary,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'flex-start',
+  },
+  stepNumber: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    color: colors.white,
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    lineHeight: 20,
+    textAlign: 'center',
+    overflow: 'hidden',
+  },
+  stepText: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.textPrimary,
   },
   stateCard: {
     backgroundColor: colors.card,

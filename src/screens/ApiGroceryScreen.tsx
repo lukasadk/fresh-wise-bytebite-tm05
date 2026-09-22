@@ -73,6 +73,26 @@ function GroceryPreviewImage({ sourceUri, style }: { sourceUri: string; style?: 
 const BOX_COLOURS = ['#1F7A42', '#D9603B', '#C68A2E', '#2F86C9', '#7A68B3'];
 const IMAGE_PICKER_MEDIA_TYPE = ImagePicker.MediaTypeOptions.Images;
 
+async function pickLibraryImage(): Promise<ImagePicker.ImagePickerResult> {
+  if (Platform.OS === 'android' && hasNativeImageFilePicker()) {
+    try {
+      const nativeAsset = await pickImageFromDeviceFiles();
+      return { canceled: false as const, assets: nativeAsset ? [nativeAsset as any] : [] };
+    } catch (nativeError) {
+      console.warn('FreshWise native image picker failed; falling back to Expo picker.', nativeError);
+    }
+  }
+
+  return ImagePicker.launchImageLibraryAsync({
+    mediaTypes: IMAGE_PICKER_MEDIA_TYPE,
+    quality: 0.9,
+    // Some Android ROMs crash the new system photo picker during native
+    // module initialization. The legacy picker is more compatible for an
+    // APK distributed outside Play Store and still returns a normal URI.
+    ...(Platform.OS === 'android' ? { legacy: true } : {}),
+  });
+}
+
 function toIsoDate(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -171,16 +191,7 @@ export default function ApiGroceryScreen({ navigation }: any) {
       }
       const result = source === 'camera'
         ? await ImagePicker.launchCameraAsync({ mediaTypes: IMAGE_PICKER_MEDIA_TYPE, quality: 0.9 })
-        : hasNativeImageFilePicker()
-          ? { canceled: false as const, assets: [await pickImageFromDeviceFiles()].filter(Boolean) as any[] }
-          : await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: IMAGE_PICKER_MEDIA_TYPE,
-          quality: 0.9,
-          // Some Android ROMs crash the new system photo picker during native
-          // module initialization. The legacy picker is more compatible for an
-          // APK distributed outside Play Store and still returns a normal URI.
-          ...(Platform.OS === 'android' ? { legacy: true } : {}),
-        });
+        : await pickLibraryImage();
       const asset = result.canceled ? null : result.assets[0];
       if (asset?.uri) {
         const cachedAsset = Platform.OS === 'android'
@@ -197,7 +208,7 @@ export default function ApiGroceryScreen({ navigation }: any) {
       setNotice({
         title: 'Could not open the image',
         body: message.includes('ExceptionInInitializerError')
-          ? 'This phone blocked the system photo picker. Please grant Photos permission and try again, or use Take photo.'
+          ? 'This phone blocked the system gallery picker. Please use Take photo, or install the latest native-picker APK.'
           : message,
       });
     } finally {

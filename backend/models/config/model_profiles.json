@@ -1,0 +1,15 @@
+{
+  "profiles": [
+    {
+      "name": "qwen3_vl_4b_nf4",
+      "model_id": "Qwen/Qwen3-VL-4B-Instruct",
+      "local_path": "models/Qwen3-VL-4B-Instruct",
+      "adapter_path": "models/adapters/qwen3_vl_4b_frozen_research_v1",
+      "adapter_sha256": "937fbe2cc40470359ee67dacc07b13247ee4ca020d125a6a28760f80a5b7cbfa",
+      "quantization": "nf4",
+      "min_vram_gb": 7.0,
+      "min_ram_gb": 12.0,
+      "notes": "Only runtime profile. The retained frozen research QLoRA adapter is mandatory; no base-only or smaller-model fallback is enabled."
+    }
+  ]
+}

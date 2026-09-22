@@ -1,0 +1,254 @@
+[
+  {
+    "recipe_id": "my-019",
+    "title": "Nasi Ayam Kicap",
+    "ingredients": ["rice", "chicken", "soy sauce", "garlic", "ginger", "cucumber", "spring onion"],
+    "ingredient_quantities": ["300 g boneless chicken thigh", "2 cups cooked rice", "2 tbsp sweet soy sauce", "1 tbsp light soy sauce", "3 garlic cloves, minced", "2 cm ginger, sliced", "1/2 cucumber, sliced", "2 spring onions, sliced", "120 ml water", "1 tbsp cooking oil"],
+    "steps": [
+      "Pat the chicken dry, cut it into 3 cm pieces, and wash hands and utensils after handling the raw poultry.",
+      "Heat 1 tablespoon oil in a frying pan over medium-high heat for 45 seconds, then brown the chicken for 4 minutes, turning once.",
+      "Add the garlic and ginger and stir for 45 seconds until fragrant without letting the garlic darken.",
+      "Add both soy sauces and 120 ml water, scrape the pan, then bring the liquid to a gentle boil.",
+      "Reduce to medium-low heat, cover, and simmer for 10 to 12 minutes; stir once so the sauce coats every piece.",
+      "Confirm the thickest chicken piece reaches 75 C, uncover and reduce the sauce for 2 minutes, then serve over rice with cucumber and spring onion."
+    ],
+    "image_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/48/Nasi_Ayam_Kicap.jpg/1280px-Nasi_Ayam_Kicap.jpg",
+    "image_alt": "A plate of Malaysian nasi ayam kicap with rice and soy-glazed chicken",
+    "image_source_id": "commons-nasi-ayam-kicap",
+    "prep_minutes": 12,
+    "cook_minutes": 20,
+    "tags": ["malaysian", "chicken", "rice", "one-pan"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-020",
+    "title": "Ayam Percik Kelantan",
+    "ingredients": ["chicken", "coconut milk", "lemongrass", "chilli", "garlic", "ginger", "tamarind"],
+    "ingredient_quantities": ["600 g chicken thighs", "250 ml coconut milk", "1 lemongrass stalk, finely sliced", "2 red chillies", "3 garlic cloves", "2 cm ginger", "1 tsp tamarind paste", "1 tsp sugar", "1/2 tsp salt", "1 tbsp cooking oil"],
+    "steps": [
+      "Blend the lemongrass, chillies, garlic, ginger, tamarind, sugar, salt, and 3 tablespoons coconut milk into a smooth paste.",
+      "Reserve one-third of the paste for basting, coat the chicken with the remainder, cover, and refrigerate for at least 30 minutes.",
+      "Heat the oven to 210 C or prepare a covered grill for medium heat; line a tray if using the oven.",
+      "Arrange the chicken skin-side up and roast for 18 minutes, then turn and brush with half the reserved paste.",
+      "Roast for another 12 minutes, turn again, brush with the remaining paste, and cook for 5 to 8 minutes until lightly charred.",
+      "Check the thickest part reaches 75 C and the juices run clear, then rest for 5 minutes before serving."
+    ],
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/d/d6/AyamPercikKelantan.jpg",
+    "image_alt": "Kelantan-style ayam percik coated in a spiced coconut glaze",
+    "image_source_id": "commons-ayam-percik-kelantan",
+    "prep_minutes": 15,
+    "cook_minutes": 38,
+    "tags": ["malaysian", "kelantan", "chicken", "grilled"],
+    "servings": 3
+  },
+  {
+    "recipe_id": "my-021",
+    "title": "Nasi Kerabu Ayam",
+    "ingredients": ["rice", "chicken", "coconut", "cucumber", "bean sprouts", "lemongrass", "turmeric", "chilli"],
+    "ingredient_quantities": ["2 cups cooked blue-pea or plain rice", "300 g boneless chicken thigh", "1/2 cup grated coconut", "1/2 cucumber, julienned", "1 cup bean sprouts", "1 lemongrass stalk, finely sliced", "1 tsp turmeric", "1 red chilli, sliced", "1 tbsp lime juice", "1 tbsp cooking oil", "1/2 tsp salt"],
+    "steps": [
+      "Season the chicken with turmeric and salt, and keep it separate from the vegetables and cooked rice.",
+      "Toast the grated coconut in a dry pan over medium-low heat for 5 to 7 minutes, stirring until evenly golden; transfer to a bowl.",
+      "Heat the oil over medium-high heat and cook the chicken for 5 minutes on the first side and 4 minutes on the second.",
+      "Lower the heat, cover, and cook for 3 to 5 minutes more until the chicken reaches 75 C, then rest and slice.",
+      "Blanch the bean sprouts in boiling water for 30 seconds, drain well, and toss with cucumber, lemongrass, chilli, lime juice, and toasted coconut.",
+      "Divide the warm rice between plates, add the herb salad and sliced chicken, and serve immediately so the vegetables remain crisp."
+    ],
+    "image_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/84/Nasi_Kerabu_J%26K_Restaurant.jpg/1280px-Nasi_Kerabu_J%26K_Restaurant.jpg",
+    "image_alt": "Malaysian nasi kerabu served with chicken, herbs, and vegetables",
+    "image_source_id": "commons-nasi-kerabu",
+    "prep_minutes": 20,
+    "cook_minutes": 22,
+    "tags": ["malaysian", "kelantan", "rice", "herbs"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-022",
+    "title": "Laksa Johor",
+    "ingredients": ["spaghetti", "fish", "coconut milk", "tamarind", "lemongrass", "onion", "garlic", "cucumber"],
+    "ingredient_quantities": ["250 g spaghetti", "300 g firm white fish", "250 ml coconut milk", "1 tbsp tamarind paste", "1 lemongrass stalk, bruised", "1 onion, chopped", "3 garlic cloves", "500 ml water", "1/2 cucumber, julienned", "1 tbsp cooking oil", "1/2 tsp salt"],
+    "steps": [
+      "Cook the spaghetti in salted boiling water until just al dente according to the packet, drain, and reserve 100 ml cooking water.",
+      "Simmer the fish in 500 ml water for 7 to 9 minutes until opaque and easy to flake; lift it out, check for bones, and reserve the stock.",
+      "Blend the onion and garlic with 3 tablespoons fish stock, then fry the paste and lemongrass in oil over medium heat for 4 minutes.",
+      "Add tamarind, coconut milk, 350 ml reserved fish stock, and the flaked fish; simmer gently for 12 minutes without a hard boil.",
+      "Season with salt and add a little pasta water if the gravy is too thick; it should coat the back of a spoon.",
+      "Place spaghetti in shallow bowls, ladle over the hot fish gravy, and finish with cucumber immediately before serving."
+    ],
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/c/c2/Laksa_Johor_Roza_Roslan_2.jpg",
+    "image_alt": "A bowl of Johor laksa with spaghetti and rich fish gravy",
+    "image_source_id": "commons-laksa-johor",
+    "prep_minutes": 20,
+    "cook_minutes": 35,
+    "tags": ["malaysian", "johor", "noodles", "fish"],
+    "servings": 3
+  },
+  {
+    "recipe_id": "my-023",
+    "title": "Penang Char Kway Teow",
+    "ingredients": ["flat rice noodles", "shrimp", "egg", "bean sprouts", "chive", "garlic", "soy sauce", "chilli"],
+    "ingredient_quantities": ["300 g fresh flat rice noodles", "150 g peeled shrimp", "2 eggs", "1 cup bean sprouts", "1/2 cup Chinese chives, cut into 4 cm pieces", "3 garlic cloves, minced", "1 tbsp light soy sauce", "1 tsp dark soy sauce", "1 tsp chilli paste", "2 tbsp cooking oil"],
+    "steps": [
+      "Loosen the rice noodles by hand and mix both soy sauces with the chilli paste before heating the wok.",
+      "Heat 1 tablespoon oil in a wok over high heat until shimmering, then cook the shrimp for 60 to 90 seconds per side until opaque; remove.",
+      "Add the remaining oil and garlic, stir for 20 seconds, then add the noodles and toss over high heat for 90 seconds.",
+      "Pour the sauce around the hot edge of the wok, toss for 45 seconds, and push the noodles to one side.",
+      "Crack in the eggs, leave for 15 seconds, scramble until softly set, then combine with the noodles, shrimp, bean sprouts, and chives.",
+      "Toss for a final 60 seconds until steaming and lightly smoky, then serve immediately while the sprouts remain crisp."
+    ],
+    "image_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/Char_kway_teow_%28kuetiau_goreng%29_of_Dann_Char_Kuey_Teow_at_Permatang_Tok_Jaya%2C_SPU_20240915_183329.jpg/1280px-Char_kway_teow_%28kuetiau_goreng%29_of_Dann_Char_Kuey_Teow_at_Permatang_Tok_Jaya%2C_SPU_20240915_183329.jpg",
+    "image_alt": "Penang-style char kway teow with prawns, egg, and bean sprouts",
+    "image_source_id": "commons-char-kway-teow",
+    "prep_minutes": 12,
+    "cook_minutes": 7,
+    "tags": ["malaysian", "penang", "noodles", "wok"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-024",
+    "title": "Maggi Goreng Mamak",
+    "ingredients": ["instant noodles", "egg", "tofu", "choy sum", "tomato", "chilli sauce", "soy sauce", "lime"],
+    "ingredient_quantities": ["2 packets instant noodles, seasoning reserved", "2 eggs", "100 g firm tofu, cubed", "1 cup chopped choy sum", "1 tomato, cut into wedges", "1 tbsp chilli sauce", "1 tsp soy sauce", "1/2 lime", "1 tbsp cooking oil", "80 ml water"],
+    "steps": [
+      "Boil the noodles for 90 seconds only, drain thoroughly, and toss with half a seasoning packet to prevent over-salting.",
+      "Heat oil in a wok over medium-high heat and brown the tofu for 3 minutes, turning until two sides are golden.",
+      "Add the choy sum stems and tomato and stir-fry for 60 seconds, then push everything to one side.",
+      "Crack in the eggs and scramble for 45 seconds until softly set before folding them through the vegetables.",
+      "Add noodles, chilli sauce, soy sauce, 80 ml water, and the choy sum leaves; toss over high heat for 2 minutes until evenly coated.",
+      "Taste before adding more seasoning, squeeze over lime, and serve immediately while the noodles are springy."
+    ],
+    "image_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/46/Maggi_Goreng.jpg/1280px-Maggi_Goreng.jpg",
+    "image_alt": "A plate of Malaysian mamak-style Maggi goreng noodles",
+    "image_source_id": "commons-maggi-goreng",
+    "prep_minutes": 8,
+    "cook_minutes": 8,
+    "tags": ["malaysian", "mamak", "noodles", "quick"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-025",
+    "title": "Roti Telur Bawang",
+    "ingredients": ["flatbread", "egg", "onion", "chilli", "curry sauce"],
+    "ingredient_quantities": ["2 frozen roti canai or plain flatbreads", "2 eggs", "1/2 small onion, thinly sliced", "1 green chilli, thinly sliced", "1/4 tsp salt", "1 tsp cooking oil", "1/2 cup warm curry sauce for serving"],
+    "steps": [
+      "Thaw the roti until flexible and beat the eggs with onion, chilli, and salt in a small bowl.",
+      "Heat a flat pan over medium heat for 2 minutes and brush it with half the oil.",
+      "Lay down one roti, cook for 45 seconds, turn it, and spread half the egg mixture over the cooked side.",
+      "Fold the four edges inward to enclose the egg, press gently, and cook for 2 minutes until the underside is golden.",
+      "Turn carefully and cook for another 2 to 3 minutes until the centre is set with no liquid egg; repeat with the second roti.",
+      "Rest for 1 minute, cut into squares, and serve hot with warmed curry sauce."
+    ],
+    "image_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/Roti_telur_bawang_planta.jpg/1280px-Roti_telur_bawang_planta.jpg",
+    "image_alt": "Malaysian roti telur bawang filled with egg and onion",
+    "image_source_id": "commons-roti-telur",
+    "prep_minutes": 8,
+    "cook_minutes": 12,
+    "tags": ["malaysian", "mamak", "bread", "egg"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-026",
+    "title": "Murtabak Ayam",
+    "ingredients": ["flatbread", "chicken", "egg", "onion", "curry powder", "garlic"],
+    "ingredient_quantities": ["4 thin flatbreads or spring-roll sheets", "250 g minced chicken", "3 eggs", "1 onion, finely diced", "1 tbsp curry powder", "2 garlic cloves, minced", "1/2 tsp salt", "1 tbsp cooking oil"],
+    "steps": [
+      "Heat half the oil over medium heat and cook the onion for 3 minutes, then add garlic and curry powder for 30 seconds.",
+      "Add minced chicken and cook for 6 to 8 minutes, breaking up lumps, until no pink remains and the meat reaches 75 C; cool for 5 minutes.",
+      "Beat the eggs with the cooled chicken mixture and salt; divide the filling into four equal portions.",
+      "Place one portion in the centre of each flatbread, fold all four sides over to form a sealed square, and keep the seam underneath.",
+      "Brush a flat pan with the remaining oil and cook each parcel over medium-low heat for 3 to 4 minutes per side until deep golden.",
+      "Check the centre is piping hot and the egg fully set, rest for 2 minutes, then slice and serve with curry or pickled onion."
+    ],
+    "image_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Martabak_Aceh.jpg/1280px-Martabak_Aceh.jpg",
+    "image_alt": "A sliced stuffed murtabak-style flatbread served on a plate",
+    "image_source_id": "commons-murtabak",
+    "prep_minutes": 18,
+    "cook_minutes": 24,
+    "tags": ["malaysian", "mamak", "chicken", "street-food"],
+    "servings": 4
+  },
+  {
+    "recipe_id": "my-027",
+    "title": "Rendang Ayam Cili Api",
+    "ingredients": ["chicken", "coconut milk", "chilli", "lemongrass", "turmeric", "ginger", "garlic"],
+    "ingredient_quantities": ["600 g chicken thigh pieces", "400 ml coconut milk", "5 bird's-eye chillies", "1 lemongrass stalk, bruised", "1 tsp ground turmeric", "2 cm ginger", "3 garlic cloves", "1 tsp sugar", "1/2 tsp salt"],
+    "steps": [
+      "Blend the chillies, ginger, garlic, turmeric, and 60 ml coconut milk into a smooth paste.",
+      "Place the paste in a heavy pot over medium heat and cook for 4 minutes, stirring until fragrant and slightly reduced.",
+      "Add the chicken and lemongrass and stir for 5 minutes until the chicken surface is opaque.",
+      "Pour in the remaining coconut milk, add sugar and salt, and bring only to a gentle simmer.",
+      "Cook uncovered over medium-low heat for 30 to 35 minutes, stirring every 5 minutes, until the sauce is thick and glossy.",
+      "Confirm the chicken reaches 75 C and the sauce no longer looks watery, remove the lemongrass, and rest for 5 minutes before serving."
+    ],
+    "image_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Rendang_Ayam_Cili_Api_Negeri_Sembilan.jpg/1280px-Rendang_Ayam_Cili_Api_Negeri_Sembilan.jpg",
+    "image_alt": "Negeri Sembilan-style chicken rendang with chilli and coconut",
+    "image_source_id": "commons-rendang-ayam",
+    "prep_minutes": 15,
+    "cook_minutes": 45,
+    "tags": ["malaysian", "negeri-sembilan", "chicken", "coconut"],
+    "servings": 4
+  },
+  {
+    "recipe_id": "my-028",
+    "title": "Ikan Bakar Kicap",
+    "ingredients": ["fish", "soy sauce", "tamarind", "chilli", "garlic", "ginger", "lime"],
+    "ingredient_quantities": ["2 fish fillets, about 180 g each", "1 tbsp sweet soy sauce", "1 tsp tamarind paste", "1 red chilli, minced", "2 garlic cloves, minced", "1 cm ginger, grated", "1/2 lime", "1 tsp cooking oil", "1/4 tsp salt"],
+    "steps": [
+      "Pat the fish dry and check for bones, then mix soy sauce, tamarind, chilli, garlic, ginger, oil, and salt.",
+      "Coat both sides of the fish with the marinade and leave for 15 minutes while heating a grill pan to medium-high.",
+      "Place the fish presentation-side down and cook without moving for 3 to 4 minutes until clear grill marks form.",
+      "Turn with a wide spatula, brush with remaining marinade, and cook for another 3 to 5 minutes depending on thickness.",
+      "Check the centre is opaque, flakes easily, and reaches about 63 C; cook 1 minute longer if still translucent.",
+      "Rest for 2 minutes, squeeze over lime, and serve immediately with rice and sliced cucumber."
+    ],
+    "image_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ec/Gurame_bakar_kecap_2.JPG/1280px-Gurame_bakar_kecap_2.JPG",
+    "image_alt": "Grilled fish glazed with dark soy sauce and chilli",
+    "image_source_id": "commons-ikan-bakar",
+    "prep_minutes": 20,
+    "cook_minutes": 10,
+    "tags": ["malaysian", "fish", "grilled", "quick"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-029",
+    "title": "Sayur Lodeh",
+    "ingredients": ["cabbage", "carrot", "tofu", "long beans", "coconut milk", "turmeric", "lemongrass", "garlic"],
+    "ingredient_quantities": ["2 cups sliced cabbage", "1 carrot, sliced", "150 g firm tofu, cubed", "1 cup long beans, cut into 4 cm pieces", "250 ml coconut milk", "1 tsp turmeric", "1 lemongrass stalk, bruised", "2 garlic cloves, minced", "300 ml water", "1/2 tsp salt"],
+    "steps": [
+      "Prepare all vegetables in even pieces and keep the cabbage separate because it cooks faster.",
+      "Place water, garlic, turmeric, and lemongrass in a pot and simmer over medium heat for 3 minutes.",
+      "Add carrot and long beans, cover, and simmer for 6 minutes until they begin to soften.",
+      "Add tofu, cabbage, coconut milk, and salt, then stir gently so the tofu remains intact.",
+      "Cook uncovered over low heat for 7 to 9 minutes with only small bubbles; do not let the coconut milk boil hard.",
+      "Check the carrot is tender but not mushy, remove the lemongrass, adjust salt, and serve hot with rice or compressed rice cakes."
+    ],
+    "image_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/Sayur_Lodeh_Ibu_Sulastri.jpg/1280px-Sayur_Lodeh_Ibu_Sulastri.jpg",
+    "image_alt": "A bowl of sayur lodeh vegetables and tofu in coconut broth",
+    "image_source_id": "commons-sayur-lodeh",
+    "prep_minutes": 15,
+    "cook_minutes": 20,
+    "tags": ["malaysian", "vegetable", "tofu", "coconut"],
+    "servings": 4
+  },
+  {
+    "recipe_id": "my-030",
+    "title": "Cucur Jagung",
+    "ingredients": ["corn", "flour", "egg", "spring onion", "chilli", "onion"],
+    "ingredient_quantities": ["1 1/2 cups corn kernels", "3/4 cup plain flour", "1 egg", "2 spring onions, sliced", "1 small red chilli, finely chopped", "1/4 onion, finely diced", "80 ml water", "1/2 tsp salt", "120 ml cooking oil for shallow-frying"],
+    "steps": [
+      "Pat the corn dry and mix it with flour, spring onion, chilli, onion, and salt until evenly coated.",
+      "Beat the egg with 80 ml water, pour it into the corn mixture, and stir just until a thick dropping batter forms.",
+      "Heat 1 cm oil in a frying pan over medium heat for 3 minutes; a small drop of batter should sizzle immediately.",
+      "Drop heaped tablespoons of batter into the oil without crowding and flatten each fritter to about 1 cm thick.",
+      "Fry for 2 to 3 minutes per side until deep golden and the centre is firm, keeping the oil at a steady medium heat.",
+      "Drain on a rack or paper towel for 2 minutes and serve hot; discard oil that smells burnt or has become very dark."
+    ],
+    "image_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Pelas_Jagung_in_Bojonegoro.jpg/960px-Pelas_Jagung_in_Bojonegoro.jpg",
+    "image_alt": "Golden corn fritters similar to Malaysian cucur jagung",
+    "image_source_id": "commons-cucur-jagung",
+    "prep_minutes": 12,
+    "cook_minutes": 18,
+    "tags": ["malaysian", "snack", "corn", "vegetarian"],
+    "servings": 4
+  }
+]

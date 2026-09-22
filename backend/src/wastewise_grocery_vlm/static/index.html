@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0d6b4d" />
+    <title>WasteWise 食品入库确认</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">WasteWise Grocery VLM</p>
+        <h1>拍照识别，确认后入库</h1>
+        <p class="hero-copy">模型只提供候选。每一项都需要接受或排除，最终确认前不会写入 Active Inventory。</p>
+      </div>
+      <div class="safety-pill"><span></span> 用户确认门禁已启用</div>
+    </header>
+
+    <main>
+      <section class="panel upload-panel" aria-labelledby="upload-heading">
+        <div class="section-heading">
+          <div>
+            <p class="step">步骤 1</p>
+            <h2 id="upload-heading">上传或拍摄购物照片</h2>
+          </div>
+          <button id="new-analysis" class="button ghost hidden" type="button">重新识别</button>
+        </div>
+        <div class="engine-picker">
+          <label for="recognition-engine">识别引擎</label>
+          <select id="recognition-engine">
+            <option value="local">本地 Qwen3-VL-4B（已训练适配器）</option>
+            <option value="api" disabled>外部多模态 API（尚未配置）</option>
+          </select>
+          <small id="recognition-engine-hint">当前使用本地模型；外部 API 可在服务器 .env 中配置。</small>
+        </div>
+        <label class="drop-zone" id="drop-zone">
+          <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" />
+          <span class="camera-icon" aria-hidden="true">＋</span>
+          <strong>选择照片</strong>
+          <small>JPEG、PNG 或 WebP，最大 12 MB</small>
+        </label>
+        <div id="upload-preview" class="preview hidden">
+          <img id="preview-image" alt="待识别购物照片预览" />
+          <div>
+            <strong id="preview-name"></strong>
+            <span id="preview-size"></span>
+          </div>
+          <button id="analyze-button" class="button primary" type="button">开始识别</button>
+        </div>
+        <div id="progress" class="progress hidden" role="status" aria-live="polite">
+          <span class="spinner"></span>
+          <div><strong>模型正在读取商品和包装文字</strong><small id="progress-hint">本地 4B 模型首次识别可能需要较长时间。</small></div>
+        </div>
+      </section>
+
+      <div id="notice" class="notice hidden" role="status" aria-live="polite"></div>
+
+      <section id="review-section" class="panel hidden" aria-labelledby="review-heading">
+        <div class="section-heading">
+          <div>
+            <p class="step">步骤 2</p>
+            <h2 id="review-heading">逐项核对候选食品</h2>
+            <p class="muted">修改错误字段，接受正确商品，排除误识别；没有识别到的商品可以手动添加。</p>
+          </div>
+          <span id="revision-badge" class="revision"></span>
+        </div>
+
+        <div id="review-summary" class="summary-grid"></div>
+        <div id="analysis-warnings" class="warning-list hidden"></div>
+        <div id="review-items" class="review-items"></div>
+
+        <div class="review-toolbar">
+          <button id="add-item" class="button secondary" type="button">＋ 手动添加食品</button>
+          <button id="save-review" class="button secondary" type="button">保存核对草稿</button>
+        </div>
+
+        <div class="confirmation-box">
+          <label>
+            <input id="final-ack" type="checkbox" />
+            <span>我已逐项核对；接受项将写入 Active Inventory，排除项不会入库。</span>
+          </label>
+          <button id="confirm-button" class="button primary" type="button" disabled>确认并写入库存</button>
+          <small id="confirm-hint">完成所有待确认项后才能提交。</small>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="inventory-heading">
+        <div class="section-heading">
+          <div>
+            <p class="step">Active Inventory</p>
+            <h2 id="inventory-heading">当前有效库存</h2>
+          </div>
+          <button id="refresh-inventory" class="button ghost" type="button">刷新</button>
+        </div>
+        <div id="inventory-empty" class="empty-state">尚无已确认库存。</div>
+        <div class="table-wrap hidden" id="inventory-wrap">
+          <table>
+            <thead><tr><th>食品</th><th>品牌 / 规格</th><th>数量</th><th>保质期</th><th>来源</th></tr></thead>
+            <tbody id="inventory-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <template id="review-card-template">
+      <article class="review-card">
+        <div class="card-topline">
+          <div class="badges"></div>
+          <button class="remove-manual button ghost hidden" type="button">删除手动项</button>
+        </div>
+        <div class="evidence hidden"></div>
+        <div class="form-grid">
+          <label class="wide">食品名称<input data-field="food_name" maxlength="200" required /></label>
+          <label>品牌<input data-field="brand" maxlength="100" /></label>
+          <label>口味 / 型号<input data-field="product_variant" maxlength="150" /></label>
+          <label>包装净含量<input data-field="net_content_text" maxlength="50" placeholder="例如 900g" /></label>
+          <label>类别<input data-field="category" maxlength="100" required /></label>
+          <label>购买数量<input data-field="quantity" type="number" min="0.001" step="any" /></label>
+          <label>数量单位<select data-field="unit"></select></label>
+          <label class="expiry-field">保质期 / 最佳食用期<input data-field="expiry_date" type="date" /></label>
+          <label class="wide">备注<input data-field="notes" maxlength="500" /></label>
+        </div>
+        <label class="expiry-ack hidden">
+          <input data-field="expiry_confirmed" type="checkbox" />
+          <span>我已核对照片上的日期文字，确认该日期正确。</span>
+        </label>
+        <div class="decision-row" role="group" aria-label="候选项决定">
+          <button class="decision accept" data-decision="accepted" type="button">接受此项</button>
+          <button class="decision reject" data-decision="rejected" type="button">排除误识别</button>
+          <button class="decision pending" data-decision="pending" type="button">稍后确认</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>

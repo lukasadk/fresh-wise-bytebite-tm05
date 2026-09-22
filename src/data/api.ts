@@ -31,7 +31,36 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+const MISSING_PROFILE_DETAIL = 'No profile for this device UUID yet. Call POST /v1/users first.';
+let profileRegistrationInFlight: Promise<void> | null = null;
+
+async function ensureProfileExistsForCurrentDevice(): Promise<void> {
+  if (profileRegistrationInFlight) return profileRegistrationInFlight;
+
+  profileRegistrationInFlight = (async () => {
+    const deviceId = await getDeviceId();
+    const response = await fetch(`${API_BASE_URL}/v1/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        [DEVICE_ID_HEADER]: deviceId,
+        ...(API_KEY ? { [API_KEY_HEADER]: API_KEY } : {}),
+      },
+      body: JSON.stringify({ user_id: deviceId, household_size: 1 }),
+    });
+
+    if (!response.ok) {
+      const raw = await response.text().catch(() => '');
+      throw new ApiError(raw || 'Could not create device profile.', response.status);
+    }
+  })().finally(() => {
+    profileRegistrationInFlight = null;
+  });
+
+  return profileRegistrationInFlight;
+}
+
+async function request<T>(path: string, options?: RequestInit, retriedAfterProfileCreate = false): Promise<T> {
   const deviceId = await getDeviceId();
 
   const controller = new AbortController();
@@ -81,6 +110,15 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       }
     } catch {
       // Body wasn't JSON -- keep the raw text.
+    }
+    if (
+      !retriedAfterProfileCreate &&
+      response.status === 404 &&
+      message.includes(MISSING_PROFILE_DETAIL) &&
+      !path.startsWith('/v1/users')
+    ) {
+      await ensureProfileExistsForCurrentDevice();
+      return request<T>(path, options, true);
     }
     throw new ApiError(message, response.status);
   }

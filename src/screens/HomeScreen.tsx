@@ -5,6 +5,7 @@ import { colors, fonts, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
 import StatCard from '../components/StatCard';
 import QuickAction from '../components/QuickAction';
+import AlertBanner from '../components/AlertBanner';
 import { LayoutGrid, Plus, Sparkles, Sun, CloudSun, Moon } from '../icons/NavIcons';
 import { usePantry, getExpiryInfo } from '../data/pantryItems';
 
@@ -27,7 +28,15 @@ export default function HomeScreen({ navigation }: any) {
     item,
     expiry: getExpiryInfo(item),
   }));
-  const expiringSoonCount = itemsWithExpiry.filter((x) => x.expiry.expiryLevel !== 'safe').length;
+  const attentionItems = itemsWithExpiry.filter((x) => x.expiry.expiryLevel !== 'safe');
+  const expiringSoonCount = attentionItems.length;
+  const attentionHasUrgent = attentionItems.some((x) => x.expiry.expiryLevel === 'urgent');
+  const attentionNames = attentionItems
+    .slice()
+    .sort((a, b) => (a.expiry.daysLeft ?? Infinity) - (b.expiry.daysLeft ?? Infinity))
+    .slice(0, 3)
+    .map(({ item }) => item.name)
+    .join(', ');
 
   const soonestItem =
     itemsWithExpiry.length > 0
@@ -52,6 +61,15 @@ export default function HomeScreen({ navigation }: any) {
             <Text style={styles.avatarLetter}>M</Text>
           </View>
         </View>
+
+        {attentionItems.length > 0 ? (
+          <AlertBanner
+            level={attentionHasUrgent ? 'urgent' : 'warn'}
+            title={attentionHasUrgent ? 'Use or check food today' : 'Food entering Amber Gold zone'}
+            subtitle={`Use or check: ${attentionNames}`}
+            onPress={() => navigation.navigate('UseFirst')}
+          />
+        ) : null}
 
         {/* Use First hero */}
         <View style={styles.hero}>

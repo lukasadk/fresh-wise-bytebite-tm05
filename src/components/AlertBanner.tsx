@@ -7,30 +7,61 @@ type Props = {
   title: string;
   subtitle: string;
   onPress?: () => void;
+  level?: 'error' | 'warn' | 'urgent';
 };
 
-export default function AlertBanner({ title, subtitle, onPress }: Props) {
+export default function AlertBanner({ title, subtitle, onPress, level = 'error' }: Props) {
+  const tone = toneStyles[level];
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.banner, pressed && { opacity: 0.9 }]}>
-      <View style={styles.iconCircle}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.banner,
+        { backgroundColor: tone.backgroundColor, borderColor: tone.borderColor },
+        pressed && onPress && { opacity: 0.9 },
+      ]}
+    >
+      <View style={[styles.iconCircle, { backgroundColor: tone.iconColor }]}>
         <AlertTriangle size={16} color={colors.white} strokeWidth={2.5} />
       </View>
       <View style={styles.textCol}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        <Text style={[styles.title, { color: tone.titleColor }]}>{title}</Text>
+        <Text style={[styles.subtitle, { color: tone.bodyColor }]}>{subtitle}</Text>
       </View>
-      <ChevronRight size={20} color={colors.textPrimary} />
+      {onPress ? <ChevronRight size={20} color={tone.titleColor} /> : null}
     </Pressable>
   );
 }
+
+const toneStyles = {
+  error: {
+    backgroundColor: colors.alertBg,
+    borderColor: colors.alertBorder,
+    iconColor: colors.alertIcon,
+    titleColor: colors.alertTitle,
+    bodyColor: colors.alertBody,
+  },
+  warn: {
+    backgroundColor: colors.expiryWarnBg,
+    borderColor: colors.expiryWarnBorder,
+    iconColor: colors.statusSoon,
+    titleColor: colors.expiryWarnText,
+    bodyColor: colors.expiryWarnText,
+  },
+  urgent: {
+    backgroundColor: colors.expiryUrgentBg,
+    borderColor: colors.expiryUrgentBorder,
+    iconColor: colors.statusToday,
+    titleColor: colors.expiryUrgentText,
+    bodyColor: colors.expiryUrgentText,
+  },
+} as const;
 
 const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.alertBg,
     borderWidth: 1,
-    borderColor: colors.alertBorder,
     borderRadius: radii.lg,
     padding: spacing.md + 2,
     gap: spacing.md,

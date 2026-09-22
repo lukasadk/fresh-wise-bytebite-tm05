@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     api_key: str = ""
     api_key_header: str = "X-API-Key"
     rate_limit_per_minute: int = 0
+    # Safe production bootstrap for freshly-created managed databases. Disabled
+    # by default so local /health checks still work even when a developer has
+    # not started Postgres. When true, startup applies the bundled initial
+    # schema only if the core user_profile table is missing.
+    auto_apply_schema: bool = False
     # Only true when something trusted (Railway's edge, a Cloudflare/Tailscale
     # tunnel, a reverse proxy) really is in front, because it makes the rate
     # limiter believe X-Forwarded-For -- which a direct caller could forge.

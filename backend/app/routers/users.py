@@ -47,6 +47,8 @@ async def update_me(
         user.household_size = body.household_size
     if body.location is not None:
         user.location = body.location
+    if body.push_token is not None:
+        user.push_token = body.push_token or None
     await db.commit()
     await db.refresh(user)
     return user

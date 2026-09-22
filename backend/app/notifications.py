@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 REMINDER_COLOR = "#C68A2E"  # Amber Gold -- matches the "expiring soon" band elsewhere
+URGENT_COLOR = "#D9603B"  # Coral Red -- expires today / urgent band
 REMINDER_WINDOW_DAYS = 3  # 0-3 days left, same boundary as the Amber/Red UI thresholds
 
 
@@ -44,25 +45,39 @@ async def run_daily_expiry_check(db: AsyncSession) -> int:
     )
     rows = result.all()
 
-    by_user: dict[str, list[str]] = {}
+    by_user: dict[str, list[tuple[str, int]]] = {}
     tokens: dict[str, str | None] = {}
     for item, user in rows:
         user_id = str(user.user_id)
-        by_user.setdefault(user_id, []).append(item.name)
+        by_user.setdefault(user_id, []).append((item.name, (item.expiry_date - today).days))
         tokens[user_id] = user.push_token
 
     sent = 0
     async with httpx.AsyncClient(timeout=10) as client:
-        for user_id, names in by_user.items():
+        for user_id, entries in by_user.items():
             token = tokens.get(user_id)
             if not token:
                 continue  # no registered device for this user -- nothing to push to
-            title = f"{len(names)} item{'s' if len(names) != 1 else ''} need attention soon"
+            names = [name for name, _days_left in entries]
+            has_urgent = any(days_left <= 0 for _name, days_left in entries)
+            color = URGENT_COLOR if has_urgent else REMINDER_COLOR
+            title = (
+                f"{len(names)} item{'s' if len(names) != 1 else ''} need checking today"
+                if has_urgent
+                else f"{len(names)} item{'s' if len(names) != 1 else ''} need attention soon"
+            )
             body = ", ".join(names[:3]) + (f", +{len(names) - 3} more" if len(names) > 3 else "")
             try:
                 response = await client.post(
                     EXPO_PUSH_URL,
-                    json={"to": token, "title": title, "body": body, "color": REMINDER_COLOR, "sound": "default"},
+                    json={
+                        "to": token,
+                        "title": title,
+                        "body": f"Use or check: {body}",
+                        "color": color,
+                        "sound": "default",
+                        "data": {"status": "urgent" if has_urgent else "warn"},
+                    },
                 )
                 response.raise_for_status()
                 sent += 1

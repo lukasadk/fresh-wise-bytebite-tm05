@@ -1,0 +1,634 @@
+{
+  "my-001": {
+    "path": "/static/recipe-images/ai-generated/my-001-ca0bdb81.jpg",
+    "title": "Nasi Goreng Kampung",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "597f94937f07781e13ffafd39ec471c9de6ed7fec57dfd8a403d24effa8d0bdb",
+    "request_id": "a11d1303-03a7-9d83-9df3-8f346567d4c0",
+    "generated_at": "2026-09-21T19:53:43.747701+00:00"
+  },
+  "my-002": {
+    "path": "/static/recipe-images/ai-generated/my-002-17f10bbf.jpg",
+    "title": "Mee Goreng Mamak",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2f7c6be743f48ed6ac770eff8ff87cb224b19f15abb7cfc16865a0adf526bfdf",
+    "request_id": "63919ab0-7135-9cd0-af85-37568351dae7",
+    "generated_at": "2026-09-21T19:54:41.986017+00:00"
+  },
+  "my-003": {
+    "path": "/static/recipe-images/ai-generated/my-003-0486f9f2.jpg",
+    "title": "Ayam Masak Kicap",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "18ed3d21eee2256c7285a328944f918e9f60b9b4e4febbf365d4669c372e5ed3",
+    "request_id": "cb6d9d21-fdca-9eb8-842f-8463f4f603f6",
+    "generated_at": "2026-09-21T19:54:42.690358+00:00"
+  },
+  "my-004": {
+    "path": "/static/recipe-images/ai-generated/my-004-705cc0c1.jpg",
+    "title": "Kari Ayam Kentang",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "a700168d63ce4e1287bcfb3af6f608fa898c7a6beaa2b86e319b4c437f9d84d2",
+    "request_id": "5fb06688-21e6-9f84-b61a-aee371c7b32a",
+    "generated_at": "2026-09-21T19:54:42.831918+00:00"
+  },
+  "my-005": {
+    "path": "/static/recipe-images/ai-generated/my-005-ddeef090.jpg",
+    "title": "Sambal Telur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "482a2a3bf19f697fca21e081982ded47ce82486d214e896af36c18dffabc71c6",
+    "request_id": "bff775c0-4d09-9d43-8056-f4c32b2d900f",
+    "generated_at": "2026-09-21T19:54:43.258866+00:00"
+  },
+  "my-006": {
+    "path": "/static/recipe-images/ai-generated/my-006-fbf9361c.jpg",
+    "title": "Kangkung Belacan",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e2aa1e97aee86afef57687e416b9d59e27c290ae0f93991dcded0fd3f287f94d",
+    "request_id": "0e1d88c6-4f26-95fb-b0a3-543b2e53f5f1",
+    "generated_at": "2026-09-21T19:54:44.014775+00:00"
+  },
+  "my-007": {
+    "path": "/static/recipe-images/ai-generated/my-007-5cecca87.jpg",
+    "title": "Sup Sayur Telur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e097a59606fa67fc996973d58bc2a9b2e6efa4b976a018a8886ff907c40dbab0",
+    "request_id": "61459f2f-8ef1-9438-a53f-5655386a0ae9",
+    "generated_at": "2026-09-21T19:54:44.328576+00:00"
+  },
+  "my-008": {
+    "path": "/static/recipe-images/ai-generated/my-008-9d6de5fa.jpg",
+    "title": "Fried Bee Hoon",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0141ddae17354b109790cc82280bdf3b8426919b72716b4a6324ff0ed15c9fbd",
+    "request_id": "5e366cfd-6a77-961d-8725-824cc5732a81",
+    "generated_at": "2026-09-21T19:54:46.271096+00:00"
+  },
+  "my-009": {
+    "path": "/static/recipe-images/ai-generated/my-009-9237b0d3.jpg",
+    "title": "Tomato Egg Rice",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b8b267fb2e41a8a51b9aab506d2e9e908003e0d4b79cfca86aac49701752dfd2",
+    "request_id": "9f2aef1e-96a2-910e-9c8f-513cb9436567",
+    "generated_at": "2026-09-21T19:54:47.061685+00:00"
+  },
+  "my-010": {
+    "path": "/static/recipe-images/ai-generated/my-010-9cd9d3f6.jpg",
+    "title": "Tauhu Goreng Kicap",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "51c8197bde4919bc86fc298c85ba4491bfba2d4b1b8650267baf09e2047ad793",
+    "request_id": "82bf623b-2768-9cf1-8262-47631d4a687b",
+    "generated_at": "2026-09-21T19:54:52.649412+00:00"
+  },
+  "my-011": {
+    "path": "/static/recipe-images/ai-generated/my-011-15dbdb04.jpg",
+    "title": "Bubur Ayam",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "010a27a6f2f345b1ee1410513a4c72cdce312a798a78c917acbefaa1d2378b53",
+    "request_id": "c276db96-a27f-91e0-88a4-90f15053eca0",
+    "generated_at": "2026-09-21T19:54:53.503805+00:00"
+  },
+  "my-013": {
+    "path": "/static/recipe-images/ai-generated/my-013-983f7c70.jpg",
+    "title": "Nasi Lemak Quick Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "cdf7077d16bbfa5fcb0a0da4b11e98e5570386784c1662161f4afc2a8aa1e34e",
+    "request_id": "39f3d63c-de3c-9fcf-928a-207dba20d813",
+    "generated_at": "2026-09-21T19:54:54.274536+00:00"
+  },
+  "my-014": {
+    "path": "/static/recipe-images/ai-generated/my-014-792d8ab1.jpg",
+    "title": "Curry Mee",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0a53ebb9fb24bd37f50ba9beaea8bd9008d11ce0c1d95b043b4ebbd3227c8f34",
+    "request_id": "7f28e652-b7d4-92da-a2e8-6c6d5e9aced9",
+    "generated_at": "2026-09-21T19:54:54.673310+00:00"
+  },
+  "my-015": {
+    "path": "/static/recipe-images/ai-generated/my-015-aaa43eaf.jpg",
+    "title": "Ikan Masak Asam",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "354f5d128b73617083ef60a351b96c9f40b532d365d22f074e6c6977b32e3b11",
+    "request_id": "51f976d0-cbd3-964c-83c9-3b02f4029886",
+    "generated_at": "2026-09-21T19:54:55.846700+00:00"
+  },
+  "my-016": {
+    "path": "/static/recipe-images/ai-generated/my-016-3eb2700a.jpg",
+    "title": "Masak Lemak Cili Api",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f712c714e17bff280dbe4e11e8766eb84a7f2e422b22c43868f01775cc0b33e4",
+    "request_id": "896b8587-654c-9e28-b135-7dd26fc4a90e",
+    "generated_at": "2026-09-21T19:54:56.707829+00:00"
+  },
+  "my-017": {
+    "path": "/static/recipe-images/ai-generated/my-017-df65a690.jpg",
+    "title": "Roti John",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "047b410a1b57a0af8de802a1e9b661f44deb045d8153a3e86b8d00c6d3f2bde5",
+    "request_id": "4a13ad01-8a39-94fc-8d67-212a3cb9c3d3",
+    "generated_at": "2026-09-21T19:54:57.417480+00:00"
+  },
+  "my-018": {
+    "path": "/static/recipe-images/ai-generated/my-018-9a72bf04.jpg",
+    "title": "Stir-Fried Choy Sum with Garlic",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "309f3b80c385bd0024460753bf425d835f223978e3119985aaae297006ff4474",
+    "request_id": "cd7f5448-02cc-917c-a533-76464b89f809",
+    "generated_at": "2026-09-21T19:55:03.347882+00:00"
+  },
+  "my-019": {
+    "path": "/static/recipe-images/ai-generated/my-019-d21c7e55.jpg",
+    "title": "Nasi Ayam Kicap",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e975ce799e6a2cd141244a5975da8315dd958d937048a187ed30d9e8f6871f1f",
+    "request_id": "a5712955-cb1c-9044-add8-ba372c3d17a4",
+    "generated_at": "2026-09-21T19:55:03.665219+00:00"
+  },
+  "my-012": {
+    "path": "/static/recipe-images/ai-generated/my-012-83d77f4f.jpg",
+    "title": "Sardin Masak Tomato",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7c498f906aa904bc04d1100fb841c628b711e260e0514ba17543ffcf82908613",
+    "request_id": "8162e633-c339-9ee4-b368-e33d179f1567",
+    "generated_at": "2026-09-21T19:55:04.642219+00:00"
+  },
+  "my-021": {
+    "path": "/static/recipe-images/ai-generated/my-021-5d51a8ba.jpg",
+    "title": "Nasi Kerabu Ayam",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6dd14ed06c596f84816402052d3f7c17d950fd254610d2577f834c7223480842",
+    "request_id": "ede3eb0f-f772-9edd-b7df-a2d28119a82f",
+    "generated_at": "2026-09-21T19:55:05.221761+00:00"
+  },
+  "my-020": {
+    "path": "/static/recipe-images/ai-generated/my-020-86f14ffd.jpg",
+    "title": "Ayam Percik Kelantan",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "81a5b70ade16b9ac4619329f24f8a0f0b61740bfbdd53a8ae48473558d9152d9",
+    "request_id": "b008c24f-e770-97a1-a83a-c3c6221fde1e",
+    "generated_at": "2026-09-21T19:55:05.577527+00:00"
+  },
+  "my-022": {
+    "path": "/static/recipe-images/ai-generated/my-022-83836e97.jpg",
+    "title": "Laksa Johor",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "186994056e12bbd65dedc3a470e29e8f3c7672f219dda118121dae9726a0c4b0",
+    "request_id": "d3a4a6c7-f063-9d45-8f6e-bc31abede01c",
+    "generated_at": "2026-09-21T19:55:06.571412+00:00"
+  },
+  "my-024": {
+    "path": "/static/recipe-images/ai-generated/my-024-3ee06e6c.jpg",
+    "title": "Maggi Goreng Mamak",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e08fef38425e8627023f8b3a4b7482dafa0652674a99eb382bc0682cacbd79af",
+    "request_id": "1edcbc5d-5fb1-9102-8936-49fcfe4bb322",
+    "generated_at": "2026-09-21T19:55:07.621636+00:00"
+  },
+  "my-023": {
+    "path": "/static/recipe-images/ai-generated/my-023-305f8c75.jpg",
+    "title": "Penang Char Kway Teow",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "25a693fb5799cc357dd70ad6d3e79224753d5ef68fa68032baf0dcecb746273b",
+    "request_id": "ef93176d-6c18-9462-bf78-74a49ab85c9a",
+    "generated_at": "2026-09-21T19:55:07.630337+00:00"
+  },
+  "my-025": {
+    "path": "/static/recipe-images/ai-generated/my-025-13a3af79.jpg",
+    "title": "Roti Telur Bawang",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "266793fc859a5be45277c8421ab0feb0195c13ea09f1ed8c34e0cab8e8544a86",
+    "request_id": "436837a3-8679-93a2-a783-f175e1a8dfe3",
+    "generated_at": "2026-09-21T19:55:14.220698+00:00"
+  },
+  "my-026": {
+    "path": "/static/recipe-images/ai-generated/my-026-8f6aee14.jpg",
+    "title": "Murtabak Ayam",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "a5d43d8a53c4063b432bd2b727d2053b69ced989bc3f63c8d4e78aa492ea2b53",
+    "request_id": "9d6b04b2-153c-9b96-aa93-74e894e747ec",
+    "generated_at": "2026-09-21T19:55:14.970233+00:00"
+  },
+  "my-027": {
+    "path": "/static/recipe-images/ai-generated/my-027-86df1ffc.jpg",
+    "title": "Rendang Ayam Cili Api",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e64cbfe3229d106f79d28ee870b15dc5b3b3f9a3002a0057d617f36f8462c71e",
+    "request_id": "683ea755-a866-9145-9864-c8c900c1050d",
+    "generated_at": "2026-09-21T19:55:15.283493+00:00"
+  },
+  "my-028": {
+    "path": "/static/recipe-images/ai-generated/my-028-91938ea7.jpg",
+    "title": "Ikan Bakar Kicap",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c7c494496b464572765be03f40ffd41e4677a230c35c637bc8bf516cbad0a021",
+    "request_id": "3dc50bdd-d37f-9b63-84df-0b91d06a09fc",
+    "generated_at": "2026-09-21T19:55:16.723416+00:00"
+  },
+  "my-029": {
+    "path": "/static/recipe-images/ai-generated/my-029-2a26d483.jpg",
+    "title": "Sayur Lodeh",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5241290a57ea2b1e9148ef4cb6758554f864146a9b9aaf737714b08f8054ca63",
+    "request_id": "d9f67aed-50a4-9ced-a5eb-7688dd4a81c2",
+    "generated_at": "2026-09-21T19:55:17.402008+00:00"
+  },
+  "my-030": {
+    "path": "/static/recipe-images/ai-generated/my-030-86d7e858.jpg",
+    "title": "Cucur Jagung",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "bc71c1a810756e5c1290611b6f7322ad6aa4ea9a38b84d261962810f3a74da1c",
+    "request_id": "a45fad19-afdc-9af8-932c-2ece7cba6189",
+    "generated_at": "2026-09-21T19:55:17.671555+00:00"
+  },
+  "hf-my-000001": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000001-98f1824a.jpg",
+    "title": "Chicken Choy Sum Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "db11f4693696ffd515e6c036c1816dec6c3542032db9528bb3149d04ccbddc98",
+    "request_id": "55efbeac-61b0-93e7-9531-604d73500a07",
+    "generated_at": "2026-09-21T19:55:19.156014+00:00"
+  },
+  "hf-my-000000": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000000-4917c199.jpg",
+    "title": "Chicken Choy Sum Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c1b75a003739bf0686f1894f060f7e0bbb8cc6cf964a65d3bda080f75e80d067",
+    "request_id": "fe27d811-51a2-9568-a25f-6659f12f03dc",
+    "generated_at": "2026-09-21T19:55:19.864954+00:00"
+  },
+  "hf-my-000002": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000002-b9b485f4.jpg",
+    "title": "Chicken Choy Sum Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0312f5567637c2c36d8dbdcd57b01a2ea7d72f2a5e48b1cecc2d095b47fa5997",
+    "request_id": "3bfa414b-7c5b-954e-b993-c688cbd25893",
+    "generated_at": "2026-09-21T19:55:24.856088+00:00"
+  },
+  "hf-my-000003": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000003-ffae89e9.jpg",
+    "title": "Chicken Choy Sum Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "1c0018314bb1c15defaa31846d94b57f22cf496db374c92ef988b51affff2af2",
+    "request_id": "b626c9b8-3109-956c-84ac-32f6eb043222",
+    "generated_at": "2026-09-21T19:55:25.624761+00:00"
+  },
+  "hf-my-000004": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000004-7bb8280b.jpg",
+    "title": "Chicken Choy Sum Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "751264cab5e8668cc9b2bf1c9b1eaec87e347709d71ccb0217147c8590875bf5",
+    "request_id": "782eb697-c28d-9cfa-bf5c-99ee79061030",
+    "generated_at": "2026-09-21T19:55:25.901286+00:00"
+  },
+  "hf-my-000005": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000005-08e2e060.jpg",
+    "title": "Prawn Choy Sum Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "60de48b4df15bae9602582deafdd6b80282ebb704b1a80b262b0da2bc6e84a25",
+    "request_id": "04ed95bc-1793-9581-b472-296302e6a56b",
+    "generated_at": "2026-09-21T19:55:26.634650+00:00"
+  },
+  "hf-my-000007": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000007-07a98822.jpg",
+    "title": "Tofu Choy Sum Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3980c671fb1acd4cf3b5e7cddb1daf0482f24fd2286c6033a10028dd3d7d3e37",
+    "request_id": "adb5ee94-fb83-957c-9571-93d71060c330",
+    "generated_at": "2026-09-21T19:55:28.891460+00:00"
+  },
+  "hf-my-000006": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000006-1d6ba6f5.jpg",
+    "title": "Chicken Choy Sum Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2759099b9d0f83aadd9ab2e03ebaa298d1d45f28d58fd1baca691c02e6ce5bd6",
+    "request_id": "4658da5c-f2bc-93a9-9ec8-7bac2004cab7",
+    "generated_at": "2026-09-21T19:55:29.745489+00:00"
+  },
+  "hf-my-000008": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000008-bc4b849f.jpg",
+    "title": "Prawn Choy Sum Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7801028b2fbb391275716f7e671bf66734f17c7cb92faab76d235e1c352e2b8c",
+    "request_id": "9c33f7d0-1236-9abc-afa9-f48a9c430e6c",
+    "generated_at": "2026-09-21T19:55:29.997518+00:00"
+  },
+  "hf-my-000009": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000009-86433cbb.jpg",
+    "title": "Chicken Choy Sum Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b8b8677cc9f60191ec6436e6ec53fdd2f3f3e458f7fe197964b675c4bed98568",
+    "request_id": "10960020-2fa2-94e3-ab98-5be9bb8c820d",
+    "generated_at": "2026-09-21T19:55:30.730311+00:00"
+  },
+  "hf-my-000010": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000010-2d99524b.jpg",
+    "title": "Prawn Choy Sum Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "719286b7d927f62849909fcdb0844e654bafacbeb28d2384b858b4e1e5e95ab0",
+    "request_id": "e7d74a9a-cf5b-95fd-8086-61e47cb4e432",
+    "generated_at": "2026-09-21T19:55:35.316049+00:00"
+  },
+  "hf-my-000011": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000011-b1f18020.jpg",
+    "title": "Chicken Choy Sum Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "81eb6ea72fcdac092212938c74757fbff61a47b992a3e47c89cf23a8059e7e61",
+    "request_id": "fd2dfdbc-a781-9799-8801-cdb91af655e0",
+    "generated_at": "2026-09-21T19:55:36.318966+00:00"
+  },
+  "hf-my-000013": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000013-eb7fb566.jpg",
+    "title": "Chicken Choy Sum Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5039f2d0c5cfa6fffdef71807debd0d243c9756247ea41827bf30c2693e5140b",
+    "request_id": "0f79f01b-55ea-9f55-b75c-bfb049c054c8",
+    "generated_at": "2026-09-21T19:55:37.126852+00:00"
+  },
+  "hf-my-000012": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000012-36b42002.jpg",
+    "title": "Tofu Choy Sum Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "736a27a881094b9cf4040609c77f18889aa28eb2318362352602fee282775da1",
+    "request_id": "cd27d5f1-4369-9932-834f-3415abe4ff4b",
+    "generated_at": "2026-09-21T19:55:37.281969+00:00"
+  },
+  "hf-my-000014": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000014-63c96b63.jpg",
+    "title": "Prawn Choy Sum Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "030912c11bd30e3123ced89ff3eaabb44b0b60c262345252cfe3b4f12badfc85",
+    "request_id": "15263c9d-8fb6-9086-8339-f8a06abba314",
+    "generated_at": "2026-09-21T19:55:39.473268+00:00"
+  },
+  "hf-my-000015": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000015-f6c46c6d.jpg",
+    "title": "Egg Choy Sum Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6b867ad28d2fd7bd5c0c1d2ae0cc58d76b806c0cbc3332d0d0d52b0645ac72df",
+    "request_id": "f65b7f5c-486d-9928-8280-7d4fc5a09803",
+    "generated_at": "2026-09-21T19:55:39.933352+00:00"
+  },
+  "hf-my-000016": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000016-8d360eb0.jpg",
+    "title": "Tofu Choy Sum Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c40cc911889448665bf8bb16b1b03ab031713981b106f3eddb05adabcc655847",
+    "request_id": "5b4dba00-217a-9cfe-88ec-8d64d427a41f",
+    "generated_at": "2026-09-21T19:55:40.647874+00:00"
+  },
+  "hf-my-000017": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000017-8724c2bc.jpg",
+    "title": "Prawn Choy Sum Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8205e82fa95761887e5ea38fe0d86be27535afc2390508271bccb0ee516eae67",
+    "request_id": "b3034df0-8adc-975a-832d-3f9eceeafabf",
+    "generated_at": "2026-09-21T19:55:41.885043+00:00"
+  },
+  "hf-my-000018": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000018-3bb0bf91.jpg",
+    "title": "Tofu Choy Sum Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "a8467b1500e873fa0e09cc3c36b2000f78b93e5f04fa5e210ab6e593be66153b",
+    "request_id": "a5663627-1358-9e3e-8881-7ea7c371a477",
+    "generated_at": "2026-09-21T19:55:46.590596+00:00"
+  },
+  "hf-my-000019": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000019-76497ee4.jpg",
+    "title": "Prawn Choy Sum Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "84f22f2532701fd8599f79a7471445a65447cd6c26b97370503f0f6a446bd55c",
+    "request_id": "d21a0b9c-b4bf-9350-8638-7c402279726b",
+    "generated_at": "2026-09-21T19:55:47.191598+00:00"
+  },
+  "hf-my-000020": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000020-9f03a9e0.jpg",
+    "title": "Chicken Choy Sum Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3f5de8244785fca4eba41ce415114f35fa863ca4d834f807b7c59b02592689e7",
+    "request_id": "7a93282d-c9a5-9601-8513-4be8890dd77e",
+    "generated_at": "2026-09-21T19:55:48.084996+00:00"
+  },
+  "hf-my-000021": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000021-79d8624f.jpg",
+    "title": "Tofu Choy Sum Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9d142c1c2ac8ed1f00e3cebec87dbdfe163c54748c16a63baf62f7ea0b39e721",
+    "request_id": "96d6d789-f2f2-989f-8ebf-93707280a575",
+    "generated_at": "2026-09-21T19:55:48.476265+00:00"
+  },
+  "hf-my-000022": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000022-59392921.jpg",
+    "title": "Prawn Choy Sum Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f31d9f6b529155847428fd6a4dfe72da41444baed068cdeadf46d280485ddf74",
+    "request_id": "bd2a5c58-7e58-9004-85c4-8314e00296bc",
+    "generated_at": "2026-09-21T19:55:50.042601+00:00"
+  },
+  "hf-my-000023": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000023-a054e376.jpg",
+    "title": "Egg Choy Sum Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "70767cfcd7ac11d27d696eb5d16d38f7b6dfdf7cb3c671e6599571dcc74189e9",
+    "request_id": "4d6e787b-8859-97a2-a307-fb2dcec5093b",
+    "generated_at": "2026-09-21T19:55:50.532376+00:00"
+  },
+  "hf-my-000025": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000025-67f0d826.jpg",
+    "title": "Tofu Choy Sum Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f72b219eaab02a9a7d7f682c815c4ee25a32d752c9ac00cf2e820bda30c4d9c5",
+    "request_id": "5b454264-7f66-9fa1-86bd-7d5e41baac73",
+    "generated_at": "2026-09-21T19:55:52.008451+00:00"
+  },
+  "hf-my-000024": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000024-49ba9b11.jpg",
+    "title": "Prawn Choy Sum Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "390bf3d13bfde5cce645583eb393b0c1587f2d4f144bfd9eedc1a4706a04bcf9",
+    "request_id": "78bf714d-fcdf-9012-9a1e-fdb663e700fd",
+    "generated_at": "2026-09-21T19:55:52.124503+00:00"
+  },
+  "hf-my-000026": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000026-3e0ce02c.jpg",
+    "title": "Fish Choy Sum Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4da6a154e7237bec8533bbaa4f8b9f9b3666ac1799b3d8f63d110ecd2830e86a",
+    "request_id": "20b2c668-187c-9032-87e7-37045cb8a7fc",
+    "generated_at": "2026-09-21T19:55:57.218846+00:00"
+  },
+  "hf-my-000027": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000027-65e02018.jpg",
+    "title": "Tempeh Choy Sum Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9169fe65773db2b3711a2b16395f0818f427fdc859f8b9c56d93fc64bf128e75",
+    "request_id": "77e1fdc8-5cba-96b0-a41e-e376b40c91ea",
+    "generated_at": "2026-09-21T19:55:57.834681+00:00"
+  },
+  "hf-my-000028": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000028-6d8d7fbd.jpg",
+    "title": "Sambal Choy Sum Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "925d3a55e3b4d63daa6c0160f72ed334eeb47187c7e758d6b6caec7e6dd06d99",
+    "request_id": "d82e2741-059f-91c6-a0f1-70914c68170b",
+    "generated_at": "2026-09-21T19:55:59.070337+00:00"
+  },
+  "hf-my-000029": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000029-993affa9.jpg",
+    "title": "Fish Choy Sum Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8d6f8eb6a3c9c7269637eaa46cc5d42cb0f36daf64dadd9aa86b073e4ea7ec8b",
+    "request_id": "558cdab2-bdb0-912c-9e71-e96bd466c680",
+    "generated_at": "2026-09-21T19:55:59.299315+00:00"
+  },
+  "hf-my-000030": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000030-5a143eb4.jpg",
+    "title": "Egg Choy Sum Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0e7826ff3f4c061e5bc0142cd9c9b8ed4b18dbc9ba2a9e737b07bb3c1654bb2f",
+    "request_id": "228b3b6e-5435-9337-af39-03fc03bbc67d",
+    "generated_at": "2026-09-21T19:56:00.472905+00:00"
+  },
+  "hf-my-000031": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000031-0152b663.jpg",
+    "title": "Tempeh Choy Sum Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4333fcaf4639d410daab1c0b63cca41a1d43fff63b062a4ae68b6efe215a3bb5",
+    "request_id": "8bbf7e5b-e398-90af-b926-df059fb6a2da",
+    "generated_at": "2026-09-21T19:56:01.323642+00:00"
+  },
+  "hf-my-000032": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000032-e98751ff.jpg",
+    "title": "Prawn Choy Sum Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6c90cff61f5cfe25c1f97cd6220c67c4582851b4f8c6d01006f4706a5e06e7be",
+    "request_id": "7319afe5-100f-9b08-87e3-a19cfa6940d9",
+    "generated_at": "2026-09-21T19:56:02.257365+00:00"
+  },
+  "hf-my-000033": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000033-d8144cce.jpg",
+    "title": "Egg Choy Sum Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9b616ac1be85d842014d4ad99082b6f96ee3014720a779e4b087b313b92ada19",
+    "request_id": "d5cafa93-0aad-9ba1-b167-bd17ed055fcd",
+    "generated_at": "2026-09-21T19:56:04.059622+00:00"
+  },
+  "hf-my-000034": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000034-da122c6a.jpg",
+    "title": "Prawn Choy Sum Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "28a9c4aca9eb11c902a838aeb0a6c691e622319a1520ad084b8754338f4431a7",
+    "request_id": "4cc53de8-4666-9e29-8154-ce61797901e7",
+    "generated_at": "2026-09-21T19:56:07.334221+00:00"
+  },
+  "hf-my-000035": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000035-b2fa3236.jpg",
+    "title": "Egg Choy Sum Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f44f42e1414c2987d8c2b94c03fd1aaf5a35ffd69ae62982a940fdc43e1a881e",
+    "request_id": "5729bccc-b5de-9cff-ba30-7613ea94ee21",
+    "generated_at": "2026-09-21T19:56:08.042047+00:00"
+  },
+  "hf-my-000036": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000036-54d52cbc.jpg",
+    "title": "Fish Choy Sum Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3e2d17dee279a88d6d98fbea999f4f829090049db283be8491d3bf864bf6dddf",
+    "request_id": "8d0c0c49-ce7c-9565-8835-837242000404",
+    "generated_at": "2026-09-21T19:56:09.618187+00:00"
+  },
+  "hf-my-000037": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000037-3f40f777.jpg",
+    "title": "Tofu Choy Sum Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "858dba48da130d94551c9d9c74ea34d70c3298f7496829b01ebd14fd46039af0",
+    "request_id": "7b21bb01-961d-9cf7-bad2-38e0f592b936",
+    "generated_at": "2026-09-21T19:56:10.535174+00:00"
+  },
+  "hf-my-000038": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000038-503ef7d7.jpg",
+    "title": "Egg Choy Sum Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4b64bf64ef1c091482b18a9a3bdebd3ea6405aefd7ddb48735498cb39e338ab0",
+    "request_id": "e2ea0e74-0049-98c8-af49-185ce4bdf845",
+    "generated_at": "2026-09-21T19:56:11.736191+00:00"
+  },
+  "hf-my-000039": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000039-4a90495f.jpg",
+    "title": "Egg Choy Sum Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4a9c47cb4cf339bf01407fc58c110d8951bcda7406d34666ea9241edd192cba8",
+    "request_id": "969b3039-7f16-969e-8471-e8e779082137",
+    "generated_at": "2026-09-21T19:56:12.960350+00:00"
+  },
+  "hf-my-000040": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000040-c7338b79.jpg",
+    "title": "Fish Choy Sum Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f4afe27ee3d5a91efc7efb3021a55dd011259c5ae5263164597a0ca0d8357921",
+    "request_id": "a21d96b1-5277-93eb-88ae-b50b6cb161c2",
+    "generated_at": "2026-09-21T19:56:13.746335+00:00"
+  },
+  "hf-my-000042": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000042-68e26a54.jpg",
+    "title": "Beef Choy Sum Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b084f5365778227802898aea1150044f8289538a86e43c723ed268825f12cc18",
+    "request_id": "1b74ab73-2803-9f82-9a0c-0ecc4ce50b8b",
+    "generated_at": "2026-09-21T19:56:18.753013+00:00"
+  },
+  "hf-my-000046": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000046-be6fa668.jpg",
+    "title": "Beef Choy Sum Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f66af556fc1363825eda749803c3921e24c43b6d8d12d40111a6557f97841b01",
+    "request_id": "3f3df1d6-6ecb-930e-9ea7-c5795f115498",
+    "generated_at": "2026-09-21T19:56:22.521278+00:00"
+  },
+  "hf-my-000050": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000050-00c763ad.jpg",
+    "title": "Anchovy Choy Sum Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0cf677837113df7c7c30f98cb4766fa6d1a2028052f656a399546a0a8003cd68",
+    "request_id": "72e5325d-3229-9339-9e54-b2b7a88c7326",
+    "generated_at": "2026-09-21T19:56:32.637776+00:00"
+  },
+  "hf-my-000051": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000051-292b4b21.jpg",
+    "title": "Sardine Choy Sum Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "1d3d4ce42b29da76189d2b01014874f63942c2b4b929d269c09d89ca5c222bdd",
+    "request_id": "37530979-3842-9997-96d0-5f5e6e047d3b",
+    "generated_at": "2026-09-21T19:56:43.200531+00:00"
+  },
+  "hf-my-000052": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000052-73ef37a5.jpg",
+    "title": "Mushroom Choy Sum Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "912801f9282b65cfdf8cd825f4e5a9063477d82e09d6697edfb6836c3c18a7c4",
+    "request_id": "ca8310ff-9036-9649-a9f1-4bcbbd7301cc",
+    "generated_at": "2026-09-21T19:56:54.283645+00:00"
+  },
+  "hf-my-000053": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000053-8d72351a.jpg",
+    "title": "Fish Choy Sum Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2816b52e4f7705869db53fa641d2abfa89398c4e0bd91153353d470ccd9d2b10",
+    "request_id": "0da22dc2-59d9-9e21-a96a-c796715407f3",
+    "generated_at": "2026-09-21T19:57:15.865302+00:00"
+  },
+  "hf-my-000054": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000054-58347046.jpg",
+    "title": "Tempeh Choy Sum Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0a55e8d6b41e40c95870095cd740bd0cea841629b32805fd6ae678301ac6d94d",
+    "request_id": "da3ca5e2-dead-94f7-b46f-4b01137daad2",
+    "generated_at": "2026-09-21T19:57:26.556355+00:00"
+  },
+  "hf-my-000041": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000041-70356075.jpg",
+    "title": "Tempeh Choy Sum Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dc82fca2c564492c8bc5c4a369a2f71af062d52d6164dbd70b22b5c569db6c63",
+    "request_id": "62c01a41-bf34-9157-9291-390f85117b64",
+    "generated_at": "2026-09-21T20:00:16.770541+00:00"
+  }
+}

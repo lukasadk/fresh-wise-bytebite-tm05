@@ -21,6 +21,7 @@ modules/*/android/build/
 modules/*/android/src/main/jniLibs/
 android/app/src/main/assets/wastewise-vlm/
 artifacts/
+backend/src/wastewise_grocery_vlm/static/downloads/
 *.jks
 *.keystore
 *.p8

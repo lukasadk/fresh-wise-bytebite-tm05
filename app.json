@@ -2,7 +2,7 @@
   "expo": {
     "name": "FreshWise",
     "slug": "freshwise",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "orientation": "portrait",
     "icon": "./assets/logo/freshwise-logo.png",
     "backgroundColor": "#FCF9F2",
@@ -24,6 +24,7 @@
           "backgroundColor": "#FCF9F2"
         }
       ],
+      "expo-notifications",
       "expo-status-bar"
     ],
     "extra": {

@@ -52,7 +52,49 @@ type RequestOptions = {
   signal?: AbortSignal;
 };
 
-export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+const MISSING_PROFILE_DETAIL = 'No profile for this device UUID yet. Call POST /v1/users first.';
+
+function isMissingProfileError(status: number, message: string): boolean {
+  return status === 404 && message.includes(MISSING_PROFILE_DETAIL);
+}
+
+let profileRegistrationInFlight: Promise<void> | null = null;
+
+async function ensureProfileExistsForCurrentDevice(): Promise<void> {
+  if (profileRegistrationInFlight) return profileRegistrationInFlight;
+
+  profileRegistrationInFlight = (async () => {
+    const user_id = await getDeviceId();
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      [DEVICE_ID_HEADER]: user_id,
+    };
+    if (API_KEY) headers[API_KEY_HEADER] = API_KEY;
+
+    const response = await fetch(`${API_BASE_URL}/v1/users`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ user_id, household_size: 1 }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      const parsed = text ? safeJson(text) : null;
+      throw new ApiError(response.status, readDetail(parsed, `Could not create device profile.`), parsed);
+    }
+  })().finally(() => {
+    profileRegistrationInFlight = null;
+  });
+
+  return profileRegistrationInFlight;
+}
+
+export async function request<T>(
+  path: string,
+  options: RequestOptions = {},
+  retriedAfterProfileCreate = false,
+): Promise<T> {
   const { method = 'GET', body, anonymous = false, signal } = options;
 
   const headers: Record<string, string> = { Accept: 'application/json' };
@@ -98,7 +140,17 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const parsed = text ? safeJson(text) : null;
 
   if (!response.ok) {
-    throw new ApiError(response.status, readDetail(parsed, `HTTP ${response.status}`), parsed);
+    const message = readDetail(parsed, `HTTP ${response.status}`);
+    if (
+      !retriedAfterProfileCreate &&
+      !anonymous &&
+      !path.startsWith('/v1/users') &&
+      isMissingProfileError(response.status, message)
+    ) {
+      await ensureProfileExistsForCurrentDevice();
+      return request<T>(path, options, true);
+    }
+    throw new ApiError(response.status, message, parsed);
   }
   return parsed as T;
 }

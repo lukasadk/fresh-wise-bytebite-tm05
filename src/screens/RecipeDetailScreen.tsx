@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, CheckCircle2, Clock3, ShoppingBasket, Sparkles } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -39,6 +39,7 @@ export default function RecipeDetailScreen() {
   const available = list(recipe.available_ingredients ?? recipe.matched_ingredients);
   const priority = list(recipe.priority_ingredients ?? recipe.expiring_ingredients_matched);
   const missing = list(recipe.missing_ingredients);
+  const quantities = list(recipe.ingredient_quantities);
   const steps = list(recipe.steps);
 
   return (
@@ -47,6 +48,15 @@ export default function RecipeDetailScreen() {
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
           <ArrowLeft size={20} color={colors.textPrimary} strokeWidth={2.4} />
         </Pressable>
+
+        {recipe.image_url ? (
+          <Image
+            source={{ uri: recipe.image_url }}
+            style={styles.heroImage}
+            resizeMode="cover"
+            accessibilityLabel={recipe.image_alt || `Serving suggestion for ${titleOf(recipe)}`}
+          />
+        ) : null}
 
         <View style={styles.header}>
           <View style={styles.iconCircle}>
@@ -67,6 +77,18 @@ export default function RecipeDetailScreen() {
               <Clock3 size={14} color={colors.primary} />
               <Text style={styles.metaText}>{recipe.ai_enhanced ? 'AI refined' : 'RAG matched'}</Text>
             </View>
+            {recipe.prep_minutes !== null && recipe.prep_minutes !== undefined ? (
+              <View style={styles.metaPill}>
+                <Clock3 size={14} color={colors.primary} />
+                <Text style={styles.metaText}>Prep {recipe.prep_minutes} min</Text>
+              </View>
+            ) : null}
+            {recipe.cook_minutes !== null && recipe.cook_minutes !== undefined ? (
+              <View style={styles.metaPill}>
+                <Clock3 size={14} color={colors.primary} />
+                <Text style={styles.metaText}>Cook {recipe.cook_minutes} min</Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -79,12 +101,26 @@ export default function RecipeDetailScreen() {
           </View>
         ) : null}
 
+        {quantities.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Ingredients and quantities</Text>
+            <View style={styles.quantityCard}>
+              {quantities.map((item) => (
+                <View key={item} style={styles.quantityRow}>
+                  <View style={styles.quantityDot} />
+                  <Text style={styles.quantityText}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>You already have</Text>
+          <Text style={styles.sectionTitle}>Available</Text>
           <View style={styles.ingredientGrid}>
             {available.length ? available.map((item) => (
               <View key={item} style={styles.haveChip}>
-                <CheckCircle2 size={14} color={colors.primary} />
+                <CheckCircle2 size={14} color={colors.statusFresh} />
                 <Text style={styles.haveChipText}>{item}</Text>
               </View>
             )) : <Text style={styles.mutedText}>No strong pantry match was reported.</Text>}
@@ -92,7 +128,7 @@ export default function RecipeDetailScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>May need</Text>
+          <Text style={[styles.sectionTitle, styles.missingSectionTitle]}>Missing</Text>
           <View style={styles.ingredientGrid}>
             {missing.length ? missing.map((item) => (
               <View key={item} style={styles.missingChip}>
@@ -140,6 +176,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  heroImage: {
+    width: '100%',
+    height: 230,
+    borderRadius: radii.xl,
+    backgroundColor: colors.primaryTint,
+  },
   header: {
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -163,7 +205,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   reason: {
-    fontFamily: fonts.regular,
+    fontFamily: fonts.storyItalic,
     fontSize: 14,
     lineHeight: 22,
     color: colors.textSecondary,
@@ -212,12 +254,42 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: fonts.bold,
     fontSize: 16,
-    color: colors.textPrimary,
+    color: colors.statusFresh,
+  },
+  missingSectionTitle: {
+    color: colors.sourceManual,
   },
   ingredientGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  quantityCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  quantityRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  quantityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+    marginTop: 7,
+  },
+  quantityText: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.textPrimary,
   },
   haveChip: {
     flexDirection: 'row',
@@ -231,7 +303,7 @@ const styles = StyleSheet.create({
   haveChipText: {
     fontFamily: fonts.semibold,
     fontSize: 12,
-    color: colors.primary,
+    color: colors.statusFresh,
   },
   missingChip: {
     backgroundColor: colors.card,
@@ -244,7 +316,7 @@ const styles = StyleSheet.create({
   missingChipText: {
     fontFamily: fonts.semibold,
     fontSize: 12,
-    color: colors.textSecondary,
+    color: colors.sourceManual,
   },
   stepsCard: {
     backgroundColor: colors.card,

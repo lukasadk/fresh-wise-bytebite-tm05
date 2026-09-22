@@ -102,7 +102,12 @@ export default function UseFirstScreen({ navigation }: any) {
                 <Button
                   label="See recipe"
                   variant="onDark"
-                  onPress={() => navigation.navigate('Recipes')}
+                  onPress={() =>
+                    navigation.navigate('Recipes', {
+                      focusFoodName: priority.name,
+                      focusFoodId: priority.id,
+                    })
+                  }
                 />
                 <Text style={styles.swipeHint}>Swipe to manage →</Text>
               </View>

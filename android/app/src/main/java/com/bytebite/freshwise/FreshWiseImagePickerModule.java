@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.ImageDecoder;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 import android.util.Base64;
 import android.util.Size;
@@ -85,11 +86,25 @@ public class FreshWiseImagePickerModule extends ReactContextBaseJavaModule {
     }
     pendingPromise = promise;
     try {
-      Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-      intent.addCategory(Intent.CATEGORY_OPENABLE);
+      Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
       intent.setType("image/*");
       intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-      intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+
+      if (intent.resolveActivity(activity.getPackageManager()) == null) {
+        intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("image/*");
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+      }
+
+      if (intent.resolveActivity(activity.getPackageManager()) == null) {
+        intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("image/*");
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+      }
+
       activity.startActivityForResult(intent, REQUEST_PICK_IMAGE);
     } catch (Exception error) {
       pendingPromise = null;
