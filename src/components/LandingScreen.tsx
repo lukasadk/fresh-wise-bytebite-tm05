@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Image, Pressable, Animated, Easing, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, Animated, Easing, StyleSheet, useWindowDimensions } from 'react-native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import { ArrowRight } from '../icons/NavIcons';
 
@@ -25,6 +25,16 @@ export default function LandingScreen({ appReady, onGetStarted, onExitComplete, 
   // never accidentally fight over the same driver.
   const exitAnim = useRef(new Animated.Value(1)).current;
   const [isExiting, setIsExiting] = useState(false);
+
+  // Edge-to-edge hero photo: full screen width, 640x800 (4:5) proportions,
+  // capped at half the screen height so the title and button still fit on
+  // short phones. resizeMode="cover" trims only the photo's empty backdrop
+  // above/below the bag when the cap kicks in.
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const illustrationSize = {
+    width: screenWidth,
+    height: Math.min(screenWidth * 1.25, screenHeight * 0.5),
+  };
 
   useEffect(() => {
     // Staggered, not simultaneous -- each element's own timing overlaps the
@@ -104,8 +114,8 @@ export default function LandingScreen({ appReady, onGetStarted, onExitComplete, 
         >
           <Image
             source={require('../../assets/illustrations/grocery-bag.jpg')}
-            style={styles.illustration}
-            resizeMode="contain"
+            style={illustrationSize}
+            resizeMode="cover"
           />
         </Animated.View>
 
@@ -190,16 +200,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  illustration: {
-    width: 260,
-    // Explicit height, not aspectRatio -- combining width+aspectRatio in the
-    // same style produced a full-screen image instead of a constrained 260px
-    // box on device, a real regression caught after testing. Two fixed
-    // numbers is the pattern that was already confirmed working throughout
-    // the rest of this project, so that's what stays. 325 = 260 * (800/640),
-    // matching the new image's real 640x800 proportions.
-    height: 325,
+    // Cancel the content's side padding so the photo can reach both screen edges.
+    marginHorizontal: -spacing.xxl,
   },
   button: {
     flexDirection: 'row',

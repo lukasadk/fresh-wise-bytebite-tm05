@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, FlatList, Pressable, ScrollView, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
@@ -319,7 +319,18 @@ export default function PantryScreen({ navigation, route }: any) {
             {/* One pill would just be "All", which filters nothing -- the row
                 only earns its space once there is a choice to make. */}
             {filters.length > 1 ? (
-              <View style={styles.filterRow}>
+              // Horizontal scroll so every category stays reachable on narrow
+              // screens instead of being clipped off the right edge. The row
+              // bleeds to the screen edges (negative margin cancels the list's
+              // side padding) so pills scroll out cleanly rather than cutting
+              // off mid-screen.
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.filterScroll}
+                contentContainerStyle={styles.filterRow}
+                keyboardShouldPersistTaps="handled"
+              >
                 {filters.map((filter) => (
                   <FilterPill
                     key={filter}
@@ -328,7 +339,7 @@ export default function PantryScreen({ navigation, route }: any) {
                     onPress={() => setActiveFilter(filter)}
                   />
                 ))}
-              </View>
+              </ScrollView>
             ) : null}
 
             {hasActiveFilter ? (
@@ -354,6 +365,7 @@ export default function PantryScreen({ navigation, route }: any) {
               <AlertBanner
                 title={`${attentionItems.length} item${attentionItems.length === 1 ? '' : 's'} need${attentionItems.length === 1 ? 's' : ''} attention`}
                 subtitle={`Closest expiry: ${closestAttentionLabel}`}
+                onPress={() => navigation.navigate('UseFirst')}
               />
             ) : null}
 
@@ -617,9 +629,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  filterScroll: {
+    marginHorizontal: -spacing.xxl,
+    flexGrow: 0,
+  },
   filterRow: {
     flexDirection: 'row',
     gap: spacing.sm,
+    paddingHorizontal: spacing.xxl,
   },
   chipRow: {
     flexDirection: 'row',

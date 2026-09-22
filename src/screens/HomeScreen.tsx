@@ -84,12 +84,14 @@ export default function HomeScreen({ navigation }: any) {
             value={`${items.length} item${items.length === 1 ? '' : 's'}`}
             label="in your pantry"
             variant="outline"
+            onPress={() => navigation.navigate('Main', { screen: 'Pantry' })}
           />
           <StatCard
             icon={<Sparkles size={20} color={colors.primary} />}
             value={`${expiringSoonCount} item${expiringSoonCount === 1 ? '' : 's'}`}
             label="expiring soon"
             variant="tinted"
+            onPress={() => navigation.navigate('Main', { screen: 'UseFirst' })}
           />
         </View>
 

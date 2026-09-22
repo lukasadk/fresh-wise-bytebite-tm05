@@ -11,6 +11,7 @@ import {
   DEVICE_ID_HEADER,
   REQUEST_TIMEOUT_MS,
 } from './config';
+import { Platform } from 'react-native';
 import { getDeviceId } from './device';
 
 export class ApiError extends Error {
@@ -52,7 +53,52 @@ type RequestOptions = {
   signal?: AbortSignal;
 };
 
+// Detail string the backend's get_current_user() returns (backend/app/deps.py)
+// when this device UUID has no profile row yet.
+export const NO_PROFILE_DETAIL = 'No profile for this device UUID yet';
+
+// One shared in-flight registration, so ten screens hitting the 404 at once
+// trigger ONE POST /v1/users, not ten. Cleared on failure so the next request
+// tries again instead of being stuck with a rejected promise forever.
+let profileRegistration: Promise<void> | null = null;
+
+/** Also used by src/data/api.ts's wrapper, so both share one registration. */
+export function ensureProfile(): Promise<void> {
+  if (!profileRegistration) {
+    profileRegistration = (async () => {
+      const user_id = await getDeviceId();
+      await requestOnce('/v1/users', { method: 'POST', body: { user_id, household_size: 1 } });
+    })().catch((err) => {
+      profileRegistration = null;
+      throw err;
+    });
+  }
+  return profileRegistration;
+}
+
+/** Every API call goes through here. Self-heals a missing device profile:
+ *  App.tsx registers the device once at startup, but only fire-and-forget --
+ *  if that single POST /v1/users failed (slow or dropped connection, the
+ *  hosted server waking up, the 10s timeout), every later request would 404
+ *  with "No profile for this device UUID yet" for the rest of the session.
+ *  Now the first such 404 registers the device (get-or-create, so harmless if
+ *  it already exists) and retries the original request once. */
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  try {
+    return await requestOnce<T>(path, options);
+  } catch (err) {
+    const isMissingProfile =
+      err instanceof ApiError &&
+      err.status === 404 &&
+      err.message.startsWith(NO_PROFILE_DETAIL) &&
+      path !== '/v1/users';
+    if (!isMissingProfile || options.signal?.aborted) throw err;
+    await ensureProfile();
+    return requestOnce<T>(path, options);
+  }
+}
+
+async function requestOnce<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, anonymous = false, signal } = options;
 
   const headers: Record<string, string> = { Accept: 'application/json' };
@@ -83,6 +129,18 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     }
     // The overwhelmingly common cause in dev is API_BASE_URL pointing at
     // localhost from a phone, so say so rather than just "Network request failed".
+    // In a browser (expo start --web) the usual cause is different: the server
+    // is up but its CORS settings don't allow this page's origin, and the
+    // browser reports that as the same generic network failure.
+    if (Platform.OS === 'web') {
+      throw new ApiError(
+        0,
+        `Can't reach the API at ${API_BASE_URL} from the browser. If the app works on ` +
+          `your phone, the server is probably blocking this web origin ` +
+          `(${typeof window !== 'undefined' ? window.location.origin : 'this page'}) -- ` +
+          `add it to CORS_ORIGINS on the backend.`,
+      );
+    }
     throw new ApiError(
       0,
       `Can't reach the API at ${API_BASE_URL}. On a phone or emulator, "localhost" ` +

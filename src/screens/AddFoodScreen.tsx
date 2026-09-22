@@ -136,7 +136,7 @@ export default function AddFoodScreen({ navigation, route }: any) {
           // present, so whatever storage value this item already has (set
           // automatically at creation) is left untouched here.
         });
-        navigation.navigate('FoodDetail', { id: editId, justEdited: true });
+        navigation.popTo('FoodDetail', { id: editId, justEdited: true });
       } else {
         const canonicalFoodName = name.trim().toLowerCase();
         const autoStorage = await determineStorage(canonicalFoodName);
@@ -169,10 +169,10 @@ export default function AddFoodScreen({ navigation, route }: any) {
         // dismissing FoodDetail drops you back onto the Add Food form instead of
         // the pantry. replace() swaps this screen for FoodDetail: one modal.
         //
-        // The edit branch above deliberately still uses navigate(): there
-        // FoodDetail IS already in the stack (you came from it), so navigate()
-        // pops back to it and updates its params. replace() there would create a
-        // second copy.
+        // The edit branch above uses popTo(): there FoodDetail IS already in the
+        // stack (you came from it), so popTo() pops back to it and updates its
+        // params. (In React Navigation 7 plain navigate() no longer pops back --
+        // it pushes a second copy, which is how screens were piling up on iOS.)
         navigation.replace('FoodDetail', { id: newItem.item_id, justAdded: true });
       }
     } catch (err) {
@@ -187,9 +187,9 @@ export default function AddFoodScreen({ navigation, route }: any) {
     // root stack -- has to be targeted via { screen, params } rather than
     // navigation.navigate('Pantry') directly.
     if (isEditing && editId) {
-      navigation.navigate('FoodDetail', { id: editId });
+      navigation.popTo('FoodDetail', { id: editId });
     } else {
-      navigation.navigate('Main', { screen: 'Pantry' });
+      navigation.popTo('Main', { screen: 'Pantry' });
     }
   };
 

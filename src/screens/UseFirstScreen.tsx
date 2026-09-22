@@ -124,7 +124,13 @@ export default function UseFirstScreen({ navigation }: any) {
                 {section.items.map((item) => {
                   const expiry = getExpiryInfo(item);
                   return (
-                    <SwipeToManage key={item.id} onManage={() => goToDetail(item.id)}>
+                    // Swipe matches the row's "Swipe for recipe" hint and
+                    // Pantry's behaviour; tapping the row still opens Food Detail.
+                    <SwipeToManage
+                      key={item.id}
+                      onManage={() => navigation.navigate('Recipes')}
+                      actionLabel="Recipe"
+                    >
                       <FoodRow
                         name={item.name}
                         category={item.category}

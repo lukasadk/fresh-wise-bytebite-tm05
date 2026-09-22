@@ -13,6 +13,7 @@ import { getDeviceId } from './device';
 // can be read out of the built app. It filters bots and acts as a kill switch;
 // the server's rate limiter is what actually caps abuse.
 import { API_BASE_URL, API_KEY, API_KEY_HEADER, DEVICE_ID_HEADER } from '../api/config';
+import { ensureProfile, NO_PROFILE_DETAIL } from '../api/client';
 
 // Re-exported so existing importers of `API_BASE_URL` from this module keep working.
 export { API_BASE_URL };
@@ -31,7 +32,25 @@ export class ApiError extends Error {
   }
 }
 
+// Same self-healing as src/api/client.ts: if the startup registration never
+// landed, the first "No profile" 404 registers this device (get-or-create) and
+// the request is retried once, instead of failing for the whole session.
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  try {
+    return await requestOnce<T>(path, options);
+  } catch (err) {
+    const isMissingProfile =
+      err instanceof ApiError &&
+      err.status === 404 &&
+      err.message.startsWith(NO_PROFILE_DETAIL) &&
+      path !== '/v1/users';
+    if (!isMissingProfile) throw err;
+    await ensureProfile();
+    return requestOnce<T>(path, options);
+  }
+}
+
+async function requestOnce<T>(path: string, options?: RequestInit): Promise<T> {
   const deviceId = await getDeviceId();
 
   const controller = new AbortController();

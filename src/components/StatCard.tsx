@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 
 type Props = {
@@ -7,16 +7,35 @@ type Props = {
   value: string;
   label: string;
   variant?: 'outline' | 'tinted';
+  // When set, the whole card becomes a tap target (e.g. Home's overview
+  // cards jump to My Pantry / Use First).
+  onPress?: () => void;
+  accessibilityLabel?: string;
 };
 
-export default function StatCard({ icon, value, label, variant = 'outline' }: Props) {
+export default function StatCard({ icon, value, label, variant = 'outline', onPress, accessibilityLabel }: Props) {
   const tinted = variant === 'tinted';
-  return (
-    <View style={[styles.card, tinted ? styles.tinted : styles.outline]}>
+  const content = (
+    <>
       {icon}
       <Text style={styles.value}>{value}</Text>
       <Text style={styles.label}>{label}</Text>
-    </View>
+    </>
+  );
+
+  if (!onPress) {
+    return <View style={[styles.card, tinted ? styles.tinted : styles.outline]}>{content}</View>;
+  }
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? `${value} ${label}`}
+      style={({ pressed }) => [styles.card, tinted ? styles.tinted : styles.outline, pressed && styles.pressed]}
+    >
+      {content}
+    </Pressable>
   );
 }
 
@@ -44,5 +63,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 13,
     color: colors.textSecondary,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

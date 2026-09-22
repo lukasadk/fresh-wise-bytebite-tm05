@@ -99,9 +99,9 @@ export default function FoodDetailScreen({ navigation, route }: any) {
     // the SAME navigator, or going "up" to a parent -- not back "down" into a
     // different nested one).
     if (justAdded) {
-      navigation.navigate('Main', { screen: 'Pantry', params: { added: item?.name } });
+      navigation.popTo('Main', { screen: 'Pantry', params: { added: item?.name } });
     } else if (justEdited) {
-      navigation.navigate('Main', { screen: 'Pantry', params: { highlightId: item?.id } });
+      navigation.popTo('Main', { screen: 'Pantry', params: { highlightId: item?.id } });
     } else {
       navigation.goBack();
     }
@@ -117,7 +117,7 @@ export default function FoodDetailScreen({ navigation, route }: any) {
       // safe to use even though the item is about to stop existing server-side.
       const removedName = item.name;
       await deletePantryItem(item.id);
-      navigation.navigate('Main', { screen: 'Pantry', params: { removed: removedName } });
+      navigation.popTo('Main', { screen: 'Pantry', params: { removed: removedName } });
     } catch (err) {
       setRemoveError(err instanceof ApiError ? err.message : "Couldn't remove this item — try again.");
     } finally {
@@ -159,7 +159,10 @@ export default function FoodDetailScreen({ navigation, route }: any) {
 
         <Pressable
           style={({ pressed }) => [styles.findRecipesLink, pressed && { opacity: 0.7 }]}
-          onPress={() => navigation.navigate('Recipes')}
+          // Recipes is a tab inside the nested "Main" navigator, so it must be
+          // targeted through Main -- a bare navigate('Recipes') isn't handled
+          // by this root-stack screen in React Navigation 7.
+          onPress={() => navigation.popTo('Main', { screen: 'Recipes' })}
         >
           <Text style={styles.findRecipesLinkText}>Find recipes with this item →</Text>
         </Pressable>

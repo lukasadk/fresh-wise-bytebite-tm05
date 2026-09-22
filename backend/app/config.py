@@ -39,6 +39,12 @@ class Settings(BaseSettings):
 
     device_id_header: str = "X-Device-Id"
     cors_origins: str = "http://localhost:19006,http://localhost:8081"
+    # Also allow any localhost / 127.0.0.1 port, so `expo start --web` keeps
+    # working when Metro picks a different port (8082, 19006...) or when the
+    # hosted CORS_ORIGINS variable doesn't list the dev origin. Low risk: CORS
+    # only governs browsers, credentials are disabled, and the API key still
+    # applies. Set CORS_ORIGIN_REGEX="" to turn it off.
+    cors_origin_regex: str = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
     environment: str = "development"
 
     # --- Public-deployment hardening (all OFF by default) ------------------

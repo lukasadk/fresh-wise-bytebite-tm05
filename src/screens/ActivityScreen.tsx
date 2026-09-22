@@ -17,7 +17,7 @@
  * Patterns is also LIVE: it reads GET /v1/dashboard/waste-patterns (see
  * usePatterns() below). Redesigned to be deliberately simple (Feature 99
  * reference, see the screenshot this redesign was built from):
- *   - Categories: a plain top-5-by-weight bar list, one category icon per
+ *   - Categories: a plain top-5-by-times-wasted bar list, one category icon per
  *     row (categoryIconFor() in icons/FoodIcons.tsx), NO rolled-up "Other"
  *     row -- WastePatternsOut.top_waste_categories is already exactly 5.
  *   - Reasons: numbered 1-5 by count (RankBadge), plus a single unnumbered
@@ -81,9 +81,13 @@ import type { DashboardSummary, WeeklyWasteRow, WasteReason, WastePatternsOut } 
 type InsightsTab = 'Overview' | 'Patterns' | 'Trends';
 
 type WeekSummary = {
-  wasted_kg: number;
-  consumed_kg: number;
-  utilisation_rate: number;        // 0–1
+  // Counts of logged records, NOT weights. Units are free text per item
+  // ("pcs", "g", "carton", "L"...), so summing raw quantities mixed them into
+  // a meaningless number that was then labelled "kg". Counting records is the
+  // one measure that stays honest whatever unit the user typed.
+  wasted_count: number;
+  consumed_count: number;
+  utilisation_rate: number;        // 0–1, consumed records / all records
   week_delta_pct: number | null;   // negative = improved (less wasted)
   food_records: number;
   quick_insight_title: string | null;
@@ -101,12 +105,12 @@ type FrequencyDatum = {
   count: number;
 };
 
-/** One row in the "Most wasted categories" card -- kg, not a raw count, so
- *  the bar reflects actual weight wasted rather than how many separate
- *  waste events happened to be logged. */
+/** One row in the "Most wasted categories" card -- number of times items in
+ *  that category were wasted (the backend ranks by COUNT; units are free text
+ *  so a weight total isn't meaningful). */
 type CategoryWeightDatum = {
   label: string;
-  kg: number;
+  count: number;
 };
 
 type WasteInsight = {
@@ -156,13 +160,13 @@ type AlternativesData = {
 type TrendsPeriod = 'Weekly' | 'Monthly';
 
 type TrendsSeries = {
-  points: number[];       // waste kg, oldest → newest
+  points: number[];       // wasted-item records per period, oldest → newest
   /** "YYYY-MM-DD" per point, same length as points — weekly rows use the
    *  ISO week's Monday, monthly rows are padded to the 1st of the month.
    *  Used by TrendChart to render X-axis date labels. */
   periodKeys: string[];
-  goalKg: number;
-  latestKg: number;
+  goalValue: number;
+  latestValue: number;
   deltaPct: number | null; // negative = improved (less wasted)
   rangeLabel: string;      // e.g. "Last 8 weeks"
   streakTitle: string;     // e.g. "On track"
@@ -175,8 +179,15 @@ type TrendsData = Record<TrendsPeriod, TrendsSeries>;
 // Helpers
 // ---------------------------------------------------------------------------
 
-function fmtKg(kg: number): string {
-  return Number.isInteger(kg) ? `${kg} kg` : `${kg.toFixed(1)} kg`;
+/** "1 item" / "3 items" -- Insights counts logged records, not weight. */
+function fmtItems(n: number): string {
+  const v = Number.isInteger(n) ? String(n) : n.toFixed(1);
+  return `${v} item${n === 1 ? '' : 's'}`;
+}
+
+/** Plain number for chart axes/goal: "2" not "2.0", else one decimal. */
+function fmtNum(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
 function fmtPct(rate: number): string {
@@ -395,7 +406,7 @@ function ThisWeekCard({ summary }: { summary: WeekSummary }) {
           {summary.food_records === 1 ? '' : 's'}
         </Text>
         <Text style={heroStyles.wastedValue}>
-          {fmtKg(summary.wasted_kg)} wasted
+          {fmtItems(summary.wasted_count)} wasted
         </Text>
         {deltaAbs !== null && (
           <Text
@@ -468,8 +479,8 @@ function StatPills({ summary }: { summary: WeekSummary }) {
       valueColor: colors.statusToday,
     },
     {
-      value: fmtKg(summary.consumed_kg),
-      label: 'Food saved',
+      value: fmtItems(summary.consumed_count),
+      label: 'Food used',
       valueColor: undefined as string | undefined,
     },
   ];
@@ -534,7 +545,7 @@ function UtilisationSplit({ summary }: { summary: WeekSummary }) {
           <Dot color={colors.primary} />
           <Text style={splitStyles.rowLabel}>Consumed</Text>
           <Text style={splitStyles.rowValue}>
-            {fmtKg(summary.consumed_kg)}
+            {fmtItems(summary.consumed_count)}
           </Text>
         </View>
         <View style={[splitStyles.row, splitStyles.rowBorder]}>
@@ -543,7 +554,7 @@ function UtilisationSplit({ summary }: { summary: WeekSummary }) {
           <Text
             style={[splitStyles.rowValue, { color: colors.statusToday }]}
           >
-            {fmtKg(summary.wasted_kg)}
+            {fmtItems(summary.wasted_count)}
           </Text>
         </View>
       </View>
@@ -653,22 +664,22 @@ const sectionStyles = StyleSheet.create({
   },
 });
 
-// "Most wasted categories" -- literal top 5 by weight, no "Other" row (see
+// "Most wasted categories" -- literal top 5 by times wasted, no "Other" row (see
 // WastePatternsOut.top_waste_categories: the backend never rolls category
 // overflow into a synthetic bucket the way the OLD reasons logic used to).
 
 function CategoryWeightRow({
   label,
-  kg,
-  maxKg,
+  count,
+  maxCount,
 }: {
   label: string;
-  kg: number;
-  maxKg: number;
+  count: number;
+  maxCount: number;
 }) {
   const Icon = categoryIconFor(label);
   // Keep a small minimum width so low weights still render a visible sliver.
-  const pct = maxKg > 0 ? Math.max(6, (kg / maxKg) * 100) : 6;
+  const pct = maxCount > 0 ? Math.max(6, (count / maxCount) * 100) : 6;
   return (
     <View style={weightRowStyles.row}>
       <Icon size={28} />
@@ -683,7 +694,7 @@ function CategoryWeightRow({
           ]}
         />
       </View>
-      <Text style={weightRowStyles.value}>{kg.toFixed(1)} kg</Text>
+      <Text style={weightRowStyles.value}>{fmtNum(count)}×</Text>
     </View>
   );
 }
@@ -725,16 +736,16 @@ const weightRowStyles = StyleSheet.create({
 });
 
 function CategoryWeightCard({ categories }: { categories: CategoryWeightDatum[] }) {
-  const maxKg = categories.reduce((m, d) => Math.max(m, d.kg), 0);
+  const maxCount = categories.reduce((m, d) => Math.max(m, d.count), 0);
   return (
     <View style={sectionStyles.wrap}>
       <View style={sectionStyles.headingBlock}>
         <Text style={sectionStyles.heading}>Most wasted categories</Text>
-        <Text style={sectionStyles.subheading}>Top 5 by weight</Text>
+        <Text style={sectionStyles.subheading}>Top 5 by times wasted</Text>
       </View>
       <View style={sectionStyles.card}>
         {categories.map((c) => (
-          <CategoryWeightRow key={c.label} label={c.label} kg={c.kg} maxKg={maxKg} />
+          <CategoryWeightRow key={c.label} label={c.label} count={c.count} maxCount={maxCount} />
         ))}
       </View>
     </View>
@@ -1398,8 +1409,8 @@ function TrendChart({
   // ---- Y-axis labels (kg values at each grid line) -----------------------
   // Map each grid Y back to a kg value and format to 1 decimal place.
   const yLabels = gridYs.map(gy => {
-    const kg = minV + (1 - (gy - TOP) / PLOT_H) * valueSpan;
-    return { y: gy, text: `${kg.toFixed(1)}` };
+    const v = minV + (1 - (gy - TOP) / PLOT_H) * valueSpan;
+    return { y: gy, text: fmtNum(Math.round(v * 10) / 10) };
   });
 
   // ---- X-axis labels (dates at selected point indices) -------------------
@@ -1474,7 +1485,7 @@ function TrendChart({
           fontFamily={fonts.semibold}
           fill={colors.textSecondary}
         >
-          Goal: {goal} kg
+          Goal: {fmtNum(goal)}
         </SvgText>
 
         {/* Trend polyline */}
@@ -1540,7 +1551,7 @@ function TrendsSummary({
   return (
     <View style={trendsSummaryStyles.wrap}>
       <Text style={trendsSummaryStyles.value}>
-        {series.latestKg.toFixed(2)} kg this {periodWord}
+        {fmtItems(series.latestValue)} wasted this {periodWord}
       </Text>
       {series.deltaPct !== null && (
         <Text
@@ -1825,12 +1836,12 @@ function buildPatternsData(raw: WastePatternsOut): PatternsData {
   const categoryTotals = new Map<string, number>();
   for (const b of raw.top_waste_categories) {
     const anyB = b as any;
-    const kg = typeof anyB.quantity === 'number' ? anyB.quantity : Number(anyB.count ?? 0);
-    categoryTotals.set(b.label, (categoryTotals.get(b.label) ?? 0) + kg);
+    const count = Number(anyB.count ?? 0);
+    categoryTotals.set(b.label, (categoryTotals.get(b.label) ?? 0) + count);
   }
-  const categories: CategoryWeightDatum[] = [...categoryTotals.entries()].map(([label, kg]) => ({
+  const categories: CategoryWeightDatum[] = [...categoryTotals.entries()].map(([label, count]) => ({
     label,
-    kg,
+    count,
   }));
 
   let otherReasonCount = raw.other_reason_count ?? 0;
@@ -1982,14 +1993,14 @@ type WeekTotal = { weekStart: string; total: number };
 function sumWeeklyTotals(rows: WeeklyWasteRow[]): WeekTotal[] {
   const totals = new Map<string, number>();
   for (const row of rows) {
-    totals.set(row.week_start, (totals.get(row.week_start) ?? 0) + row.total_quantity_wasted);
+    totals.set(row.week_start, (totals.get(row.week_start) ?? 0) + row.waste_events);
   }
   return [...totals.entries()]
     .map(([weekStart, total]) => ({ weekStart, total }))
     .sort((a, b) => a.weekStart.localeCompare(b.weekStart)); // ascending, oldest first
 }
 
-function computeGoalKg(points: number[]): number {
+function computeGoal(points: number[]): number {
   if (!points.length) return 0;
   const avg = points.reduce((s, v) => s + v, 0) / points.length;
   return Math.round(avg * 10) / 10;
@@ -1999,11 +2010,11 @@ function computeGoalKg(points: number[]): number {
  *  same side of the goal line as the latest period -- i.e. however many in a
  *  row have been "below goal" (a positive streak) or "above goal" (a streak
  *  worth flagging). Direction is whatever the newest point is doing. */
-function computeTrailingStreak(points: number[], goalKg: number): { count: number; onTrack: boolean } {
-  const onTrack = points[points.length - 1] <= goalKg;
+function computeTrailingStreak(points: number[], goalValue: number): { count: number; onTrack: boolean } {
+  const onTrack = points[points.length - 1] <= goalValue;
   let count = 0;
   for (let i = points.length - 1; i >= 0; i--) {
-    if ((points[i] <= goalKg) === onTrack) count++;
+    if ((points[i] <= goalValue) === onTrack) count++;
     else break;
   }
   return { count, onTrack };
@@ -2012,27 +2023,27 @@ function computeTrailingStreak(points: number[], goalKg: number): { count: numbe
 function finishSeries(points: number[], periodKeys: string[], rangeLabel: string): TrendsSeries {
   if (points.length === 0) {
     return {
-      points: [], periodKeys: [], goalKg: 0, latestKg: 0, deltaPct: null, rangeLabel,
+      points: [], periodKeys: [], goalValue: 0, latestValue: 0, deltaPct: null, rangeLabel,
       streakTitle: 'No data yet',
       streakNote: 'Mark items as consumed or wasted to start building this chart.',
     };
   }
-  const goalKg = computeGoalKg(points);
-  const latestKg = points[points.length - 1];
+  const goalValue = computeGoal(points);
+  const latestValue = points[points.length - 1];
   const prev = points.length > 1 ? points[points.length - 2] : null;
-  const deltaPct = prev !== null && prev > 0 ? ((latestKg - prev) / prev) * 100 : null;
+  const deltaPct = prev !== null && prev > 0 ? ((latestValue - prev) / prev) * 100 : null;
 
   if (points.length < 2) {
     return {
-      points, periodKeys, goalKg, latestKg, deltaPct: null, rangeLabel,
+      points, periodKeys, goalValue, latestValue, deltaPct: null, rangeLabel,
       streakTitle: 'Just getting started',
       streakNote: 'Keep logging outcomes to start seeing a trend here.',
     };
   }
 
-  const streak = computeTrailingStreak(points, goalKg);
+  const streak = computeTrailingStreak(points, goalValue);
   return {
-    points, periodKeys, goalKg, latestKg, deltaPct, rangeLabel,
+    points, periodKeys, goalValue, latestValue, deltaPct, rangeLabel,
     streakTitle: streak.onTrack ? 'On track' : 'Above target',
     streakNote: streak.onTrack
       ? `Waste has stayed at or below your average for ${streak.count} period${streak.count === 1 ? '' : 's'}.`
@@ -2135,7 +2146,7 @@ function buildWeekSummary(summary: DashboardSummary, weekly: WeeklyWasteRow[]): 
   // share a week_start -- sum them to get each week's total before comparing.
   const totalsByWeek = new Map<string, number>();
   for (const row of weekly) {
-    totalsByWeek.set(row.week_start, (totalsByWeek.get(row.week_start) ?? 0) + row.total_quantity_wasted);
+    totalsByWeek.set(row.week_start, (totalsByWeek.get(row.week_start) ?? 0) + row.waste_events);
   }
   const weeksSorted = [...totalsByWeek.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   const [thisWeek, lastWeek] = weeksSorted;
@@ -2144,8 +2155,11 @@ function buildWeekSummary(summary: DashboardSummary, weekly: WeeklyWasteRow[]): 
       ? ((thisWeek[1] - lastWeek[1]) / lastWeek[1]) * 100
       : null;
 
-  const utilisationRate = summary.waste_rate !== null ? 1 - summary.waste_rate : 0;
+  // Share of records that were consumed rather than wasted. Computed from
+  // counts here instead of the backend's waste_rate, which divides raw
+  // quantities across mixed units (e.g. 500 "g" vs 2 "pcs").
   const foodRecords = summary.total_wasted_events + summary.total_consumed_events;
+  const utilisationRate = foodRecords > 0 ? summary.total_consumed_events / foodRecords : 0;
   const isImproving = weekDeltaPct !== null && weekDeltaPct <= 0;
   const topReason = summary.top_waste_reasons[0];
 
@@ -2162,8 +2176,8 @@ function buildWeekSummary(summary: DashboardSummary, weekly: WeeklyWasteRow[]): 
           : 'Record more outcomes to start spotting patterns.';
 
   return {
-    wasted_kg: summary.total_wasted_quantity,
-    consumed_kg: summary.total_consumed_quantity,
+    wasted_count: summary.total_wasted_events,
+    consumed_count: summary.total_consumed_events,
     utilisation_rate: utilisationRate,
     week_delta_pct: weekDeltaPct,
     food_records: foodRecords,
@@ -2407,7 +2421,7 @@ export default function ActivityScreen() {
                       <View style={styles.chartCard}>
                         <TrendChart
                           points={series.points}
-                          goal={series.goalKg}
+                          goal={series.goalValue}
                           periodKeys={series.periodKeys}
                           period={trendsPeriod}
                         />

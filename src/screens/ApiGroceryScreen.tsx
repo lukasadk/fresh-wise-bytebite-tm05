@@ -330,7 +330,7 @@ export default function ApiGroceryScreen({ navigation }: any) {
           storage: await determineStorage(name),
         });
       }));
-      navigation.navigate('Main', {
+      navigation.popTo('Main', {
         screen: 'Pantry',
         params: { photoAddedCount: accepted.length },
       });
