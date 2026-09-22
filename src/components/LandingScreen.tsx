@@ -88,6 +88,9 @@ export default function LandingScreen({ appReady, onGetStarted, onExitComplete, 
           <Animated.Text style={[styles.tagline, fadeUp(taglineAnim)]}>
             Smarter food choices.{'\n'}A brighter tomorrow.
           </Animated.Text>
+          <Animated.Text style={[styles.planUseWaste, fadeUp(taglineAnim)]}>
+            PLAN · USE · WASTE LESS
+          </Animated.Text>
         </View>
 
         <Animated.View
@@ -100,7 +103,7 @@ export default function LandingScreen({ appReady, onGetStarted, onExitComplete, 
           ]}
         >
           <Image
-            source={require('../../assets/illustrations/grocery-bag.png')}
+            source={require('../../assets/illustrations/grocery-bag.jpg')}
             style={styles.illustration}
             resizeMode="contain"
           />
@@ -127,7 +130,12 @@ export default function LandingScreen({ appReady, onGetStarted, onExitComplete, 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    // Sampled directly from the hero photo's own backdrop (#F7F1E8), not the
+    // shared colors.background token (#FCF9F2) -- close enough that reusing
+    // the shared token would leave a faint but visible seam around the image.
+    // This is a deliberate LOCAL override for this one photo, not a change to
+    // the app's background colour elsewhere.
+    backgroundColor: '#F7F1E8',
     overflow: 'hidden',
   },
   blob: {
@@ -171,6 +179,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
+  planUseWaste: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.textSecondary,
+    letterSpacing: 2,
+    marginTop: spacing.xs,
+  },
   illustrationWrap: {
     flex: 1,
     alignItems: 'center',
@@ -178,7 +193,13 @@ const styles = StyleSheet.create({
   },
   illustration: {
     width: 260,
-    height: 282, // matches the source image's aspect ratio (305:331)
+    // Explicit height, not aspectRatio -- combining width+aspectRatio in the
+    // same style produced a full-screen image instead of a constrained 260px
+    // box on device, a real regression caught after testing. Two fixed
+    // numbers is the pattern that was already confirmed working throughout
+    // the rest of this project, so that's what stays. 325 = 260 * (800/640),
+    // matching the new image's real 640x800 proportions.
+    height: 325,
   },
   button: {
     flexDirection: 'row',

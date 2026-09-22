@@ -236,7 +236,14 @@ function imageContentType(
 }
 
 async function imagePart(imageUri: string, mimeTypeHint?: string | null): Promise<Blob> {
-  const response = await fetch(imageUri);
+  // Expo Go's ImagePicker can return a double-encoded file:// path on Android
+  // (its sandboxed ExperienceData/@anonymous/... cache folder), which fetch()
+  // then 404s on since the double-encoded string doesn't resolve to a real
+  // file. Decoding once undoes that extra layer; a normally-encoded URI is
+  // unaffected by one decode pass.
+  const decodedUri = imageUri.includes('%25') ? decodeURIComponent(imageUri) : imageUri;
+  const response = await fetch(decodedUri);
+  console.log('imagePart response:', response.status, response.ok);
   if (!response.ok) throw new Error('The selected image could not be read.');
   const blob = await response.blob();
   // If the fetched blob's own type isn't a supported image type (commonly

@@ -11,6 +11,11 @@ export type StorageMethod = {
   key: StorageMethodKey;
   title: string;
   body: string;
+  /** The last sentence of FoodKeeper's own tips text, split out by
+   *  splitTips() -- shown as a separate callout rather than folded into
+   *  `body`. Null when the row's tips are empty or only one sentence long
+   *  (nothing left to split off). */
+  tip: string | null;
   /** Just the duration ("4-12 months"), with none of the prose. The card shows
    *  `body`; the food picker needs something short enough to list ten of. */
   keeps: string | null;
@@ -96,6 +101,32 @@ function phraseFor(metric: string | null): string | null {
 
 function metricIs(metric: string | null, value: string): boolean {
   return (metric ?? '').trim().toLowerCase() === value;
+}
+
+/** Splits a real FoodKeeper tips string into a "lead" (everything but the
+ *  last sentence) and a "tip" (the last sentence alone) -- e.g. "Keep at 4°C
+ *  or below. Cook thoroughly before eating. Store on the lowest fridge shelf
+ *  in a sealed container to avoid cross-contamination." becomes lead="Keep at
+ *  4°C or below. Cook thoroughly before eating." and tip="Store on the lowest
+ *  fridge shelf...". This is pure re-formatting of text FoodKeeper already
+ *  provides -- no new advice is authored here, one real string is just shown
+ *  as a main line plus a separate callout instead of one unbroken paragraph.
+ *
+ *  A tips string with only one sentence has nothing to split off, so the
+ *  whole thing stays as `lead` and `tip` is null -- most rows will land here,
+ *  and that's fine, not every food needs a separate callout.
+ *
+ *  Deliberately not a lookbehind regex (Hermes's regex engine has historically
+ *  had limited support for those) -- a plain string split on ". " instead. */
+function splitTips(tips: string | null): { lead: string | null; tip: string | null } {
+  if (!tips) return { lead: null, tip: null };
+  const trimmed = tips.trim();
+  const parts = trimmed.split('. ').filter(Boolean);
+  // Re-attach the period the split consumed to every part except the last,
+  // which already ends in whatever punctuation (or none) it originally had.
+  const sentences = parts.map((part, i) => (i < parts.length - 1 ? `${part}.` : part));
+  if (sentences.length <= 1) return { lead: trimmed, tip: null };
+  return { lead: sentences.slice(0, -1).join(' '), tip: sentences[sentences.length - 1] };
 }
 
 /** Whether this duration says anything at all -- a number, or one of the
@@ -236,10 +267,12 @@ export function buildGuidance(rows: FoodkeeperStorage[]): Guidance {
     metric: row.refrigerate_after_opening_metric,
   };
   if (row.refrigerate_tips || hasAnswer(fridge) || hasAnswer(opened)) {
+    const split = splitTips(row.refrigerate_tips);
     methods.push({
       key: 'refrigerate',
       title: 'Refrigerate',
-      body: bodyFor(row.refrigerate_tips, fridge, opened, 'once opened', 'Keep refrigerated.'),
+      body: bodyFor(split.lead, fridge, opened, 'once opened', 'Keep refrigerated.'),
+      tip: split.tip,
       keeps: fmtRange(fridge.min, fridge.max, fridge.metric),
       keepsDays: toDays(fridge.max ?? fridge.min, fridge.metric),
     });
@@ -264,10 +297,12 @@ export function buildGuidance(rows: FoodkeeperStorage[]): Guidance {
       body: noFreeze.reason ?? 'FoodKeeper does not recommend freezing this — keep it refrigerated instead.',
     };
   } else if (row.freeze_tips || hasAnswer(freezer)) {
+    const split = splitTips(row.freeze_tips);
     methods.push({
       key: 'freeze',
       title: 'Freeze',
-      body: bodyFor(row.freeze_tips, freezer, thawed, 'in the fridge once thawed', 'Suitable for freezing.'),
+      body: bodyFor(split.lead, freezer, thawed, 'in the fridge once thawed', 'Suitable for freezing.'),
+      tip: split.tip,
       keeps: fmtRange(freezer.min, freezer.max, freezer.metric),
       keepsDays: toDays(freezer.max ?? freezer.min, freezer.metric),
     });
@@ -283,10 +318,12 @@ export function buildGuidance(rows: FoodkeeperStorage[]): Guidance {
     metric: row.pantry_after_opening_metric,
   };
   if (row.pantry_tips || hasAnswer(pantry) || hasAnswer(pantryOpened)) {
+    const split = splitTips(row.pantry_tips);
     methods.push({
       key: 'pantry',
       title: 'Room temperature',
-      body: bodyFor(row.pantry_tips, pantry, pantryOpened, 'once opened', 'Store at room temperature.'),
+      body: bodyFor(split.lead, pantry, pantryOpened, 'once opened', 'Store at room temperature.'),
+      tip: split.tip,
       keeps: fmtRange(pantry.min, pantry.max, pantry.metric),
       keepsDays: toDays(pantry.max ?? pantry.min, pantry.metric),
     });

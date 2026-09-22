@@ -33,6 +33,9 @@ export default function PantryScreen({ navigation, route }: any) {
   const [activeFilter, setActiveFilter] = useState<string>(ALL_FILTER);
   const { items, loading: itemsLoading, error: itemsError, refresh } = usePantry();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // Only 'removed' gets different styling (coral, matching the destructive
+  // action it confirms) -- 'added' and 'consumed' share the same success look.
+  const [toastType, setToastType] = useState<'success' | 'removed'>('success');
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
 
   const { width } = useWindowDimensions();
@@ -55,16 +58,68 @@ export default function PantryScreen({ navigation, route }: any) {
   useFocusEffect(
     useCallback(() => {
       const addedName = route?.params?.added;
+      const consumedName = route?.params?.consumed;
+      const updatedText = route?.params?.updated;
+      const wastedName = route?.params?.wasted;
+      const removedName = route?.params?.removed;
       const highlightId = route?.params?.highlightId;
       if (addedName) {
-        setToastMessage('Added');
+        // Falls back to the generic label if addedName isn't a real name string
+        // (e.g. some earlier caller passing just `true`) -- never shows "true
+        // added" or similar.
+        const message = typeof addedName === 'string' && addedName.trim() ? `${addedName} added` : 'Added';
+        setToastType('success');
+        setToastMessage(message);
         navigation.setParams({ added: undefined });
+      }
+      if (consumedName) {
+        const message =
+          typeof consumedName === 'string' && consumedName.trim() ? `${consumedName} consumed` : 'Consumed';
+        setToastType('success');
+        setToastMessage(message);
+        navigation.setParams({ consumed: undefined });
+      }
+      if (updatedText) {
+        // Already a complete sentence from the caller ("Milk updated to
+        // 0.5 carton") -- shown as-is, not reconstructed here, since where
+        // "updated" belongs in the sentence depends on the quantity phrasing
+        // in a way a generic suffix can't reproduce correctly.
+        const message = typeof updatedText === 'string' && updatedText.trim() ? updatedText : 'Updated';
+        setToastType('success');
+        setToastMessage(message);
+        navigation.setParams({ updated: undefined });
+      }
+      if (wastedName) {
+        // Green, not coral, on purpose -- WasteRecordedScreen already shows
+        // its own Coral Red toast for the actual waste event. By the time the
+        // user reaches Pantry, they're just confirming a successful save, the
+        // same category as Added/Consumed -- not a second warning about the
+        // same thing.
+        const message =
+          typeof wastedName === 'string' && wastedName.trim() ? `${wastedName} waste recorded` : 'Waste recorded';
+        setToastType('success');
+        setToastMessage(message);
+        navigation.setParams({ wasted: undefined });
+      }
+      if (removedName) {
+        const message =
+          typeof removedName === 'string' && removedName.trim() ? `${removedName} removed` : 'Removed';
+        setToastType('removed');
+        setToastMessage(message);
+        navigation.setParams({ removed: undefined });
       }
       if (highlightId) {
         setHighlightedItemId(highlightId);
         navigation.setParams({ highlightId: undefined });
       }
-    }, [route?.params?.added, route?.params?.highlightId])
+    }, [
+      route?.params?.added,
+      route?.params?.consumed,
+      route?.params?.updated,
+      route?.params?.wasted,
+      route?.params?.removed,
+      route?.params?.highlightId,
+    ])
   );
 
   // Auto-hides the toast and the row highlight, kept as their OWN effects (keyed on
@@ -227,8 +282,10 @@ export default function PantryScreen({ navigation, route }: any) {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {toastMessage ? (
         <View style={styles.toast}>
-          <View style={styles.toastPill}>
-            <Text style={styles.toastText}>{toastMessage}</Text>
+          <View style={[styles.toastPill, toastType === 'removed' && styles.toastPillRemoved]}>
+            <Text style={[styles.toastText, toastType === 'removed' && styles.toastTextRemoved]}>
+              {toastMessage}
+            </Text>
           </View>
         </View>
       ) : null}
@@ -346,6 +403,7 @@ export default function PantryScreen({ navigation, route }: any) {
             <View style={styles.emptyState}>
               <PackageOpen size={96} color={colors.emptyStateIllustration} strokeWidth={1.5} />
               <Text style={styles.emptyStateText}>Your pantry is empty — add your first item</Text>
+              <Text style={styles.emptyStateSubtext}>Start by adding the food you have at home.</Text>
               <Button
                 label="Add food"
                 onPress={() => navigation.navigate('AddFood')}
@@ -400,9 +458,21 @@ export default function PantryScreen({ navigation, route }: any) {
             />
           );
           // Swipe-to-manage is disabled during bulk select -- a tap there
-          // already means "select this item", so a swipe revealing "Manage"
+          // already means "select this item", so a swipe revealing anything
           // would be a second, conflicting interpretation of the same gesture.
-          return selectMode ? row : <SwipeToManage onManage={() => openItem(item)}>{row}</SwipeToManage>;
+          //
+          // Tap and swipe now lead to two DIFFERENT places, not variations of
+          // the same one: tap opens this item's own Food Detail page
+          // (handlePress/openItem above); swipe instead goes to Recipes, to
+          // find something to cook with it. There's no per-item recipe
+          // filtering endpoint yet, so swipe lands on the same general
+          // Recipes tab regardless of which item was swiped -- not a
+          // recipe list scoped to that specific ingredient.
+          return selectMode ? row : (
+            <SwipeToManage onManage={() => navigation.navigate('Recipes')} actionLabel="Recipe">
+              {row}
+            </SwipeToManage>
+          );
         }}
         ItemSeparatorComponent={viewMode === 'list' ? () => <View style={{ height: spacing.md }} /> : undefined}
       />
@@ -489,6 +559,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.white,
   },
+  // Reuses the same tokens the "needs attention" banner and Remove item link
+  // already use elsewhere on this screen -- a removal is the one destructive
+  // action here, so it gets the same coral treatment, not the green success look.
+  toastPillRemoved: {
+    backgroundColor: colors.expiryUrgentBg,
+  },
+  toastTextRemoved: {
+    color: colors.errorText,
+  },
   content: {
     paddingHorizontal: spacing.xxl,
     paddingBottom: spacing.xxl,
@@ -517,7 +596,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.serif,
-    fontSize: 31,
+    fontSize: 26,
     color: colors.textPrimary,
   },
   headerButtons: {
@@ -636,6 +715,13 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontFamily: fonts.semibold,
     fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  emptyStateSubtext: {
+    marginTop: -spacing.sm,
+    fontFamily: fonts.regular,
+    fontSize: 13,
     color: colors.textSecondary,
     textAlign: 'center',
   },

@@ -1,12 +1,10 @@
-// Food illustration icons. Milk/Bread/Pasta/Tomato/Soup/Spinach are real PNG
-// artwork from the design team (see /assets/food-icons). Chicken has no matching
-// asset yet, so it's still the hand-coded SVG ported from the original Figma
-// export. GenericFoodIcon is a deliberately neutral fallback for anything that
-// doesn't match a known food -- previously unmatched foods silently fell back to
-// MilkIcon, which was misleading (a "Bread" item showing a milk carton).
+// Food illustration icons. Milk/Bread/Pasta/Tomato/Soup/Spinach/Chicken are
+// real PNG artwork from the design team (see /assets/food-icons).
+// GenericFoodIcon is a deliberately neutral fallback for anything that
+// doesn't match a known food -- previously unmatched foods silently fell back
+// to MilkIcon, which was misleading (a "Bread" item showing a milk carton).
 import React from 'react';
 import { Image, View, StyleSheet } from 'react-native';
-import Svg, { Rect, Ellipse, Path, G } from 'react-native-svg';
 import { colors, radii } from '../theme/theme';
 
 type IconProps = { size?: number };
@@ -32,6 +30,7 @@ export const PastaIcon = makeImageIcon(require('../../assets/food-icons/pasta.pn
 export const TomatoIcon = makeImageIcon(require('../../assets/food-icons/tomato.png'));
 export const SoupIcon = makeImageIcon(require('../../assets/food-icons/soup.png'));
 export const SpinachIcon = makeImageIcon(require('../../assets/food-icons/spinach.png'));
+export const ChickenIcon = makeImageIcon(require('../../assets/food-icons/chicken.png'));
 
 // The remaining six assets in /assets/food-icons are the "anime style" CATEGORY
 // icon set (Feature 99 reference) -- one per AddFoodScreen.CATEGORIES value,
@@ -43,24 +42,6 @@ export const PantryFoodIcon = makeImageIcon(require('../../assets/food-icons/pan
 export const FrozenIcon = makeImageIcon(require('../../assets/food-icons/frozen.png'));
 export const BeveragesIcon = makeImageIcon(require('../../assets/food-icons/beverages.png'));
 export const OtherCategoryIcon = makeImageIcon(require('../../assets/food-icons/other.png'));
-
-export function ChickenIcon({ size = 48 }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <G>
-        <Rect fill={colors.foodIconBg} width="48" height="48" rx="14" />
-        <Ellipse cx="24.5" cy="25" rx="17.5" ry="11" fill="#F7C6A5" />
-        <Ellipse cx="24.5" cy="21.5" rx="14.5" ry="9.5" fill="#FFD9BE" />
-        <Ellipse cx="19.6" cy="24" rx="1.6" ry="2" fill="#173A24" />
-        <Ellipse cx="28.6" cy="24" rx="1.6" ry="2" fill="#173A24" />
-        <Ellipse cx="16" cy="28.1" rx="2" ry="1.1" fill="#F3A5A5" />
-        <Ellipse cx="33" cy="28.1" rx="2" ry="1.1" fill="#F3A5A5" />
-        <Path d="M21 27C23 31 26 31 28 27" stroke="#173A24" strokeWidth="1.2" />
-        <Ellipse cx="24" cy="33.5" rx="16" ry="2.5" fill="#DCEBC8" />
-      </G>
-    </Svg>
-  );
-}
 
 // Neutral fallback -- a plain rounded square with a soft dot, distinct from every
 // real food icon so an unrecognised name doesn't masquerade as milk (or anything

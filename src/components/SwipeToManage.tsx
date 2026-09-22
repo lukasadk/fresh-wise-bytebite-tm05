@@ -9,23 +9,29 @@ type Props = {
   children: React.ReactNode;
   actionColor?: string;
   borderRadius?: number;
+  // Defaults to "Manage" -- override when the swipe leads somewhere other
+  // than this item's own management screen (e.g. Pantry's rows now swipe to
+  // Recipes, not Food Detail, so that one passes actionLabel="Recipe").
+  actionLabel?: string;
 };
 
-// Wraps any card/row with a left-swipe that reveals a "Manage" panel and
-// navigates on release. Used on Use First's hero card AND every row in its
-// three sections -- previously only the hero had this.
+// Wraps any card/row with a left-swipe that reveals a small labelled panel
+// and navigates on release. Used on Use First's hero card and rows (labelled
+// "Manage", its original purpose) and on Pantry's rows (labelled "Recipe",
+// since that swipe intentionally goes somewhere different).
 export default function SwipeToManage({
   onManage,
   children,
   actionColor = colors.slateTealDark,
   borderRadius = radii.lg,
+  actionLabel = 'Manage',
 }: Props) {
   const ref = useRef<Swipeable>(null);
 
   const renderRightActions = () => (
     <View style={[styles.action, { backgroundColor: actionColor, borderRadius }]}>
       <ArrowRight size={20} color={colors.white} />
-      <Text style={styles.actionText}>Manage</Text>
+      <Text style={styles.actionText}>{actionLabel}</Text>
     </View>
   );
 

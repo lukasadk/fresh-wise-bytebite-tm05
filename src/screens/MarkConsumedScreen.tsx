@@ -86,7 +86,20 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
       // popToTop() only returns to whichever tab happened to be active when
       // that chain started, not necessarily Pantry. The AC requires landing
       // on My Pantry specifically.
-      navigation.navigate('Main', { screen: 'Pantry' });
+      //
+      // Full vs partial consumption get genuinely different toast copy, not
+      // just different numbers: the item is either GONE ("consumed") or
+      // still there with a smaller quantity ("updated to X") -- confusing
+      // "half a carton left" with "fully consumed" would misdescribe what
+      // actually happened to the pantry.
+      if (isFullyConsumed) {
+        navigation.navigate('Main', { screen: 'Pantry', params: { consumed: item.name } });
+      } else {
+        navigation.navigate('Main', {
+          screen: 'Pantry',
+          params: { updated: `${item.name} updated to ${formatWithUnit(remaining, item.unit)}` },
+        });
+      }
     } catch (err) {
       setSaveError(err instanceof ApiError ? err.message : "Couldn't save this — check your connection and try again.");
     } finally {
