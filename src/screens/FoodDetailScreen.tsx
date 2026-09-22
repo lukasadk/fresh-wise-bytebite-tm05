@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -36,6 +36,7 @@ const METHOD_STYLE: Record<StorageMethodKey, { Icon: IconComponent; color: strin
 
 export default function FoodDetailScreen({ navigation, route }: any) {
   const { item, loading, error } = usePantryItem(route?.params?.id);
+  const insets = useSafeAreaInsets();
   const justAdded = !!route?.params?.justAdded;
   const justEdited = !!route?.params?.justEdited;
   const [removing, setRemoving] = useState(false);
@@ -132,7 +133,10 @@ export default function FoodDetailScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.xl }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerRow}>
           <BackButton onPress={handleBack} />
           <Pressable

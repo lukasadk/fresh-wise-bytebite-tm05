@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import { Home, LayoutGrid, Zap, Sparkles, BarChart3 } from '../icons/NavIcons';
 
@@ -27,8 +28,17 @@ const LABELS: Record<string, string> = {
 // Custom tab bar so it visually matches the Figma "pill" nav exactly,
 // instead of relying on React Navigation's default tab bar styling.
 export default function BottomNav({ state, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  // Math.max, not the raw inset alone -- on a gesture-nav device insets.bottom
+  // can be small or 0, and the pill still wants its normal breathing room
+  // above the screen edge. On a device with on-screen Home/Back/Recents
+  // buttons (this bug's actual cause), insets.bottom is the real height of
+  // that bar, and the fixed spacing.md this used before had no way to know
+  // that -- it just sat underneath it, indistinguishable from being covered.
+  const bottomMargin = Math.max(insets.bottom, spacing.md);
+
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, { marginBottom: bottomMargin }]}>
       {state.routes.map((route, index) => {
         const isFocused = state.index === index;
         const Icon = ICONS[route.name] ?? Home;
@@ -59,7 +69,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.xxl,
     marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.xs,
   },

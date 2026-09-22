@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import { foodIconFor } from '../icons/FoodIcons';
 import { Minus, Plus, RefreshCw } from '../icons/NavIcons';
-import { usePantryItem } from '../data/pantryItems';
+import { usePantryItem, formatDisplayDate, getExpiryInfo } from '../data/pantryItems';
 import { recordOutcome } from '../api/freshwise';
 import { ApiError } from '../api/client';
 import { LoadingState, ErrorState } from '../components/ScreenState';
@@ -18,12 +18,15 @@ import { clampQuantity, formatAmount, formatWithUnit, parseQuantityDraft, stepFo
 // three controls for one number, with no clue how they related. The stepper IS
 // the custom input, so a pill that "activates" a control already on screen only
 // added confusion. Full and Half remain as what they always were: shortcuts
-// that set the amount.
+// that set the amount. Reconfirmed when the redesigned mockup briefly brought
+// a "Custom" pill back -- the decision still stands, on this screen and on
+// Mark Wasted's matching stepper.
 type QuickOption = 'full' | 'half' | 'other';
 
 
 export default function MarkConsumedScreen({ navigation, route }: any) {
   const { item, loading, error } = usePantryItem(route?.params?.id);
+  const insets = useSafeAreaInsets();
   const [consumedQty, setConsumedQty] = useState(0);
   // The typed draft is held separately from the number: mid-edit a field can be
   // "" or "1." , neither of which is a quantity, and forcing it through Number()
@@ -49,12 +52,14 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
   const remaining = Math.max(0, (item?.quantity ?? 0) - consumedQty);
   const isFullyConsumed = item ? consumedQty >= item.quantity : true;
 
+  // Always phrased as what's being removed, whether that's the whole item or
+  // part of it -- matches the redesigned mockup's wording exactly ("0.5
+  // carton will be removed from your pantry"), simpler than the old
+  // split framing (removed entirely vs. "X will remain").
   const inventoryNote = useMemo(() => {
     if (!item) return '';
-    return isFullyConsumed
-      ? `This will remove ${item.name} from your active pantry.`
-      : `${formatWithUnit(remaining, item.unit)} will remain in your active pantry.`;
-  }, [isFullyConsumed, item, remaining]);
+    return `${formatWithUnit(consumedQty, item.unit)} will be removed from your pantry.`;
+  }, [item, consumedQty]);
 
   // Item may still be null here (loading/error hasn't been checked yet -- that
   // happens further down, AFTER all hooks including the useMemo above, since
@@ -63,6 +68,8 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
   // Scaled to the item: 0.5 for a carton, 10 for a 100 g pack. A fixed step
   // would mean 200 taps to consume 100 g.
   const step = stepFor(item?.quantity ?? 0);
+
+  const expiry = item ? getExpiryInfo(item) : null;
 
   /** Accept what was typed, or fall back to the last good value.
    *
@@ -114,26 +121,41 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.xl }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerRow}>
           <BackButton onPress={() => navigation.goBack()} />
           <Text style={styles.title}>Mark as consumed</Text>
         </View>
+        <Text style={styles.headerSubtitle}>Update your pantry after enjoying this item.</Text>
 
-        <Text style={styles.question}>How much did you consume?</Text>
-
-        <View style={styles.card}>
-          <View style={styles.identityRow}>
-            <Icon size={56} />
-            <View style={styles.identityText}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.subtitle}>
-                {item.category} · {formatWithUnit(item.quantity, item.unit)} available
-              </Text>
+        <View style={styles.itemCard}>
+          <View style={styles.itemTopRow}>
+            <View style={styles.itemIdentity}>
+              <Icon size={40} />
+              <View>
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={styles.itemCategory}>{item.category}</Text>
+              </View>
+            </View>
+            <View style={styles.itemQtyBlock}>
+              <Text style={styles.itemQty}>{formatWithUnit(item.quantity, item.unit)}</Text>
+              <Text style={styles.itemQtyLabel}>available</Text>
             </View>
           </View>
+          <View style={styles.itemBottomRow}>
+            <Text style={styles.itemExpiryDate}>
+              Expiry date: {formatDisplayDate(item.expiryDate)}
+            </Text>
+            <Text style={styles.itemExpiryLabel}>{expiry?.detailDaysLeftLabel}</Text>
+          </View>
+        </View>
 
-          <Text style={styles.consumedLabel}>Consumed quantity</Text>
+        <View style={styles.card}>
+          <Text style={styles.question}>How much did you consume?</Text>
+          <Text style={styles.questionSubtitle}>Select a quantity or enter a custom amount.</Text>
 
           <View style={styles.stepperRow}>
             <Pressable
@@ -232,7 +254,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.xxl,
-    gap: spacing.xl,
+    gap: spacing.lg,
   },
   headerRow: {
     flexDirection: 'row',
@@ -245,40 +267,87 @@ const styles = StyleSheet.create({
     fontSize: 26,
     color: colors.textPrimary,
   },
-  question: {
-    fontFamily: fonts.bold,
-    fontSize: 17,
-    color: colors.textPrimary,
+  headerSubtitle: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.textSecondary,
     marginTop: -spacing.md,
   },
-  card: {
+  itemCard: {
     backgroundColor: colors.primaryTint,
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
     padding: spacing.lg,
-    gap: spacing.md,
+    gap: spacing.sm,
   },
-  identityRow: {
+  itemTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  itemIdentity: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  identityText: {
-    gap: 2,
+  itemName: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textPrimary,
   },
-  name: {
+  itemCategory: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  itemQtyBlock: {
+    alignItems: 'flex-end',
+  },
+  itemQty: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.textPrimary,
+  },
+  itemQtyLabel: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  itemBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.primaryPale,
+  },
+  itemExpiryDate: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  itemExpiryLabel: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  card: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  question: {
     fontFamily: fonts.bold,
     fontSize: 17,
     color: colors.textPrimary,
   },
-  subtitle: {
-    fontFamily: fonts.semibold,
+  questionSubtitle: {
+    fontFamily: fonts.regular,
     fontSize: 13,
-    color: colors.primary,
-  },
-  consumedLabel: {
-    fontFamily: fonts.bold,
-    fontSize: 13,
-    color: colors.primary,
+    color: colors.textSecondary,
+    marginTop: -spacing.sm,
   },
   stepperRow: {
     flexDirection: 'row',
