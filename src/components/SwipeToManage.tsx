@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { colors, fonts, radii } from '../theme/theme';
 import { ArrowRight } from '../icons/NavIcons';
@@ -13,6 +13,11 @@ type Props = {
   // than this item's own management screen (e.g. Pantry's rows now swipe to
   // Recipes, not Food Detail, so that one passes actionLabel="Recipe").
   actionLabel?: string;
+  // Passed straight to Swipeable's own container. Swipeable clips its content
+  // (overflow: 'hidden') by default, which cuts off anything drawn outside the
+  // card's edge -- e.g. UrgencyOutline's glow on Use First's hero card, which
+  // passes { overflow: 'visible' } here to let the glow show.
+  containerStyle?: StyleProp<ViewStyle>;
 };
 
 // Wraps any card/row with a left-swipe that reveals a small labelled panel
@@ -25,6 +30,7 @@ export default function SwipeToManage({
   actionColor = colors.slateTealDark,
   borderRadius = radii.lg,
   actionLabel = 'Manage',
+  containerStyle,
 }: Props) {
   const ref = useRef<Swipeable>(null);
 
@@ -49,6 +55,7 @@ export default function SwipeToManage({
       onSwipeableOpen={handleOpen}
       overshootRight={false}
       rightThreshold={56}
+      containerStyle={containerStyle}
     >
       {children}
     </Swipeable>

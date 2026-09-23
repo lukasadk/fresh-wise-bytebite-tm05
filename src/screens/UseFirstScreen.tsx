@@ -5,6 +5,7 @@ import { colors, fonts, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
 import FoodRow from '../components/FoodRow';
 import SwipeToManage from '../components/SwipeToManage';
+import UrgencyOutline, { urgencyPalette } from '../components/UrgencyOutline';
 import { foodIconFor } from '../icons/FoodIcons';
 import { usePantry, getExpiryInfo, formatDisplayDate, PantryItem } from '../data/pantryItems';
 
@@ -37,6 +38,8 @@ const SECTIONS = [
   },
 ] as const;
 
+const HERO_RADIUS = radii.xl + 2;
+
 export default function UseFirstScreen({ navigation }: any) {
   // Every item, not just the expiring ones -- the "Fresh" band needs the rest
   // of the pantry to have anything to show. The API returns them already
@@ -61,6 +64,7 @@ export default function UseFirstScreen({ navigation }: any) {
   }, [items]);
 
   const heroExpiry = priority ? getExpiryInfo(priority) : null;
+  const heroPalette = urgencyPalette(heroExpiry?.expiryLevel);
   const HeroIcon = priority ? foodIconFor(priority.name, priority.category) : null;
 
   const goToDetail = (id: string) => navigation.navigate('FoodDetail', { id });
@@ -86,27 +90,39 @@ export default function UseFirstScreen({ navigation }: any) {
             </Text>
           </View>
         ) : (
-          <SwipeToManage onManage={() => goToDetail(priority.id)} borderRadius={radii.xl + 2}>
-            <View style={styles.hero}>
-              <View style={styles.heroTopRow}>
-                <View style={styles.heroTextBlock}>
-                  <Text style={styles.heroEyebrow}>TODAY'S PRIORITY</Text>
-                  <Text style={styles.heroTitle}>{priority.name}</Text>
-                  <Text style={styles.heroSubtitle}>{heroExpiry?.detailExpiryTitle}</Text>
+          <SwipeToManage
+            onManage={() => goToDetail(priority.id)}
+            borderRadius={HERO_RADIUS}
+            // Lets UrgencyOutline's glow extend past the card edge instead of
+            // being clipped by Swipeable's default overflow: 'hidden'.
+            containerStyle={{ overflow: 'visible' }}
+          >
+            {/* Terracotta + pulsing coral outline when expired/today, ochre +
+                pulsing amber outline when 1-3 days, original green otherwise. */}
+            <UrgencyOutline level={heroExpiry?.expiryLevel} borderRadius={HERO_RADIUS}>
+              <View style={[styles.hero, { backgroundColor: heroPalette.background }]}>
+                <View style={styles.heroTopRow}>
+                  <View style={styles.heroTextBlock}>
+                    <Text style={[styles.heroEyebrow, { color: heroPalette.muted }]}>TODAY'S PRIORITY</Text>
+                    <Text style={[styles.heroTitle, { color: heroPalette.text }]}>{priority.name}</Text>
+                    <Text style={[styles.heroSubtitle, { color: heroPalette.text }]}>
+                      {heroExpiry?.detailExpiryTitle}
+                    </Text>
+                  </View>
+                  <View style={styles.heroIcon}>
+                    <HeroIcon size={104} />
+                  </View>
                 </View>
-                <View style={styles.heroIcon}>
-                  <HeroIcon size={104} />
+                <View style={styles.heroBottomRow}>
+                  <Button
+                    label="See recipe"
+                    variant={heroPalette.buttonVariant}
+                    onPress={() => navigation.navigate('Recipes')}
+                  />
+                  <Text style={[styles.swipeHint, { color: heroPalette.muted }]}>Swipe to manage →</Text>
                 </View>
               </View>
-              <View style={styles.heroBottomRow}>
-                <Button
-                  label="See recipe"
-                  variant="onDark"
-                  onPress={() => navigation.navigate('Recipes')}
-                />
-                <Text style={styles.swipeHint}>Swipe to manage →</Text>
-              </View>
-            </View>
+            </UrgencyOutline>
           </SwipeToManage>
         )}
 
@@ -175,7 +191,7 @@ const styles = StyleSheet.create({
   },
   hero: {
     backgroundColor: colors.primary,
-    borderRadius: radii.xl + 2,
+    borderRadius: HERO_RADIUS,
     padding: spacing.xl,
     gap: spacing.lg,
   },
