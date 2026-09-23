@@ -16,7 +16,8 @@ type Props = {
   source?: PantryItem['source']; // raw backend value ('manual' | 'barcode' | 'photo') -- see Epic 1 AC4
   selectMode?: boolean; // shows a checkbox instead of navigating on tap -- see PantryScreen's bulk actions
   selected?: boolean;
-  highlighted?: boolean; // brief flash after this item was just edited -- see PantryScreen
+  highlighted?: boolean; // brief flash after this item was just edited/added -- see PantryScreen
+  highlightLabel?: string; // tag text while highlighted -- defaults to "Updated"
   onPress?: () => void;
 };
 
@@ -38,6 +39,7 @@ export default function FoodRow({
   selectMode,
   selected,
   highlighted,
+  highlightLabel,
   onPress,
 }: Props) {
   const Icon = foodIconFor(name, category);
@@ -63,7 +65,7 @@ export default function FoodRow({
           <Text style={styles.name} numberOfLines={1}>{name}</Text>
           {highlighted ? (
             <View style={styles.updatedTag}>
-              <Text style={styles.updatedTagText}>Updated</Text>
+              <Text style={styles.updatedTagText}>{highlightLabel ?? 'Updated'}</Text>
             </View>
           ) : null}
           {source ? (

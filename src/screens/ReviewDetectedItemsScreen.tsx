@@ -8,6 +8,7 @@ import { addPantryItem, lookupStorage } from '../api/freshwise';
 import type { FoodItemStorage } from '../api/types';
 import type { EditableItem } from '../vlm/editableItem';
 import { findDuplicateProductIds } from '../vlm/editableItem';
+import { savePantryPhotoCrop } from '../vlm/pantryPhotos';
 
 function toIsoDate(date: Date): string {
   const year = date.getFullYear();
@@ -42,14 +43,14 @@ async function determineStorage(name: string): Promise<FoodItemStorage> {
 export default function ReviewDetectedItemsScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<EditableItem[]>(route?.params?.items ?? []);
+  // The scan photo, passed from DetectionComplete -- each item's bounding box is
+  // cropped out of it on save and stored on-device as that pantry item's photo.
+  const displayImageUri: string | undefined = route?.params?.displayImageUri;
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // EditDetectedItemScreen (not built yet) will navigate back here with
-  // { updatedItem, updatedIndex } once it exists -- this effect is already
-  // wired to receive that, so nothing here needs revisiting once that
-  // screen is added. AddMissingItemScreen will use the same { newItem }
-  // pattern below it.
+  // EditDetectedItemScreen pops back here with { updatedItem, updatedIndex }.
+  // AddMissingItemScreen will use the same { newItem } pattern below it.
   useEffect(() => {
     const updatedItem: EditableItem | undefined = route?.params?.updatedItem;
     const updatedIndex: number | undefined = route?.params?.updatedIndex;
@@ -112,9 +113,9 @@ export default function ReviewDetectedItemsScreen({ navigation, route }: any) {
     setSaveError(null);
     setSaving(true);
     try {
-      await Promise.all(items.map(async (item) => {
+      const createdIds = await Promise.all(items.map(async (item) => {
         const name = item.foodName.trim();
-        await addPantryItem({
+        const created = await addPantryItem({
           name,
           category: item.appCategory || 'Other',
           canonical_food_name: name.toLocaleLowerCase(),
@@ -125,16 +126,27 @@ export default function ReviewDetectedItemsScreen({ navigation, route }: any) {
           source: 'photo',
           storage: await determineStorage(name),
         });
+        // ASSUMPTION: FoodItem's ID field is `item_id`. If TypeScript errors
+        // here, use whichever field PantryItem.id is mapped from in
+        // data/pantryItems.ts.
+        const createdId = String(created.item_id);
+        // Best-effort: a failed crop must never block the pantry save itself.
+        if (displayImageUri && item.boundingBox) {
+          try {
+            await savePantryPhotoCrop(displayImageUri, item.boundingBox, createdId);
+          } catch {}
+        }
+        return createdId;
       }));
       navigation.navigate('Main', {
         screen: 'Pantry',
         params: {
           photoAddedCount: items.length,
           // For the upcoming Pantry confirmation banner ("Eggs, Milk and
-          // Apples are now saved") -- not consumed by PantryScreen yet,
-          // but included now so this screen doesn't need touching again
-          // once that banner is built.
+          // Apples are now saved") -- not consumed by PantryScreen yet.
           photoAddedNames: items.map((item) => item.foodName.trim()),
+          // Pins these rows to the top of Pantry for a few seconds.
+          newIds: createdIds,
         },
       });
     } catch (error) {

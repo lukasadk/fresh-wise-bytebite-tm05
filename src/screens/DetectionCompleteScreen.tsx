@@ -108,7 +108,8 @@ export default function DetectionCompleteScreen({ navigation, route }: any) {
 
         <Pressable
           style={({ pressed }) => [styles.reviewButton, pressed && { opacity: 0.9 }]}
-          onPress={() => navigation.navigate('ReviewDetectedItems', { items })}
+          // displayImageUri is passed on so Review can crop each item's photo on save.
+          onPress={() => navigation.navigate('ReviewDetectedItems', { items, displayImageUri })}
         >
           <Text style={styles.reviewButtonText}>Review {items.length} item{items.length === 1 ? '' : 's'}</Text>
         </Pressable>

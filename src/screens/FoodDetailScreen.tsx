@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Image } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
@@ -13,6 +13,7 @@ import { buildGuidance } from '../data/storageGuidance';
 import type { Guidance, StorageMethodKey } from '../data/storageGuidance';
 import { LoadingState, ErrorState } from '../components/ScreenState';
 import FoodMatchPicker from '../components/FoodMatchPicker';
+import { usePantryPhoto, deletePantryPhoto } from '../vlm/pantryPhotos';
 
 type IconComponent = typeof Refrigerator;
 
@@ -54,6 +55,11 @@ export default function FoodDetailScreen({ navigation, route }: any) {
   const [pickError, setPickError] = useState<string | null>(null);
 
   const lookupKey = chosenKey ?? item?.canonicalFoodName ?? null;
+  // Cropped scan photo saved on-device (Scan Groceries flow). The cartoon icon
+  // always stays as the item's identity; the real photo is opt-in behind a
+  // button, and the button only exists when a photo was actually saved.
+  const photoUri = usePantryPhoto(item?.id);
+  const [showPhoto, setShowPhoto] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -92,14 +98,18 @@ export default function FoodDetailScreen({ navigation, route }: any) {
   const handleBack = () => {
     // Landed here straight from Add Food, or straight back from editing -- either
     // way "back" means My Pantry, and it should signal the row change (an "Added"
-    // toast, or a brief highlight on the edited row) now that the change is real.
+    // toast + pinned "New" row, or a brief highlight on the edited row) now that
+    // the change is real.
     // Pantry lives inside the nested "Main" tab navigator, not on this screen's
     // own root stack, so it has to be targeted via { screen, params } rather than
     // navigation.navigate('Pantry', ...) directly (that only works for screens on
     // the SAME navigator, or going "up" to a parent -- not back "down" into a
     // different nested one).
     if (justAdded) {
-      navigation.popTo('Main', { screen: 'Pantry', params: { added: item?.name } });
+      navigation.popTo('Main', {
+        screen: 'Pantry',
+        params: { added: item?.name, newIds: item ? [item.id] : undefined },
+      });
     } else if (justEdited) {
       navigation.popTo('Main', { screen: 'Pantry', params: { highlightId: item?.id } });
     } else {
@@ -117,6 +127,8 @@ export default function FoodDetailScreen({ navigation, route }: any) {
       // safe to use even though the item is about to stop existing server-side.
       const removedName = item.name;
       await deletePantryItem(item.id);
+      // Clean up the on-device scan photo too; best-effort.
+      deletePantryPhoto(item.id).catch(() => {});
       navigation.popTo('Main', { screen: 'Pantry', params: { removed: removedName } });
     } catch (err) {
       setRemoveError(err instanceof ApiError ? err.message : "Couldn't remove this item — try again.");
@@ -166,6 +178,22 @@ export default function FoodDetailScreen({ navigation, route }: any) {
         >
           <Text style={styles.findRecipesLinkText}>Find recipes with this item →</Text>
         </Pressable>
+
+        {photoUri ? (
+          <View style={styles.photoSection}>
+            <Pressable
+              style={({ pressed }) => [styles.photoButton, pressed && { opacity: 0.85 }]}
+              onPress={() => setShowPhoto((v) => !v)}
+            >
+              <Text style={styles.photoButtonText}>
+                {showPhoto ? 'Hide scanned photo' : 'View scanned photo'}
+              </Text>
+            </Pressable>
+            {showPhoto ? (
+              <Image source={{ uri: photoUri }} style={styles.photoLarge} resizeMode="cover" />
+            ) : null}
+          </View>
+        ) : null}
 
         <View style={styles.useFirstBanner}>
           <Text style={styles.bannerEyebrow}>USE FIRST</Text>
@@ -363,6 +391,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+  },
+  photoSection: {
+    gap: spacing.md,
+  },
+  photoButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primaryTint,
+    borderWidth: 1,
+    borderColor: colors.primaryPale,
+  },
+  photoButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.primary,
+  },
+  photoLarge: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: radii.lg,
+    backgroundColor: colors.primaryTint,
   },
   identityText: {
     gap: 2,
