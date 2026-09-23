@@ -21,17 +21,9 @@
  *     row (categoryIconFor() in icons/FoodIcons.tsx), NO rolled-up "Other"
  *     row -- WastePatternsOut.top_waste_categories is already exactly 5.
  *   - Reasons: numbered 1-5 by count (RankBadge), plus a single unnumbered
- *     "Other" row sourced directly from other_reason_count. This is
- *     deliberately NOT client-side "top 5 + other" bucketing -- that
- *     approach used to produce two separate rows both labelled "Other"
- *     whenever the waste_reason enum's own 'other' value ranked in the top
- *     5 by itself AND there was unrelated overflow to roll up. The backend
- *     now keeps "a real reason nobody picked much" and "the user picked
- *     Other" permanently separate, so the frontend just renders both lists
- *     as-is with no merging logic at all.
+ *     "Other" row sourced directly from other_reason_count.
  *   - "Key insight" card: tappable as a whole (chevron, no separate
- *     button), icon looked up by the specific item NAME via foodIconFor()
- *     (not just its category -- "Milk" gets the milk bottle specifically).
+ *     button), icon looked up by the specific item NAME via foodIconFor().
  *     Opens a live FoodKeeper-backed storage-alternatives view on tap (see
  *     useAlternatives() below).
  * Trends is also LIVE: it reads the same GET /v1/dashboard/weekly-waste as
@@ -41,33 +33,33 @@
  * dashed goal line and "On track"/"Above target" message are computed as the
  * period's own running average, not a hardcoded number.
  *
+ * FIGMA vs DATA (deliberate deviations from the 24–27 mockups):
+ *   - Mockups show kg everywhere. Units are free text per item, so a kg total
+ *     would be fabricated -- this screen shows RECORD COUNTS ("3 items").
+ *   - Mockups show a fixed "Goal 1.4 kg". No goal exists in the backend, so
+ *     the goal line is the period's own average.
+ *   - Category rows keep their category icons (Feature 99 redesign), which
+ *     the mockup omits.
+ *
  * NOTE: There was previously a fourth "Report" tab (GET
- * /v1/dashboard/monthly-report) with month-over-month comparisons and a
- * ‹/› month navigator. It's been removed for now — the endpoint's code
- * never made it past a local, unpushed branch, so it was never actually
- * live on any deployed backend. Re-adding it means recreating: the
- * monthly_report()/_month_summary() endpoint and MonthlyReportMonth/
- * MonthlyReportOut schemas in the backend, getMonthlyReport() in
- * api/freshwise.ts, MonthlyReportOut in api/types.ts, and the ReportData/
- * ReportState/useReport()/MonthNavigator/ReportHeadline/ReportTotalsCard/
- * ReportSectionTitle/KeyFindingsCard/ShareReportButton pieces here — check
- * git log for "monthly-report" on this branch's history for the last working
- * version before reintroducing it.
+ * /v1/dashboard/monthly-report). It's been removed for now — the endpoint's
+ * code never made it past a local, unpushed branch. Check git log for
+ * "monthly-report" before reintroducing it.
  *
  * NOTE: The donut chart (Overview) is drawn with plain View components, not
  * react-native-svg, so it keeps working in Expo Go without a native rebuild.
- * The Trends line chart below it DOES use react-native-svg (already a
- * dependency) since a polyline is impractical to fake with Views.
+ * The Trends line chart DOES use react-native-svg (already a dependency).
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import Svg, { Line, Polyline, Circle, Text as SvgText } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { Leaf, Lightbulb } from 'lucide-react-native';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
-import { ChevronRight } from '../icons/NavIcons';
+import { ChevronRight, Refrigerator, Snowflake, Sun } from '../icons/NavIcons';
 import { getDashboardSummary, getWeeklyWaste, getWastePatterns, getAlternativesFromFoodkeeper } from '../api/freshwise';
 import type { FoodkeeperAlternative } from '../api/freshwise';
 import { ApiError } from '../api/client';
@@ -115,25 +107,17 @@ type CategoryWeightDatum = {
 
 type WasteInsight = {
   /** Raw item name (e.g. "Milk"), used both for the icon lookup and for
-   *  passing to getAlternativesFromFoodkeeper() -- kept as its own field
-   *  rather than parsed back out of `title`, which used to break for any
-   *  item name that itself contained the words " is ". */
+   *  passing to getAlternativesFromFoodkeeper(). */
   itemName: string;
   title: string;
   body: string;
-  /** The canonical_food_name of the most-wasted item, passed to
-   *  getAlternativesFromFoodkeeper() when the card is tapped. Null when the
-   *  backend's most_wasted_item doesn't carry one (shouldn't happen but
-   *  guards against a schema change). */
+  /** canonical_food_name of the most-wasted item, for the alternatives lookup. */
   canonicalFoodName: string | null;
 };
 
 type PatternsData = {
   categories: CategoryWeightDatum[];
-  /** Top 5 REAL reasons by count -- never includes the waste_reason enum's
-   *  own "other" value, which is reported separately via otherReasonCount
-   *  instead (see WasteInsight above for why merging risks a duplicate
-   *  "Other" row). */
+  /** Top 5 REAL reasons by count -- never includes the enum's own "other". */
   reasons: FrequencyDatum[];
   otherReasonCount: number;
   insight: WasteInsight | null;
@@ -141,15 +125,10 @@ type PatternsData = {
 
 // -- Alternatives view (reached from the Patterns waste-insight CTA) -------
 
-// AlternativeOption is now FoodkeeperAlternative from freshwise.ts —
-// the same type is re-exported here as a local alias so component props
-// stay readable without importing from two places.
 type AlternativeOption = FoodkeeperAlternative;
 
 type AlternativesData = {
-  /** Display name of the most-wasted item (e.g. "Milk"), used in the heading. */
   itemName: string;
-  /** canonical_food_name, passed to getAlternativesFromFoodkeeper(). */
   canonicalFoodName: string;
   insightBody: string;
   options: AlternativeOption[];
@@ -161,16 +140,14 @@ type TrendsPeriod = 'Weekly' | 'Monthly';
 
 type TrendsSeries = {
   points: number[];       // wasted-item records per period, oldest → newest
-  /** "YYYY-MM-DD" per point, same length as points — weekly rows use the
-   *  ISO week's Monday, monthly rows are padded to the 1st of the month.
-   *  Used by TrendChart to render X-axis date labels. */
+  /** "YYYY-MM-DD" per point, same length as points. */
   periodKeys: string[];
   goalValue: number;
   latestValue: number;
   deltaPct: number | null; // negative = improved (less wasted)
   rangeLabel: string;      // e.g. "Last 8 weeks"
   streakTitle: string;     // e.g. "On track"
-  streakNote: string;      // e.g. "Waste has stayed below your goal for 3 periods."
+  streakNote: string;
 };
 
 type TrendsData = Record<TrendsPeriod, TrendsSeries>;
@@ -195,14 +172,37 @@ function fmtPct(rate: number): string {
 }
 
 // ---------------------------------------------------------------------------
+// Shared leaf badge (mockup: leaf in a soft green circle)
+// ---------------------------------------------------------------------------
+
+function LeafBadge({
+  size = 40,
+  iconColor = colors.primary,
+  background = colors.primaryTint,
+}: {
+  size?: number;
+  iconColor?: string;
+  background?: string;
+}) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: background,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Leaf size={size * 0.5} color={iconColor} strokeWidth={2} />
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Donut chart — pure View, no SVG, works in Expo Go
 // ---------------------------------------------------------------------------
-//
-// Technique: a square View with borderRadius = size/2 (making a circle),
-// clipped with overflow:hidden. Inside, we place the green arc using a
-// rotated half-disk (two Views), then overlay the coral wasted arc on the
-// right side proportionally. The centre is covered by a white circle to
-// create the donut hole, with percentage text overlaid absolutely.
 
 function DonutChart({
   utilisation,
@@ -214,16 +214,7 @@ function DonutChart({
   thickness?: number;
 }) {
   const holeSize = size - thickness * 2;
-  // Degrees of the utilised arc (0–360)
   const utilisedDeg = utilisation * 360;
-  // We draw the green arc as a rotated half-disk pair:
-  // - If utilised <= 0.5: one green half visible, rotated
-  // - If utilised >  0.5: full green circle + correction for the waste side
-  //
-  // Simple two-half approach:
-  //   Left half  = green if utilised > 0.5, otherwise transparent
-  //   Right half = always green, rotated by utilisedDeg from the top
-
   const rightRotation = utilisedDeg - 90; // starts at 12 o'clock
   const showFullLeftHalf = utilisation > 0.5;
 
@@ -250,7 +241,6 @@ function DonutChart({
           position: 'absolute',
         }}
       >
-        {/* Right green half-disk, rotated to cover utilisedDeg */}
         <View
           style={{
             position: 'absolute',
@@ -277,7 +267,6 @@ function DonutChart({
           />
         </View>
 
-        {/* Left green half-disk — only shown when utilised > 50% */}
         {showFullLeftHalf && (
           <View
             style={{
@@ -291,7 +280,7 @@ function DonutChart({
         )}
       </View>
 
-      {/* Donut hole — white circle covers the centre */}
+      {/* Donut hole */}
       <View
         style={{
           position: 'absolute',
@@ -358,14 +347,15 @@ function TabBar({
 }
 
 const tabStyles = StyleSheet.create({
+  // Mockup: three equal-width pills spanning the full row.
   row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   pill: {
-    paddingVertical: spacing.sm - 1,
-    paddingHorizontal: spacing.md + 2,
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
     borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.border,
@@ -412,11 +402,7 @@ function ThisWeekCard({ summary }: { summary: WeekSummary }) {
           <Text
             style={[
               heroStyles.delta,
-              {
-                color: isImproving
-                  ? colors.statusFresh
-                  : colors.statusToday,
-              },
+              { color: isImproving ? colors.statusFresh : colors.statusToday },
             ]}
           >
             {isImproving ? '↓' : '↑'} {deltaAbs}%{' '}
@@ -425,7 +411,7 @@ function ThisWeekCard({ summary }: { summary: WeekSummary }) {
         )}
       </View>
       <View style={heroStyles.right}>
-        <DonutChart utilisation={summary.utilisation_rate} size={88} thickness={10} />
+        <DonutChart utilisation={summary.utilisation_rate} size={96} thickness={11} />
       </View>
     </View>
   );
@@ -434,7 +420,7 @@ function ThisWeekCard({ summary }: { summary: WeekSummary }) {
 const heroStyles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
-    borderRadius: radii.lg,
+    borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
@@ -453,9 +439,10 @@ const heroStyles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textSecondary,
   },
+  // Mockup: large serif coral headline ("1.8 kg wasted").
   wastedValue: {
-    fontFamily: fonts.bold,
-    fontSize: 22,
+    fontFamily: fonts.serif,
+    fontSize: 26,
     color: colors.statusToday,
     marginTop: spacing.xs,
   },
@@ -488,12 +475,7 @@ function StatPills({ summary }: { summary: WeekSummary }) {
     <View style={pillStyles.row}>
       {pills.map((p) => (
         <View key={p.label} style={pillStyles.pill}>
-          <Text
-            style={[
-              pillStyles.value,
-              p.valueColor ? { color: p.valueColor } : null,
-            ]}
-          >
+          <Text style={[pillStyles.value, p.valueColor ? { color: p.valueColor } : null]}>
             {p.value}
           </Text>
           <Text style={pillStyles.label}>{p.label}</Text>
@@ -505,6 +487,7 @@ function StatPills({ summary }: { summary: WeekSummary }) {
 
 const pillStyles = StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.sm },
+  // Mockup: left-aligned value + label in each stat box.
   pill: {
     flex: 1,
     backgroundColor: colors.card,
@@ -512,7 +495,7 @@ const pillStyles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.lg,
     paddingVertical: spacing.md,
-    alignItems: 'center',
+    paddingHorizontal: spacing.md,
     gap: 2,
   },
   value: {
@@ -524,16 +507,11 @@ const pillStyles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: fontSize.xs,
     color: colors.textSecondary,
-    textAlign: 'center',
   },
 });
 
 function Dot({ color: c }: { color: string }) {
-  return (
-    <View
-      style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: c }}
-    />
-  );
+  return <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: c }} />;
 }
 
 function UtilisationSplit({ summary }: { summary: WeekSummary }) {
@@ -544,16 +522,14 @@ function UtilisationSplit({ summary }: { summary: WeekSummary }) {
         <View style={splitStyles.row}>
           <Dot color={colors.primary} />
           <Text style={splitStyles.rowLabel}>Consumed</Text>
-          <Text style={splitStyles.rowValue}>
+          <Text style={[splitStyles.rowValue, { color: colors.primary }]}>
             {fmtItems(summary.consumed_count)}
           </Text>
         </View>
         <View style={[splitStyles.row, splitStyles.rowBorder]}>
           <Dot color={colors.statusToday} />
           <Text style={splitStyles.rowLabel}>Wasted</Text>
-          <Text
-            style={[splitStyles.rowValue, { color: colors.statusToday }]}
-          >
+          <Text style={[splitStyles.rowValue, { color: colors.statusToday }]}>
             {fmtItems(summary.wasted_count)}
           </Text>
         </View>
@@ -565,8 +541,8 @@ function UtilisationSplit({ summary }: { summary: WeekSummary }) {
 const splitStyles = StyleSheet.create({
   wrap: { gap: spacing.md },
   heading: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.heading,
+    fontFamily: fonts.serif,
+    fontSize: 20,
     color: colors.textPrimary,
   },
   card: {
@@ -588,7 +564,7 @@ const splitStyles = StyleSheet.create({
   },
   rowLabel: {
     flex: 1,
-    fontFamily: fonts.regular,
+    fontFamily: fonts.semibold,
     fontSize: fontSize.md,
     color: colors.textPrimary,
   },
@@ -599,14 +575,31 @@ const splitStyles = StyleSheet.create({
   },
 });
 
-function QuickInsightCard({ title, body }: { title: string; body: string }) {
+/** Mockup: green card with a leaf badge, serif title, chevron. Tapping it
+ *  opens the Patterns tab, where the detail behind the insight lives. */
+function QuickInsightCard({
+  title,
+  body,
+  onPress,
+}: {
+  title: string;
+  body: string;
+  onPress?: () => void;
+}) {
   return (
     <View style={insightStyles.wrap}>
       <Text style={insightStyles.heading}>Quick insight</Text>
-      <View style={insightStyles.card}>
-        <Text style={insightStyles.title}>{title}</Text>
-        <Text style={insightStyles.body}>{body}</Text>
-      </View>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [insightStyles.card, pressed && { opacity: 0.85 }]}
+      >
+        <LeafBadge size={40} background={colors.card} />
+        <View style={insightStyles.body}>
+          <Text style={insightStyles.title}>{title}</Text>
+          <Text style={insightStyles.text}>{body}</Text>
+        </View>
+        {onPress ? <ChevronRight size={20} color={colors.primary} /> : null}
+      </Pressable>
     </View>
   );
 }
@@ -614,26 +607,29 @@ function QuickInsightCard({ title, body }: { title: string; body: string }) {
 const insightStyles = StyleSheet.create({
   wrap: { gap: spacing.md },
   heading: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.heading,
+    fontFamily: fonts.serif,
+    fontSize: 20,
     color: colors.textPrimary,
   },
   card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     backgroundColor: colors.primaryTint,
     borderRadius: radii.lg,
     padding: spacing.lg,
-    gap: spacing.sm,
   },
+  body: { flex: 1, gap: 4 },
   title: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.title,
+    fontFamily: fonts.serif,
+    fontSize: 18,
     color: colors.primary,
   },
-  body: {
+  text: {
     fontFamily: fonts.regular,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.textPrimary,
-    lineHeight: 21,
+    lineHeight: 19,
   },
 });
 
@@ -645,8 +641,8 @@ const sectionStyles = StyleSheet.create({
   wrap: { gap: spacing.md },
   headingBlock: { gap: 2 },
   heading: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.heading,
+    fontFamily: fonts.serif,
+    fontSize: 20,
     color: colors.textPrimary,
   },
   subheading: {
@@ -664,10 +660,6 @@ const sectionStyles = StyleSheet.create({
   },
 });
 
-// "Most wasted categories" -- literal top 5 by times wasted, no "Other" row (see
-// WastePatternsOut.top_waste_categories: the backend never rolls category
-// overflow into a synthetic bucket the way the OLD reasons logic used to).
-
 function CategoryWeightRow({
   label,
   count,
@@ -678,20 +670,14 @@ function CategoryWeightRow({
   maxCount: number;
 }) {
   const Icon = categoryIconFor(label);
-  // Keep a small minimum width so low weights still render a visible sliver.
   const pct = maxCount > 0 ? Math.max(6, (count / maxCount) * 100) : 6;
   return (
     <View style={weightRowStyles.row}>
       <Icon size={28} />
-      <Text style={weightRowStyles.label}>
-        {label}
-      </Text>
+      <Text style={weightRowStyles.label}>{label}</Text>
       <View style={weightRowStyles.track}>
         <View
-          style={[
-            weightRowStyles.fill,
-            { width: `${pct}%`, backgroundColor: colors.statusToday },
-          ]}
+          style={[weightRowStyles.fill, { width: `${pct}%`, backgroundColor: colors.statusToday }]}
         />
       </View>
       <Text style={weightRowStyles.value}>{fmtNum(count)}×</Text>
@@ -707,9 +693,6 @@ const weightRowStyles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
   },
   label: {
-    // flex:1 lets the label take up leftover space and wrap naturally.
-    // No numberOfLines cap — a category name like "Condiments & Sauces"
-    // wraps to two lines on a narrow screen instead of truncating.
     flex: 1,
     fontFamily: fonts.semibold,
     fontSize: fontSize.md,
@@ -752,14 +735,6 @@ function CategoryWeightCard({ categories }: { categories: CategoryWeightDatum[] 
   );
 }
 
-// "Why food gets wasted" -- top 5 REAL reasons, numbered 1-5, plus a single
-// unnumbered "Other" row sourced directly from WastePatternsOut.other_reason_count.
-// Deliberately NOT merged/bucketed client-side: that's what used to produce two
-// separate rows both labelled "Other" whenever the enum's own 'other' reason
-// ranked in the top 5 *and* there was unrelated overflow to roll up. The
-// backend now keeps these two concepts permanently separate, so the frontend
-// just renders each list as-is.
-
 function RankBadge({ rank }: { rank: number }) {
   return (
     <View style={rankBadgeStyles.circle}>
@@ -790,7 +765,6 @@ function ReasonRow({
   count,
   maxCount,
 }: {
-  /** 1-5 for a real reason, null for the unranked "Other" row. */
   rank: number | null;
   label: string;
   count: number;
@@ -799,12 +773,8 @@ function ReasonRow({
   const pct = maxCount > 0 ? Math.max(6, (count / maxCount) * 100) : 6;
   return (
     <View style={reasonRowStyles.row}>
-      <View style={reasonRowStyles.badgeSlot}>
-        {rank !== null && <RankBadge rank={rank} />}
-      </View>
-      <Text style={reasonRowStyles.label}>
-        {label}
-      </Text>
+      <View style={reasonRowStyles.badgeSlot}>{rank !== null && <RankBadge rank={rank} />}</View>
+      <Text style={[reasonRowStyles.label, rank === null && reasonRowStyles.labelOther]}>{label}</Text>
       <View style={reasonRowStyles.track}>
         <View
           style={[
@@ -833,14 +803,14 @@ const reasonRowStyles = StyleSheet.create({
     alignItems: 'center',
   },
   label: {
-    // Was: width: 92 — a hardcoded pixel width that truncated on screens
-    // narrower than ~360dp (common on budget Android phones). flex:1 lets
-    // the label claim whatever space is left after the badge and count
-    // columns, and wraps rather than clips on narrow devices.
     flex: 1,
     fontFamily: fonts.semibold,
     fontSize: fontSize.md,
     color: colors.textPrimary,
+  },
+  labelOther: {
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
   },
   track: {
     flex: 1,
@@ -862,13 +832,7 @@ const reasonRowStyles = StyleSheet.create({
   },
 });
 
-function ReasonsCard({
-  reasons,
-  otherCount,
-}: {
-  reasons: FrequencyDatum[];
-  otherCount: number;
-}) {
+function ReasonsCard({ reasons, otherCount }: { reasons: FrequencyDatum[]; otherCount: number }) {
   const maxCount = Math.max(reasons[0]?.count ?? 0, otherCount);
   return (
     <View style={sectionStyles.wrap}>
@@ -880,32 +844,16 @@ function ReasonsCard({
         {reasons.map((r, i) => (
           <ReasonRow key={r.label} rank={i + 1} label={r.label} count={r.count} maxCount={maxCount} />
         ))}
-        {otherCount > 0 && (
-          <ReasonRow rank={null} label="Other" count={otherCount} maxCount={maxCount} />
-        )}
+        {otherCount > 0 && <ReasonRow rank={null} label="Other" count={otherCount} maxCount={maxCount} />}
       </View>
     </View>
   );
 }
 
-// "Key insight" card -- tappable as a whole (chevron affordance, no separate
-// button), icon looked up by the specific item NAME (foodIconFor), not just
-// its category, since it's a single repeatedly-wasted item, not a category
-// aggregate -- "Milk" gets the milk bottle, not a generic dairy icon.
-
-function KeyInsightCard({
-  insight,
-  onPress,
-}: {
-  insight: WasteInsight;
-  onPress?: () => void;
-}) {
+function KeyInsightCard({ insight, onPress }: { insight: WasteInsight; onPress?: () => void }) {
   const Icon = foodIconFor(insight.itemName);
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [keyInsightStyles.card, pressed && { opacity: 0.85 }]}
-    >
+    <Pressable onPress={onPress} style={({ pressed }) => [keyInsightStyles.card, pressed && { opacity: 0.85 }]}>
       <Icon size={40} />
       <View style={keyInsightStyles.body}>
         <Text style={keyInsightStyles.eyebrow}>Key insight</Text>
@@ -950,58 +898,45 @@ const keyInsightStyles = StyleSheet.create({
 // ALTERNATIVES VIEW components (Patterns → "View better alternatives")
 // ---------------------------------------------------------------------------
 
-function InsightSummaryCard({
-  title,
-  body,
-  attribution,
-}: {
-  title: string;
-  body: string;
-  attribution: string;
-}) {
+/** Mockup 29: pale yellow card, lightbulb icon on the left, bold title + body. */
+function InsightSummaryCard({ title, body }: { title: string; body: string }) {
   return (
     <View style={insightSummaryStyles.card}>
-      <Text style={insightSummaryStyles.title}>{title}</Text>
-      <Text style={insightSummaryStyles.body}>{body}</Text>
-      <Text style={insightSummaryStyles.attribution}>{attribution}</Text>
+      <Lightbulb size={26} color={colors.statusSoon} strokeWidth={2} />
+      <View style={insightSummaryStyles.textCol}>
+        <Text style={insightSummaryStyles.title}>{title}</Text>
+        <Text style={insightSummaryStyles.body}>{body}</Text>
+      </View>
     </View>
   );
 }
 
 const insightSummaryStyles = StyleSheet.create({
   card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     backgroundColor: colors.expiryWarnBg,
     borderRadius: radii.lg,
     padding: spacing.lg,
-    gap: spacing.xs,
   },
+  textCol: { flex: 1, gap: 4 },
   title: {
     fontFamily: fonts.bold,
-    fontSize: fontSize.heading,
+    fontSize: fontSize.title,
     color: colors.textPrimary,
   },
   body: {
     fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  attribution: {
-    fontFamily: fonts.semibold,
     fontSize: fontSize.sm,
-    color: colors.statusSoon,
-    marginTop: 2,
+    color: colors.textPrimary,
+    lineHeight: 19,
   },
 });
 
 function RadioDot({ selected }: { selected: boolean }) {
   return (
-    <View
-      style={[
-        radioStyles.outer,
-        { borderColor: selected ? colors.primary : colors.border },
-      ]}
-    >
+    <View style={[radioStyles.outer, { borderColor: selected ? colors.primary : colors.border }]}>
       {selected && <View style={radioStyles.inner} />}
     </View>
   );
@@ -1036,16 +971,11 @@ function AlternativeCard({
   return (
     <Pressable
       onPress={onPress}
-      style={[
-        alternativeStyles.card,
-        selected ? alternativeStyles.cardSelected : alternativeStyles.cardUnselected,
-      ]}
+      style={[alternativeStyles.card, selected ? alternativeStyles.cardSelected : alternativeStyles.cardUnselected]}
     >
       <RadioDot selected={selected} />
       <View style={alternativeStyles.body}>
-        {option.bestMatch && (
-          <Text style={alternativeStyles.bestMatch}>Best match</Text>
-        )}
+        {option.bestMatch && <Text style={alternativeStyles.bestMatch}>Best match</Text>}
         <Text style={alternativeStyles.title}>{option.title}</Text>
         <Text style={alternativeStyles.meta}>{option.meta}</Text>
         <Text style={alternativeStyles.why}>Why: {option.why}</Text>
@@ -1072,8 +1002,6 @@ const alternativeStyles = StyleSheet.create({
   },
   body: { flex: 1, gap: 4 },
   bestMatch: {
-    // Sits above the title as a small label badge so the title
-    // always gets its full flex:1 width and never truncates.
     alignSelf: 'flex-start',
     fontFamily: fonts.semibold,
     fontSize: fontSize.xs,
@@ -1161,16 +1089,11 @@ function AlternativesFooter({
             pressed && !disabled && { opacity: 0.85 },
           ]}
         >
-          <Text style={alternativesFooterStyles.useButtonLabel}>
-            Use selected alternative
-          </Text>
+          <Text style={alternativesFooterStyles.useButtonLabel}>Use selected alternative</Text>
         </Pressable>
         <Pressable
           onPress={onNotNow}
-          style={({ pressed }) => [
-            alternativesFooterStyles.notNowButton,
-            pressed && { opacity: 0.85 },
-          ]}
+          style={({ pressed }) => [alternativesFooterStyles.notNowButton, pressed && { opacity: 0.85 }]}
         >
           <Text style={alternativesFooterStyles.notNowLabel}>Not now</Text>
         </Pressable>
@@ -1248,19 +1171,9 @@ function PeriodToggle({
           <Pressable
             key={p}
             onPress={() => onChange(p)}
-            style={[
-              periodToggleStyles.segment,
-              isActive && periodToggleStyles.segmentActive,
-            ]}
+            style={[periodToggleStyles.segment, isActive && periodToggleStyles.segmentActive]}
           >
-            <Text
-              style={[
-                periodToggleStyles.label,
-                isActive && periodToggleStyles.labelActive,
-              ]}
-            >
-              {p}
-            </Text>
+            <Text style={[periodToggleStyles.label, isActive && periodToggleStyles.labelActive]}>{p}</Text>
           </Pressable>
         );
       })}
@@ -1297,62 +1210,35 @@ const periodToggleStyles = StyleSheet.create({
   },
 });
 
-// ---------------------------------------------------------------------------
-// Trend chart label helpers
-// ---------------------------------------------------------------------------
-
-/** Format a "YYYY-MM-DD" (or full ISO datetime) period key into a
- *  human-readable label.
- *  Weekly  -> "8 Sep"  (day + abbreviated month)
- *  Monthly -> "Sep 26" (abbreviated month + short year) */
+/** "YYYY-MM-DD" (or full ISO datetime) → "8 Sep" (weekly) / "Sep 26" (monthly). */
 function formatPeriodKey(key: string, period: TrendsPeriod): string {
-  // The backend serialises week_start as a full datetime ("2026-09-08T00:00:00+00:00"),
-  // not a plain date -- naively splitting the whole string on '-' corrupts
-  // the day (and can even eat into a '-' timezone offset). Strip everything
-  // from 'T' onward first, so only the "YYYY-MM-DD" date part gets split.
+  // week_start arrives as a full datetime -- strip from 'T' onward first.
   const datePart = key.split('T')[0];
   const [year, month, day] = datePart.split('-').map(Number);
-  // Protect against a malformed key arriving from the API.
   if (!year || !month || !day) return key;
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const mon = MONTHS[(month - 1) % 12];
-  if (period === 'Monthly') {
-    // "Sep 26" — abbreviated month + two-digit year.
-    return `${mon} ${String(year).slice(2)}`;
-  }
-  // Weekly: "8 Sep" — day is the Monday that starts the ISO week.
+  if (period === 'Monthly') return `${mon} ${String(year).slice(2)}`;
   return `${day} ${mon}`;
 }
 
-/** Pick which point indices should get an X-axis label.
- *  Rules:
- *   - Always label index 0 (oldest) and index n-1 (newest / "this period").
- *   - Add up to two evenly-spaced interior indices when n > 4.
- *   - Never select an index within 1 of an already-selected one to prevent
- *     adjacent labels colliding on small screens. */
+/** Which point indices get an X-axis label -- first, last, and up to two
+ *  interior ones, never adjacent (prevents collisions on small screens). */
 function pickLabelIndices(n: number): number[] {
   if (n <= 1) return [0];
   if (n <= 4) return Array.from({ length: n }, (_, i) => i);
-  // Two interior candidates, evenly spaced.
   const c1 = Math.round(n / 3);
   const c2 = Math.round((2 * n) / 3);
-  // Deduplicate and sort, then drop any that are too close to an edge.
   const raw = [...new Set([0, c1, c2, n - 1])].sort((a, b) => a - b);
   const kept: number[] = [];
   for (const idx of raw) {
-    if (kept.length === 0 || idx - kept[kept.length - 1] >= 2) {
-      kept.push(idx);
-    }
+    if (kept.length === 0 || idx - kept[kept.length - 1] >= 2) kept.push(idx);
   }
   return kept;
 }
 
-// SVG line chart — react-native-svg (already a dependency).
-// ALL text (x-axis dates, y-axis kg, goal label) lives inside the SVG
-// viewBox so it scales correctly and can never be clipped by the card's
-// overflow:hidden. React Native <Text> positioned absolutely outside the
-// SVG is unreliable because it doesn't know the card's rendered width;
-// SVG <Text> anchors to the same coordinate space as the data points.
+// SVG line chart. ALL text lives inside the SVG viewBox so it scales with
+// the chart and can never be clipped by the card.
 function TrendChart({
   points,
   goal,
@@ -1361,104 +1247,70 @@ function TrendChart({
 }: {
   points: number[];
   goal: number;
-  /** "YYYY-MM-DD" key per point — same array length as points. When omitted
-   *   (mock data path) no X-axis date labels are rendered. */
   periodKeys?: string[];
   period?: TrendsPeriod;
 }) {
-  // ---- coordinate system ------------------------------------------------
-  // Total SVG canvas dimensions (viewBox units, not device pixels).
   const SVG_W = 320;
-  const SVG_H = 220;  // taller than before to fit X-axis label row below the plot
-
-  // Margins around the plot area (inside the canvas).
-  // Left margin is wide enough for a 3-char kg label ("2.5").
-  // Bottom margin reserves space for the X-axis date labels.
-  const LEFT   = 34;
-  const RIGHT  = 14;
-  const TOP    = 14;
-  const BOTTOM = 36;  // label row + a little breathing room
+  const SVG_H = 220;
+  const LEFT = 34;
+  const RIGHT = 14;
+  const TOP = 22; // room for the "items" unit label above the Y axis
+  const BOTTOM = 36;
 
   const PLOT_W = SVG_W - LEFT - RIGHT;
   const PLOT_H = SVG_H - TOP - BOTTOM;
 
-  // ---- value scale -------------------------------------------------------
   const allValues = [...points, goal];
   const dataMax = Math.max(...allValues);
   const dataMin = Math.min(...allValues);
-  // Pad the range so the extreme points aren't flush against the axes.
   const span = Math.max(dataMax - dataMin, 0.1);
-  const maxV  = dataMax + span * 0.12;
-  const minV  = Math.max(0, dataMin - span * 0.12);
+  const maxV = dataMax + span * 0.12;
+  const minV = Math.max(0, dataMin - span * 0.12);
   const valueSpan = Math.max(maxV - minV, 0.0001);
 
   const toX = (i: number) =>
-    points.length > 1
-      ? LEFT + (i / (points.length - 1)) * PLOT_W
-      : LEFT + PLOT_W / 2;
-  const toY = (v: number) =>
-    TOP + PLOT_H - ((v - minV) / valueSpan) * PLOT_H;
+    points.length > 1 ? LEFT + (i / (points.length - 1)) * PLOT_W : LEFT + PLOT_W / 2;
+  const toY = (v: number) => TOP + PLOT_H - ((v - minV) / valueSpan) * PLOT_H;
 
-  // ---- derived geometry --------------------------------------------------
   const polylinePoints = points.map((v, i) => `${toX(i)},${toY(v)}`).join(' ');
   const goalY = toY(goal);
 
-  // Three horizontal grid lines at 12%, 50%, 88% of the plot height.
-  const gridYs = [0.12, 0.5, 0.88].map(f => TOP + f * PLOT_H);
-
-  // ---- Y-axis labels (kg values at each grid line) -----------------------
-  // Map each grid Y back to a kg value and format to 1 decimal place.
-  const yLabels = gridYs.map(gy => {
+  const gridYs = [0.12, 0.5, 0.88].map((f) => TOP + f * PLOT_H);
+  const yLabels = gridYs.map((gy) => {
     const v = minV + (1 - (gy - TOP) / PLOT_H) * valueSpan;
     return { y: gy, text: fmtNum(Math.round(v * 10) / 10) };
   });
 
-  // ---- X-axis labels (dates at selected point indices) -------------------
   const hasKeys = periodKeys.length === points.length && points.length > 0;
   const labelIndices = hasKeys ? pickLabelIndices(points.length) : [];
-
-  // Anchor strategy to avoid clipping:
-  //  index 0             → textAnchor "start"  (label extends rightward)
-  //  index n-1           → textAnchor "end"    (label extends leftward)
-  //  everything else     → textAnchor "middle"
-  const xLabels = labelIndices.map(i => ({
+  const xLabels = labelIndices.map((i) => ({
     x: toX(i),
     text: formatPeriodKey(periodKeys[i], period),
-    anchor: i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle' as 'start' | 'middle' | 'end',
-    // "This week" / "This month" label gets a bolder colour on the last point.
+    anchor: (i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle') as 'start' | 'middle' | 'end',
     color: i === points.length - 1 ? colors.primary : colors.textSecondary,
     fontFamily: i === points.length - 1 ? fonts.semibold : fonts.regular,
   }));
 
-  // Goal label: sits just above the dashed line, right-of-centre.
-  // Pinned to x = 60% of the plot width so it never goes past the right edge.
-  const goalLabelX = Math.min(LEFT + PLOT_W * 0.60, SVG_W - RIGHT - 60);
+  const goalLabelX = Math.min(LEFT + PLOT_W * 0.6, SVG_W - RIGHT - 60);
   const goalLabelY = Math.max(goalY - 6, TOP + 10);
 
   return (
     <View style={{ width: '100%', aspectRatio: SVG_W / SVG_H }}>
-      <Svg
-        width="100%"
-        height="100%"
-        viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-        preserveAspectRatio="xMidYMid meet"
-      >
-        {/* Horizontal grid lines */}
+      <Svg width="100%" height="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} preserveAspectRatio="xMidYMid meet">
+        {/* Unit label (mockup shows "kg"; here it's item counts -- see header note) */}
+        <SvgText x={LEFT - 6} y={10} textAnchor="end" fontSize={9} fontFamily={fonts.regular} fill={colors.textSecondary}>
+          items
+        </SvgText>
+
         {gridYs.map((y, i) => (
-          <Line
-            key={`grid-${i}`}
-            x1={LEFT} y1={y} x2={LEFT + PLOT_W} y2={y}
-            stroke={colors.borderSoft}
-            strokeWidth={1}
-          />
+          <Line key={`grid-${i}`} x1={LEFT} y1={y} x2={LEFT + PLOT_W} y2={y} stroke={colors.borderSoft} strokeWidth={1} />
         ))}
 
-        {/* Y-axis kg labels */}
         {yLabels.map((lbl, i) => (
           <SvgText
             key={`ylabel-${i}`}
             x={LEFT - 6}
-            y={lbl.y + 4}   // +4 to vertically centre against the grid line
+            y={lbl.y + 4}
             textAnchor="end"
             fontSize={9}
             fontFamily={fonts.regular}
@@ -1468,15 +1320,15 @@ function TrendChart({
           </SvgText>
         ))}
 
-        {/* Goal / baseline dashed line */}
         <Line
-          x1={LEFT} y1={goalY} x2={LEFT + PLOT_W} y2={goalY}
+          x1={LEFT}
+          y1={goalY}
+          x2={LEFT + PLOT_W}
+          y2={goalY}
           stroke={colors.textSecondary}
           strokeWidth={1.5}
           strokeDasharray="5,4"
         />
-
-        {/* Goal label — inside SVG so it never clips */}
         <SvgText
           x={goalLabelX}
           y={goalLabelY}
@@ -1485,10 +1337,9 @@ function TrendChart({
           fontFamily={fonts.semibold}
           fill={colors.textSecondary}
         >
-          Goal: {fmtNum(goal)}
+          Goal {fmtNum(goal)}
         </SvgText>
 
-        {/* Trend polyline */}
         <Polyline
           points={polylinePoints}
           fill="none"
@@ -1498,24 +1349,15 @@ function TrendChart({
           strokeLinejoin="round"
         />
 
-        {/* Data point dots */}
         {points.map((v, i) => (
-          <Circle
-            key={`dot-${i}`}
-            cx={toX(i)}
-            cy={toY(v)}
-            r={4}
-            fill={colors.primaryDark}
-          />
+          <Circle key={`dot-${i}`} cx={toX(i)} cy={toY(v)} r={4} fill={colors.primaryDark} />
         ))}
 
-        {/* X-axis date labels — inside SVG so they scale with the viewBox
-             and can never overflow the card's clipping bounds. */}
         {xLabels.map((lbl, i) => (
           <SvgText
             key={`xlabel-${i}`}
             x={lbl.x}
-            y={SVG_H - 8}  // sits inside the bottom margin, 8 units from the bottom
+            y={SVG_H - 8}
             textAnchor={lbl.anchor}
             fontSize={10}
             fontFamily={lbl.fontFamily}
@@ -1529,107 +1371,118 @@ function TrendChart({
   );
 }
 
-const trendChartStyles = StyleSheet.create({
-  // Kept for any future absolute-positioned overlays; currently unused
-  // because all labels moved inside the SVG.
-  goalLabel: {
-    position: 'absolute',
-    fontFamily: fonts.semibold,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-});
-
-function TrendsSummary({
-  series,
-  periodWord,
-}: {
-  series: TrendsSeries;
-  periodWord: string;
-}) {
-  const isImproving = series.deltaPct !== null && series.deltaPct <= 0;
+/** Mockup: sits INSIDE the chart card, under the chart -- big serif value +
+ *  "this week" on the left, a rounded delta pill + "from last week" on the right. */
+function TrendsSummary({ series, periodWord }: { series: TrendsSeries; periodWord: string }) {
+  const hasDelta = series.deltaPct !== null;
+  const isImproving = hasDelta && (series.deltaPct as number) <= 0;
   return (
-    <View style={trendsSummaryStyles.wrap}>
-      <Text style={trendsSummaryStyles.value}>
-        {fmtItems(series.latestValue)} wasted this {periodWord}
-      </Text>
-      {series.deltaPct !== null && (
-        <Text
-          style={[
-            trendsSummaryStyles.delta,
-            { color: isImproving ? colors.statusFresh : colors.statusToday },
-          ]}
-        >
-          {isImproving ? '↓' : '↑'} {Math.abs(Math.round(series.deltaPct))}% from
-          last {periodWord}
-        </Text>
+    <View style={trendsSummaryStyles.row}>
+      <View style={trendsSummaryStyles.left}>
+        <Text style={trendsSummaryStyles.value}>{fmtItems(series.latestValue)}</Text>
+        <Text style={trendsSummaryStyles.caption}>wasted this {periodWord}</Text>
+      </View>
+      {hasDelta && (
+        <View style={trendsSummaryStyles.right}>
+          <View
+            style={[
+              trendsSummaryStyles.pill,
+              { backgroundColor: isImproving ? colors.primaryTint : colors.expiryUrgentBg },
+            ]}
+          >
+            <Text
+              style={[
+                trendsSummaryStyles.pillText,
+                { color: isImproving ? colors.primary : colors.statusToday },
+              ]}
+            >
+              {isImproving ? '↓' : '↑'} {Math.abs(Math.round(series.deltaPct as number))}%
+            </Text>
+          </View>
+          <Text style={trendsSummaryStyles.caption}>from last {periodWord}</Text>
+        </View>
       )}
     </View>
   );
 }
 
 const trendsSummaryStyles = StyleSheet.create({
-  wrap: { gap: 2 },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginTop: spacing.md,
+  },
+  left: { gap: 2, flex: 1 },
+  right: { alignItems: 'center', gap: 4 },
   value: {
     fontFamily: fonts.serif,
-    fontSize: 26,
+    fontSize: 28,
     color: colors.textPrimary,
   },
-  delta: {
-    fontFamily: fonts.semibold,
-    fontSize: fontSize.md,
+  caption: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  pill: {
+    borderRadius: radii.pill,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  pillText: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
   },
 });
 
-function OnTrackCard({
-  title,
-  body,
-  positive = true,
-}: {
-  title: string;
-  body: string;
-  positive?: boolean;
-}) {
+/** Mockup: leaf badge + serif title + body. Amber variant when above average. */
+function OnTrackCard({ title, body, positive = true }: { title: string; body: string; positive?: boolean }) {
   return (
     <View style={[onTrackStyles.card, !positive && onTrackStyles.cardWarn]}>
-      <Text style={[onTrackStyles.title, !positive && onTrackStyles.titleWarn]}>{title}</Text>
-      <Text style={onTrackStyles.body}>{body}</Text>
+      <LeafBadge
+        size={40}
+        background={colors.card}
+        iconColor={positive ? colors.primary : colors.statusSoon}
+      />
+      <View style={onTrackStyles.body}>
+        <Text style={[onTrackStyles.title, !positive && onTrackStyles.titleWarn]}>{title}</Text>
+        <Text style={onTrackStyles.text}>{body}</Text>
+      </View>
     </View>
   );
 }
 
 const onTrackStyles = StyleSheet.create({
   card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     backgroundColor: colors.primaryTint,
     borderRadius: radii.lg,
     padding: spacing.lg,
-    gap: spacing.xs,
   },
   cardWarn: {
     backgroundColor: colors.expiryWarnBg,
   },
+  body: { flex: 1, gap: 4 },
   title: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.title,
+    fontFamily: fonts.serif,
+    fontSize: 18,
     color: colors.primary,
   },
   titleWarn: {
     color: colors.statusSoon,
   },
-  body: {
+  text: {
     fontFamily: fonts.regular,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.textPrimary,
+    lineHeight: 19,
   },
 });
 
-function TrendsChartHeading({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle: string;
-}) {
+function TrendsChartHeading({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <View style={trendsHeadingStyles.wrap}>
       <Text style={trendsHeadingStyles.title}>{title}</Text>
@@ -1639,7 +1492,7 @@ function TrendsChartHeading({
 }
 
 const trendsHeadingStyles = StyleSheet.create({
-  wrap: { gap: 2 },
+  wrap: { gap: 2, marginBottom: spacing.sm },
   title: {
     fontFamily: fonts.serif,
     fontSize: 22,
@@ -1667,23 +1520,14 @@ function EmptyThisWeek() {
           { value: '0', label: 'Food records', isDash: false },
         ].map((p) => (
           <View key={p.label} style={emptyWeekStyles.pill}>
-            <Text
-              style={[
-                emptyWeekStyles.pillValue,
-                p.isDash && { color: colors.textSecondary },
-              ]}
-            >
-              {p.value}
-            </Text>
+            <Text style={[emptyWeekStyles.pillValue, p.isDash && { color: colors.textSecondary }]}>{p.value}</Text>
             <Text style={emptyWeekStyles.pillLabel}>{p.label}</Text>
           </View>
         ))}
       </View>
       <View style={emptyWeekStyles.hintCard}>
         <Text style={emptyWeekStyles.hintTitle}>What happens next?</Text>
-        <Text style={emptyWeekStyles.hintBody}>
-          Your dashboard updates automatically as records are added.
-        </Text>
+        <Text style={emptyWeekStyles.hintBody}>Your dashboard updates automatically as records are added.</Text>
       </View>
     </View>
   );
@@ -1692,8 +1536,8 @@ function EmptyThisWeek() {
 const emptyWeekStyles = StyleSheet.create({
   wrap: { gap: spacing.md },
   heading: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.heading,
+    fontFamily: fonts.serif,
+    fontSize: 20,
     color: colors.textPrimary,
   },
   pillRow: { flexDirection: 'row', gap: spacing.sm },
@@ -1704,7 +1548,7 @@ const emptyWeekStyles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.lg,
     paddingVertical: spacing.md,
-    alignItems: 'center',
+    paddingHorizontal: spacing.md,
     gap: 3,
   },
   pillValue: {
@@ -1716,7 +1560,6 @@ const emptyWeekStyles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: fontSize.xs,
     color: colors.textSecondary,
-    textAlign: 'center',
   },
   hintCard: {
     backgroundColor: colors.primaryTint,
@@ -1785,19 +1628,9 @@ const overviewStateStyles = StyleSheet.create({
 });
 
 // ---------------------------------------------------------------------------
-// All three tabs are LIVE. Nothing below is mock data anymore -- see
-// useWeekSummary() / usePatterns() / useAlternatives() / useTrends()
-// further down for each tab's data hook.
+// Patterns tab — data
 // ---------------------------------------------------------------------------
 
-// Patterns tab — LIVE, see usePatterns() further down. Backend endpoint:
-// GET /v1/dashboard/waste-patterns (routers/dashboard.py::waste_patterns).
-
-// The backend reports waste_reason as its raw enum value (or the literal
-// string "Other" for the rolled-up bucket). This is the display-label
-// mapping for the Patterns/Report bar rows — mirrors WASTE_REASON_BY_LABEL
-// in api/freshwise.ts but in the opposite direction and worded for a short
-// bar-chart row rather than a form option.
 const WASTE_REASON_ROW_LABEL: Record<WasteReason, string> = {
   expired: 'Expired',
   bought_too_much: 'Over-purchased',
@@ -1813,25 +1646,9 @@ function reasonRowLabel(label: string): string {
   return WASTE_REASON_ROW_LABEL[label as WasteReason] ?? label;
 }
 
-/** Maps the raw API response to PatternsData. Deliberately no client-side
- *  "top 5 + other" bucketing here -- the backend already returns categories
- *  as a plain top-5-by-weight (no Other row) and reasons as top-5-real-
- *  reasons plus a separately-counted other_reason_count, so this is meant
- *  to be a straight field mapping, not a merge.
- *
- *  The defensive merging below exists ONLY because the deployed API and
- *  this file's WastePatternsOut type can drift out of sync (this has
- *  already happened once -- see git blame): an older deployed version of
- *  GET /v1/dashboard/waste-patterns used `count` instead of `quantity` for
- *  categories, and likely used an old top-5-plus-Other pattern for BOTH
- *  categories and reasons (not just reasons) -- which can produce two
- *  array entries that both resolve to the label "Other" (a genuine
- *  category/reason someone actually has, colliding with an old-style
- *  overflow bucket). Rather than special-case just that one label, both
- *  lists are unconditionally deduped by label via a Map -- ANY duplicate
- *  label gets its values summed into one row, so there is no way for two
- *  rows to ever share a React key, regardless of what's actually driving
- *  the duplication. */
+/** Maps the raw API response to PatternsData. Both lists are deduped by label
+ *  (duplicate labels summed) so two rows can never share a React key, even if
+ *  the deployed API and WastePatternsOut drift out of sync again. */
 function buildPatternsData(raw: WastePatternsOut): PatternsData {
   const categoryTotals = new Map<string, number>();
   for (const b of raw.top_waste_categories) {
@@ -1849,18 +1666,12 @@ function buildPatternsData(raw: WastePatternsOut): PatternsData {
   for (const b of raw.top_waste_reasons) {
     const label = reasonRowLabel(b.label);
     if (label.toLowerCase() === 'other') {
-      // Folded into the single dedicated Other count instead of the ranked
-      // list, however the backend spelled it (raw enum 'other' or an
-      // already-formatted "Other").
       otherReasonCount += b.count;
     } else {
       reasonTotals.set(label, (reasonTotals.get(label) ?? 0) + b.count);
     }
   }
-  const reasons: FrequencyDatum[] = [...reasonTotals.entries()].map(([label, count]) => ({
-    label,
-    count,
-  }));
+  const reasons: FrequencyDatum[] = [...reasonTotals.entries()].map(([label, count]) => ({ label, count }));
 
   return {
     categories,
@@ -1870,17 +1681,9 @@ function buildPatternsData(raw: WastePatternsOut): PatternsData {
       ? {
           itemName: raw.most_wasted_item.name,
           title: `${raw.most_wasted_item.name} is your #1 repeated waste`,
-          // Deliberately NOT "in the last 30 days" -- most_wasted_item is
-          // computed over the household's ENTIRE waste history (no time
-          // window), so claiming a 30-day window would misrepresent it.
+          // Deliberately NOT "in the last 30 days" -- most_wasted_item covers
+          // the household's ENTIRE waste history.
           body: `Wasted ${raw.most_wasted_item.times_wasted}× so far, based on your recorded entries.`,
-          // canonical_food_name is the lookup key for FoodKeeper storage data.
-          // The backend's most_wasted_item carries the raw item name as stored
-          // in food_item.name -- which may differ from the canonical form the
-          // FoodKeeper reference uses ("Milk" vs "milk", "Whole Milk" vs "milk").
-          // Convert to lowercase and trim as a best-effort normalisation;
-          // lookupStorage does a ILIKE match server-side so minor differences
-          // in spacing or capitalisation are tolerated.
           canonicalFoodName: raw.most_wasted_item.name.toLowerCase().trim(),
         }
       : null,
@@ -1892,9 +1695,6 @@ type PatternsState =
   | { status: 'error'; message: string }
   | { status: 'ready'; data: PatternsData; totalEvents: number };
 
-/** Same refetch-on-focus shape as useWeekSummary() below, so returning here
- *  after MarkWastedScreen always reflects the latest entry. No day-range
- *  param — the Patterns tab is deliberately "entire history", not rolling. */
 function usePatterns() {
   const [state, setState] = useState<PatternsState>({ status: 'loading' });
 
@@ -1923,18 +1723,13 @@ function usePatterns() {
 // ---------------------------------------------------------------------------
 // Alternatives live hook
 // ---------------------------------------------------------------------------
-//
-// Fires lazily when the user taps "View better alternatives" on the Patterns
-// insight card. Uses FoodKeeper reference data (the same dataset that powers
-// storage guidance in FoodDetailScreen) to build storage-method alternatives
-// sorted by shelf life -- no dedicated backend endpoint needed.
 
 type AlternativesState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'empty'; itemName: string }          // no FoodKeeper match for this item
-  | { status: 'ready'; data: AlternativesData };   // alternatives populated
+  | { status: 'empty'; itemName: string }
+  | { status: 'ready'; data: AlternativesData };
 
 function useAlternatives() {
   const [state, setState] = useState<AlternativesState>({ status: 'idle' });
@@ -1973,23 +1768,13 @@ function useAlternatives() {
 // Trends tab — live data hook
 // ---------------------------------------------------------------------------
 //
-// There's no /v1/dashboard/monthly-waste endpoint, so both Weekly and
-// Monthly views are built from a single getWeeklyWaste() call: Weekly uses
-// the raw per-week totals, Monthly buckets those same weeks into calendar
-// months client-side. 26 weeks (~6 months) covers both views' ranges (last
-// 8 weeks / last 6 months) in one request.
-//
-// "Goal" has no dedicated backend concept (no goal field anywhere in
-// UserProfile) -- it's computed here as the mean of the period's own points,
-// i.e. "your own average" as an implicit reduction target. That keeps the
-// dashed goal line and the "On track" streak message honestly data-driven
-// instead of a hardcoded number that never reflects what's actually been
-// logged.
+// Both Weekly and Monthly come from one getWeeklyWaste(26) call: Weekly uses
+// the raw per-week totals, Monthly buckets those weeks into calendar months
+// client-side. "Goal" = the period's own average (no goal in the backend).
 
 type WeekTotal = { weekStart: string; total: number };
 
-/** weekly-waste rows are one row PER REASON per week, so multiple rows can
- *  share a week_start -- sum them into one total per week first. */
+/** weekly-waste rows are one row PER REASON per week -- sum per week first. */
 function sumWeeklyTotals(rows: WeeklyWasteRow[]): WeekTotal[] {
   const totals = new Map<string, number>();
   for (const row of rows) {
@@ -1997,7 +1782,7 @@ function sumWeeklyTotals(rows: WeeklyWasteRow[]): WeekTotal[] {
   }
   return [...totals.entries()]
     .map(([weekStart, total]) => ({ weekStart, total }))
-    .sort((a, b) => a.weekStart.localeCompare(b.weekStart)); // ascending, oldest first
+    .sort((a, b) => a.weekStart.localeCompare(b.weekStart));
 }
 
 function computeGoal(points: number[]): number {
@@ -2006,10 +1791,6 @@ function computeGoal(points: number[]): number {
   return Math.round(avg * 10) / 10;
 }
 
-/** Consecutive periods, counting back from the most recent, that sit on the
- *  same side of the goal line as the latest period -- i.e. however many in a
- *  row have been "below goal" (a positive streak) or "above goal" (a streak
- *  worth flagging). Direction is whatever the newest point is doing. */
 function computeTrailingStreak(points: number[], goalValue: number): { count: number; onTrack: boolean } {
   const onTrack = points[points.length - 1] <= goalValue;
   let count = 0;
@@ -2055,7 +1836,7 @@ function buildWeeklySeries(weekTotals: WeekTotal[]): TrendsSeries {
   const last8 = weekTotals.slice(-8);
   return finishSeries(
     last8.map((w) => Math.round(w.total * 100) / 100),
-    last8.map((w) => w.weekStart), // already "YYYY-MM-DD" (the week's Monday)
+    last8.map((w) => w.weekStart),
     'Last 8 weeks',
   );
 }
@@ -2070,7 +1851,7 @@ function buildMonthlySeries(weekTotals: WeekTotal[]): TrendsSeries {
   const last6 = months.slice(-6);
   return finishSeries(
     last6.map(([, total]) => Math.round(total * 100) / 100),
-    last6.map(([month]) => `${month}-01`), // pad to "YYYY-MM-DD" for formatPeriodKey
+    last6.map(([month]) => `${month}-01`),
     'Last 6 months',
   );
 }
@@ -2113,23 +1894,12 @@ function useTrends() {
 // ---------------------------------------------------------------------------
 // Overview tab — live data
 // ---------------------------------------------------------------------------
-//
-// Sourced from the same two dashboard endpoints HomeScreen's stat cards will
-// eventually use: a 7-day summary for the headline numbers (utilisation rate,
-// waste rate, food saved) and a 2-week waste breakdown purely to compute the
-// week-over-week delta arrow. Both endpoints already aggregate every
-// recordOutcome() call written from MarkConsumedScreen and MarkWastedScreen —
-// there's no separate write path to keep in sync.
 
 type OverviewState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'ready'; data: ScreenData };
 
-// Friendly labels for the backend's waste_reason enum, used only for the
-// Overview quick-insight sentence. Kept local (rather than importing
-// WASTE_REASON_BY_LABEL, which maps the other direction) since this is the
-// one place Overview needs to go from enum -> prose.
 const WASTE_REASON_PROSE: Record<WasteReason, string> = {
   expired: 'Items expiring before use',
   spoiled: 'Spoiled food',
@@ -2142,8 +1912,6 @@ const WASTE_REASON_PROSE: Record<WasteReason, string> = {
 };
 
 function buildWeekSummary(summary: DashboardSummary, weekly: WeeklyWasteRow[]): WeekSummary {
-  // weekly-waste rows are one row PER REASON per week, so multiple rows can
-  // share a week_start -- sum them to get each week's total before comparing.
   const totalsByWeek = new Map<string, number>();
   for (const row of weekly) {
     totalsByWeek.set(row.week_start, (totalsByWeek.get(row.week_start) ?? 0) + row.waste_events);
@@ -2151,26 +1919,23 @@ function buildWeekSummary(summary: DashboardSummary, weekly: WeeklyWasteRow[]): 
   const weeksSorted = [...totalsByWeek.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   const [thisWeek, lastWeek] = weeksSorted;
   const weekDeltaPct =
-    thisWeek && lastWeek && lastWeek[1] > 0
-      ? ((thisWeek[1] - lastWeek[1]) / lastWeek[1]) * 100
-      : null;
+    thisWeek && lastWeek && lastWeek[1] > 0 ? ((thisWeek[1] - lastWeek[1]) / lastWeek[1]) * 100 : null;
 
-  // Share of records that were consumed rather than wasted. Computed from
-  // counts here instead of the backend's waste_rate, which divides raw
-  // quantities across mixed units (e.g. 500 "g" vs 2 "pcs").
+  // Share of records consumed rather than wasted -- from counts, not the
+  // backend's waste_rate (which divides mixed-unit quantities).
   const foodRecords = summary.total_wasted_events + summary.total_consumed_events;
   const utilisationRate = foodRecords > 0 ? summary.total_consumed_events / foodRecords : 0;
   const isImproving = weekDeltaPct !== null && weekDeltaPct <= 0;
   const topReason = summary.top_waste_reasons[0];
 
-  const quickInsightTitle = foodRecords === 0 ? null : isImproving ? "You're improving" : 'Room to improve';
+  const quickInsightTitle = foodRecords === 0 ? null : isImproving ? "You're improving!" : 'Room to improve';
   const quickInsight =
     foodRecords === 0
       ? null
       : topReason
         ? `${WASTE_REASON_PROSE[topReason.waste_reason]} accounted for the most waste this period ` +
           `(${topReason.count} record${topReason.count === 1 ? '' : 's'}). ` +
-          (isImproving ? 'Keep an eye on it to stay on track.' : 'Tackling this first will make the biggest difference.')
+          (isImproving ? 'Keep up the good habit.' : 'Tackling this first will make the biggest difference.')
         : isImproving
           ? 'Waste is trending down — keep it up!'
           : 'Record more outcomes to start spotting patterns.';
@@ -2186,10 +1951,6 @@ function buildWeekSummary(summary: DashboardSummary, weekly: WeeklyWasteRow[]): 
   };
 }
 
-/** Mirrors usePantry()'s shape in data/pantryItems.ts: refetches on every
- *  focus (not just on mount) so returning here after Mark Consumed / Mark
- *  Wasted always shows the up-to-date rate, without either screen needing to
- *  know this tab exists. */
 function useWeekSummary() {
   const [state, setState] = useState<OverviewState>({ status: 'loading' });
 
@@ -2227,24 +1988,22 @@ export default function ActivityScreen() {
   const navigation = useNavigation<any>();
   const [activeTab, setActiveTab] = useState<InsightsTab>('Overview');
 
-  // Alternatives view (Patterns → "View better alternatives").
-  // showAlternatives gates the whole view; alternativesState drives what
-  // renders inside it. Reset when navigating away via a tab tap.
   const [showAlternatives, setShowAlternatives] = useState(false);
   const { state: alternativesState, load: loadAlternatives, reset: resetAlternatives } = useAlternatives();
   const [selectedAlternativeId, setSelectedAlternativeId] = useState<string | null>(null);
 
-  // Trends tab — Weekly/Monthly sub-toggle, independent of the top-level tab bar.
   const [trendsPeriod, setTrendsPeriod] = useState<TrendsPeriod>('Weekly');
 
-  // Overview tab — live, see useWeekSummary() above.
   const { state: overviewState, retry: retryOverview } = useWeekSummary();
-
-  // Patterns tab — live, see usePatterns() above.
   const { state: patternsState, retry: retryPatterns } = usePatterns();
-
-  // Trends tab — live, see useTrends() above.
   const { state: trendsState, retry: retryTrends } = useTrends();
+
+  const switchTab = (tab: InsightsTab) => {
+    setShowAlternatives(false);
+    resetAlternatives();
+    setSelectedAlternativeId(null);
+    setActiveTab(tab);
+  };
 
   const subtitleByTab: Record<InsightsTab, string> = {
     Overview:
@@ -2262,24 +2021,13 @@ export default function ActivityScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <Text style={styles.title}>Insights</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
 
         {/* Tabs */}
-        <TabBar
-          active={activeTab}
-          onPress={(tab) => {
-            setShowAlternatives(false);
-            resetAlternatives();
-            setSelectedAlternativeId(null);
-            setActiveTab(tab);
-          }}
-        />
+        <TabBar active={activeTab} onPress={switchTab} />
 
         {!showAlternatives && (
           <>
@@ -2297,34 +2045,24 @@ export default function ActivityScreen() {
                     <ThisWeekCard summary={overviewState.data.summary} />
                     <StatPills summary={overviewState.data.summary} />
                     <UtilisationSplit summary={overviewState.data.summary} />
-                    {overviewState.data.summary.quick_insight &&
-                      overviewState.data.summary.quick_insight_title && (
-                        <QuickInsightCard
-                          title={overviewState.data.summary.quick_insight_title}
-                          body={overviewState.data.summary.quick_insight}
-                        />
-                      )}
+                    {overviewState.data.summary.quick_insight && overviewState.data.summary.quick_insight_title && (
+                      <QuickInsightCard
+                        title={overviewState.data.summary.quick_insight_title}
+                        body={overviewState.data.summary.quick_insight}
+                        onPress={() => switchTab('Patterns')}
+                      />
+                    )}
                   </>
                 )}
 
                 {overviewState.status === 'ready' && overviewState.data.state === 'empty' && (
                   <>
                     <View style={styles.illustrationCard}>
-                      {/*
-                        DESIGNER: Replace the circle below with the leaf asset once ready.
-                        <Image
-                          source={require('../../assets/leaf-illustration.png')}
-                          style={styles.illustrationImage}
-                          resizeMode="contain"
-                        />
-                      */}
-                      <View style={styles.illustrationCircle} />
-                      <Text style={styles.illustrationTitle}>
-                        Your insights will grow here
-                      </Text>
+                      <LeafBadge size={88} />
+                      <Text style={styles.illustrationTitle}>Your insights will grow here</Text>
                       <Text style={styles.illustrationBody}>
-                        Record consumed and wasted food to build your first
-                        utilisation baseline and discover patterns.
+                        Record consumed and wasted food to build your first utilisation baseline and discover
+                        patterns.
                       </Text>
                       <Button
                         label="Add your first food"
@@ -2350,11 +2088,11 @@ export default function ActivityScreen() {
 
                 {patternsState.status === 'ready' && patternsState.totalEvents === 0 && (
                   <View style={styles.illustrationCard}>
-                    <View style={styles.illustrationCircle} />
+                    <LeafBadge size={88} />
                     <Text style={styles.illustrationTitle}>No waste recorded yet</Text>
                     <Text style={styles.illustrationBody}>
-                      Mark items as wasted from the pantry to start seeing your
-                      household's categories, reasons, and repeat offenders here.
+                      Mark items as wasted from the pantry to start seeing your household's categories, reasons,
+                      and repeat offenders here.
                     </Text>
                   </View>
                 )}
@@ -2362,10 +2100,7 @@ export default function ActivityScreen() {
                 {patternsState.status === 'ready' && patternsState.totalEvents > 0 && (
                   <>
                     <CategoryWeightCard categories={patternsState.data.categories} />
-                    <ReasonsCard
-                      reasons={patternsState.data.reasons}
-                      otherCount={patternsState.data.otherReasonCount}
-                    />
+                    <ReasonsCard reasons={patternsState.data.reasons} otherCount={patternsState.data.otherReasonCount} />
                     {patternsState.data.insight && (
                       <KeyInsightCard
                         insight={patternsState.data.insight}
@@ -2396,63 +2131,56 @@ export default function ActivityScreen() {
 
                 {trendsState.status === 'ready' && !trendsState.hasData && (
                   <View style={styles.illustrationCard}>
-                    <View style={styles.illustrationCircle} />
+                    <LeafBadge size={88} />
                     <Text style={styles.illustrationTitle}>No trend yet</Text>
                     <Text style={styles.illustrationBody}>
-                      Mark a few items as consumed or wasted and this chart
-                      will start tracking your waste week over week.
+                      Mark a few items as consumed or wasted and this chart will start tracking your waste week over
+                      week.
                     </Text>
                   </View>
                 )}
 
-                {trendsState.status === 'ready' && trendsState.hasData && (() => {
-                  const series = trendsState.data[trendsPeriod];
-                  const periodWord = trendsPeriod === 'Weekly' ? 'week' : 'month';
-                  const chartTitle =
-                    trendsPeriod === 'Weekly'
-                      ? 'Weekly waste trend'
-                      : 'Monthly waste trend';
-                  return (
-                    <>
-                      <TrendsChartHeading
-                        title={chartTitle}
-                        subtitle={series.rangeLabel}
-                      />
-                      <View style={styles.chartCard}>
-                        <TrendChart
-                          points={series.points}
-                          goal={series.goalValue}
-                          periodKeys={series.periodKeys}
-                          period={trendsPeriod}
+                {trendsState.status === 'ready' &&
+                  trendsState.hasData &&
+                  (() => {
+                    const series = trendsState.data[trendsPeriod];
+                    const periodWord = trendsPeriod === 'Weekly' ? 'week' : 'month';
+                    const chartTitle = trendsPeriod === 'Weekly' ? 'Weekly waste trend' : 'Monthly waste trend';
+                    return (
+                      <>
+                        {/* Mockup: heading, chart and summary all inside one card */}
+                        <View style={styles.chartCard}>
+                          <TrendsChartHeading title={chartTitle} subtitle={series.rangeLabel} />
+                          <TrendChart
+                            points={series.points}
+                            goal={series.goalValue}
+                            periodKeys={series.periodKeys}
+                            period={trendsPeriod}
+                          />
+                          <TrendsSummary series={series} periodWord={periodWord} />
+                        </View>
+                        <OnTrackCard
+                          title={series.streakTitle}
+                          body={series.streakNote}
+                          positive={series.streakTitle !== 'Above target'}
                         />
-                      </View>
-                      <TrendsSummary series={series} periodWord={periodWord} />
-                      <OnTrackCard
-                        title={series.streakTitle}
-                        body={series.streakNote}
-                        positive={series.streakTitle !== 'Above target'}
-                      />
-                    </>
-                  );
-                })()}
+                      </>
+                    );
+                  })()}
               </>
             )}
           </>
         )}
 
-        {/* Alternatives (from Patterns → "View better alternatives") */}
+        {/* Alternatives (from Patterns → Key insight) */}
         {showAlternatives && (
           <>
-            {/* Loading */}
             {alternativesState.status === 'loading' && <OverviewLoading />}
 
-            {/* Error */}
             {alternativesState.status === 'error' && (
               <OverviewError
                 message={alternativesState.message}
                 onRetry={() => {
-                  // Retry needs the item name + canonical name -- read them
-                  // back from the patterns insight since that's still live.
                   if (patternsState.status === 'ready' && patternsState.data.insight?.canonicalFoodName) {
                     const { insight } = patternsState.data;
                     loadAlternatives(insight.itemName, insight.canonicalFoodName!);
@@ -2461,18 +2189,13 @@ export default function ActivityScreen() {
               />
             )}
 
-            {/* No FoodKeeper match */}
             {alternativesState.status === 'empty' && (
               <View style={styles.illustrationCard}>
-                <Text style={styles.illustrationTitle}>
-                  No storage alternatives found
-                </Text>
+                <Text style={styles.illustrationTitle}>No storage alternatives found</Text>
                 <Text style={styles.illustrationBody}>
                   We don’t have FoodKeeper data for{' '}
-                  <Text style={{ fontFamily: fonts.bold }}>
-                    {alternativesState.itemName}
-                  </Text>{' '}
-                  yet. Try storing it in the fridge or freezer to extend shelf life.
+                  <Text style={{ fontFamily: fonts.bold }}>{alternativesState.itemName}</Text> yet. Try storing it
+                  in the fridge or freezer to extend shelf life.
                 </Text>
                 <Button
                   label="Go back"
@@ -2486,25 +2209,21 @@ export default function ActivityScreen() {
               </View>
             )}
 
-            {/* Live alternatives from FoodKeeper */}
             {alternativesState.status === 'ready' && (
               <>
                 <InsightSummaryCard
                   title={`${alternativesState.data.itemName} is repeatedly wasted`}
                   body={alternativesState.data.insightBody}
-                  attribution="Based on FoodKeeper storage data · US FDA / USDA (CC0 1.0)"
                 />
                 <AlternativesList
                   data={alternativesState.data}
                   selectedId={selectedAlternativeId}
-                  onSelect={(id) => {
-                    setSelectedAlternativeId(id);
-                  }}
+                  onSelect={(id) => setSelectedAlternativeId(id)}
                 />
                 <AlternativesFooter
                   disabled={!selectedAlternativeId}
                   onUse={() => {
-                    // TODO: wire up once there’s a real endpoint to apply the
+                    // TODO: wire up once there's a real endpoint to apply the
                     // preferred storage method to future add-food flows.
                     setShowAlternatives(false);
                     resetAlternatives();
@@ -2559,23 +2278,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
-  illustrationCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: colors.primaryTint,
-    marginBottom: spacing.sm,
-  },
-  illustrationImage: {
-    width: 88,
-    height: 88,
-    marginBottom: spacing.sm,
-  },
   illustrationTitle: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.heading,
+    fontFamily: fonts.serif,
+    fontSize: 20,
     color: colors.textPrimary,
     textAlign: 'center',
+    marginTop: spacing.sm,
   },
   illustrationBody: {
     fontFamily: fonts.regular,
@@ -2591,32 +2299,11 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     paddingVertical: spacing.md,
   },
-  comingSoonCard: {
-    backgroundColor: colors.card,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.xxl,
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.xl,
-  },
-  comingSoonTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 18,
-    color: colors.textPrimary,
-  },
-  comingSoonBody: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
   chartCard: {
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radii.lg,
+    borderRadius: radii.xl,
     padding: spacing.lg,
   },
 });
