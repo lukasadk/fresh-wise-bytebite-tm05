@@ -18,6 +18,10 @@ type Props = {
   // card's edge -- e.g. UrgencyOutline's glow on Use First's hero card, which
   // passes { overflow: 'visible' } here to let the glow show.
   containerStyle?: StyleProp<ViewStyle>;
+  // Style for the wrapper around the card itself -- Pantry's grid passes
+  // { flex: 1 } (with containerStyle { flex: 1 }) so cards in the same row
+  // keep matching heights.
+  childrenContainerStyle?: StyleProp<ViewStyle>;
 };
 
 // Wraps any card/row with a left-swipe that reveals a small labelled panel
@@ -31,6 +35,7 @@ export default function SwipeToManage({
   borderRadius = radii.lg,
   actionLabel = 'Manage',
   containerStyle,
+  childrenContainerStyle,
 }: Props) {
   const ref = useRef<Swipeable>(null);
 
@@ -56,6 +61,7 @@ export default function SwipeToManage({
       overshootRight={false}
       rightThreshold={56}
       containerStyle={containerStyle}
+      childrenContainerStyle={childrenContainerStyle}
     >
       {children}
     </Swipeable>

@@ -337,7 +337,7 @@ export default function PantryScreen({ navigation, route }: any) {
                   found it easy to miss up here, and it reads as an "add"-family
                   action when paired with the + button. */}
               <View style={styles.headerButtons}>
-                <Pressable style={styles.addButton} onPress={() => navigation.navigate('AddFood')}>
+                <Pressable style={styles.addButton} onPress={() => navigation.navigate('AddFoodChoice')}>
                   <Plus size={22} color={colors.white} />
                 </Pressable>
               </View>
@@ -447,7 +447,7 @@ export default function PantryScreen({ navigation, route }: any) {
               <Text style={styles.emptyStateSubtext}>Start by adding the food you have at home.</Text>
               <Button
                 label="Add food"
-                onPress={() => navigation.navigate('AddFood')}
+                onPress={() => navigation.navigate('AddFoodChoice')}
                 style={styles.emptyStateButton}
               />
             </View>
@@ -466,9 +466,8 @@ export default function PantryScreen({ navigation, route }: any) {
           const handlePress = () => (selectMode ? toggleSelected(item.id) : openItem(item));
 
           if (viewMode === 'grid') {
-            return (
-              <View style={styles.gridCell}>
-                <FoodCard
+            const card = (
+              <FoodCard
                   name={item.name}
                   category={item.category}
                   subtitle={subtitle}
@@ -479,8 +478,24 @@ export default function PantryScreen({ navigation, route }: any) {
                   selectMode={selectMode}
                   selected={isSelected}
                   highlighted={isHighlighted}
+                  highlightLabel={isNew ? 'New' : undefined}
                   onPress={handlePress}
                 />
+            );
+            // Grid cards swipe to Recipes like the list rows do (was list-only).
+            // flex: 1 on both Swipeable wrappers keeps cards in a row equal height.
+            return (
+              <View style={styles.gridCell}>
+                {selectMode ? card : (
+                  <SwipeToManage
+                    onManage={() => navigation.navigate('Recipes')}
+                    actionLabel="Recipe"
+                    containerStyle={{ flex: 1 }}
+                    childrenContainerStyle={{ flex: 1 }}
+                  >
+                    {card}
+                  </SwipeToManage>
+                )}
               </View>
             );
           }

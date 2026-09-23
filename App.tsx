@@ -27,6 +27,7 @@ import ActivityScreen from './src/screens/ActivityScreen';
 import PantryScreen from './src/screens/PantryScreen';
 import UseFirstScreen from './src/screens/UseFirstScreen';
 import AddFoodScreen from './src/screens/AddFoodScreen';
+import AddFoodChoiceScreen from './src/screens/AddFoodChoiceScreen';
 import PhotoGroceryScreen from './src/screens/ApiGroceryScreen';
 import SmartAddFoodScreen from './src/screens/SmartAddFoodScreen';
 import FoodDetailScreen from './src/screens/FoodDetailScreen';
@@ -269,6 +270,7 @@ export default function App() {
                 >
                   <Stack.Screen name="Main" component={MainTabs} />
                   <Stack.Group screenOptions={{ presentation: 'modal' }}>
+                    <Stack.Screen name="AddFoodChoice" component={AddFoodChoiceScreen} />
                     <Stack.Screen name="AddFood" component={AddFoodScreen} />
                     <Stack.Screen name="SmartAddFood" component={SmartAddFoodScreen} />
                     <Stack.Screen name="PhotoGrocery" component={PhotoGroceryScreen} />
@@ -277,6 +279,8 @@ export default function App() {
                     <Stack.Screen name="DetectionComplete" component={DetectionCompleteScreen} />
                     <Stack.Screen name="ReviewDetectedItems" component={ReviewDetectedItemsScreen} />
                     <Stack.Screen name="EditDetectedItem" component={EditDetectedItemScreen} options={{ presentation: 'modal' }}/>
+                    {/* Same form in "add" mode -- see EditDetectedItemScreen. */}
+                    <Stack.Screen name="AddMissingItem" component={EditDetectedItemScreen} options={{ presentation: 'modal' }}/>
                     <Stack.Screen name="FoodDetail" component={FoodDetailScreen} />
                     <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} />
                     <Stack.Screen name="RecipeConsume" component={RecipeConsumeScreen} />

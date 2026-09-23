@@ -33,9 +33,40 @@ function toIsoDate(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+/** Blank item for "+ Add missing item" -- something the scan didn't detect.
+ *  No bounding box, so it simply gets no cropped photo when saved. */
+function blankItem(): EditableItem {
+  return {
+    candidateId: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    foodName: '',
+    brand: null,
+    productVariant: null,
+    netContentText: null,
+    category: 'Other',
+    appCategory: 'Other',
+    quantity: null,
+    unit: 'piece' as EditableItem['unit'],
+    boundingBox: null,
+    confidence: 1,
+    reviewRequired: false,
+    reviewReasons: [],
+    packagingTextEvidence: [],
+    expiryDateCandidate: null,
+    expiryTextEvidence: null,
+    accepted: true,
+    quantityText: '',
+    expiryText: '',
+    expiryIsEstimate: false,
+  };
+}
+
+// Also registered as "AddMissingItem" (App.tsx): same form, but it starts
+// blank and hands a NEW item back to Review instead of replacing one.
 export default function EditDetectedItemScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
-  const originalItem: EditableItem = route?.params?.item;
+  const isAdding = route?.name === 'AddMissingItem' || !route?.params?.item;
+  // useState initialiser so the blank item (and its id) is created once, not per render.
+  const [originalItem] = useState<EditableItem>(() => route?.params?.item ?? blankItem());
   const index: number = route?.params?.index;
 
   const [foodName, setFoodName] = useState(originalItem.foodName);
@@ -79,6 +110,10 @@ export default function EditDetectedItemScreen({ navigation, route }: any) {
       expiryIsEstimate: false,
     };
 
+    if (isAdding) {
+      navigation.popTo('ReviewDetectedItems', { newItem: updatedItem }, { merge: true });
+      return;
+    }
     navigation.popTo('ReviewDetectedItems', { updatedItem, updatedIndex: index }, { merge: true });
   };
 
@@ -91,7 +126,7 @@ export default function EditDetectedItemScreen({ navigation, route }: any) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.headerRow}>
-            <Text style={styles.title}>Edit detected item</Text>
+            <Text style={styles.title}>{isAdding ? 'Add missing item' : 'Edit detected item'}</Text>
             {originalItem.reviewRequired ? (
               <View style={styles.reviewPill}>
                 <Text style={styles.reviewPillText}>Review Required</Text>
@@ -124,6 +159,7 @@ export default function EditDetectedItemScreen({ navigation, route }: any) {
                     value={quantityText}
                     onChangeText={setQuantityText}
                     keyboardType="decimal-pad"
+                    placeholder="e.g. 1"
                     style={styles.stepperInput}
                   />
                   <Pressable style={styles.stepperButton} onPress={() => adjustQuantity(1)}>
@@ -143,12 +179,15 @@ export default function EditDetectedItemScreen({ navigation, route }: any) {
             <DateField value={expiryDate} onChange={setExpiryDate} placeholder="Select date" />
           </Field>
 
-          <Pressable style={({ pressed }) => [styles.removeButton, pressed && { opacity: 0.85 }]} onPress={handleRemove}>
-            <Text style={styles.removeButtonText}>Remove item</Text>
-          </Pressable>
+          {/* Nothing to remove yet when adding -- Cancel covers it. */}
+          {!isAdding ? (
+            <Pressable style={({ pressed }) => [styles.removeButton, pressed && { opacity: 0.85 }]} onPress={handleRemove}>
+              <Text style={styles.removeButtonText}>Remove item</Text>
+            </Pressable>
+          ) : null}
 
           <Pressable style={({ pressed }) => [styles.saveButton, pressed && { opacity: 0.9 }]} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Save changes</Text>
+            <Text style={styles.saveButtonText}>{isAdding ? 'Add item' : 'Save changes'}</Text>
           </Pressable>
 
           <Pressable style={styles.cancelButton} onPress={() => navigation.goBack()}>

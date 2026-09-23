@@ -67,7 +67,9 @@ export default function SmartAddFoodScreen({ navigation, route }: any) {
   const { item: existingItem, loading: loadingExisting, error: loadError } = usePantryItem(editId);
 
   const [name, setName] = useState('');
-  const [quantity, setQuantity] = useState('1');
+  // Starts empty (placeholder shows an example) so the user types their own
+  // amount rather than accidentally saving a pre-filled 1.
+  const [quantity, setQuantity] = useState('');
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
   const [expiryIsEstimate, setExpiryIsEstimate] = useState(false);
   const [estimatingExpiry, setEstimatingExpiry] = useState(false);
@@ -272,7 +274,7 @@ export default function SmartAddFoodScreen({ navigation, route }: any) {
             value={quantity}
             onChangeText={setQuantity}
             keyboardType="numeric"
-            placeholder="1"
+            placeholder="e.g. 1"
             error={!!errors.quantity}
           />
         </Field>

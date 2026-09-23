@@ -50,7 +50,7 @@ export default function ReviewDetectedItemsScreen({ navigation, route }: any) {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // EditDetectedItemScreen pops back here with { updatedItem, updatedIndex }.
-  // AddMissingItemScreen will use the same { newItem } pattern below it.
+  // "+ Add missing item" (EditDetectedItemScreen in add mode) pops back with { newItem }.
   useEffect(() => {
     const updatedItem: EditableItem | undefined = route?.params?.updatedItem;
     const updatedIndex: number | undefined = route?.params?.updatedIndex;
@@ -138,7 +138,9 @@ export default function ReviewDetectedItemsScreen({ navigation, route }: any) {
         }
         return createdId;
       }));
-      navigation.navigate('Main', {
+      // popTo, not navigate: in React Navigation 7 navigate() pushes a SECOND
+      // My Pantry on top of the scan screens (the iOS screen pile-up).
+      navigation.popTo('Main', {
         screen: 'Pantry',
         params: {
           photoAddedCount: items.length,

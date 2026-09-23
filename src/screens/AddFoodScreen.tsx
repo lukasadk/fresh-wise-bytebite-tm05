@@ -64,7 +64,9 @@ export default function AddFoodScreen({ navigation, route }: any) {
 
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
-  const [quantity, setQuantity] = useState('1');
+  // Starts empty (placeholder shows an example) so the user types their own
+  // amount rather than accidentally saving a pre-filled 1.
+  const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
   const [purchaseDate, setPurchaseDate] = useState<Date | null>(null);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
@@ -237,7 +239,7 @@ export default function AddFoodScreen({ navigation, route }: any) {
             value={quantity}
             onChangeText={setQuantity}
             keyboardType="numeric"
-            placeholder="1"
+            placeholder="e.g. 1"
             error={!!errors.quantity}
           />
         </Field>

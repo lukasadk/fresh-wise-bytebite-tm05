@@ -5,24 +5,25 @@ import { colors, fonts, radii, spacing } from '../theme/theme';
 type Props = {
   label: string;
   onPress?: () => void;
-  variant?: 'primary' | 'onDark' | 'danger'; // primary = green bg/white text, onDark = white bg/green text (used inside green hero cards), danger = destructive actions e.g. Cancel
+  variant?: 'primary' | 'onDark' | 'danger' | 'secondary'; // primary = green bg/white text, onDark = white bg/green text (used inside green hero cards), danger = destructive actions e.g. Cancel, secondary = pale green bg/green text (the less-emphasised of two choices)
   style?: StyleProp<ViewStyle>;
 };
 
 export default function Button({ label, onPress, variant = 'primary', style }: Props) {
   const isOnDark = variant === 'onDark';
   const isDanger = variant === 'danger';
+  const isSecondary = variant === 'secondary';
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
-        isOnDark ? styles.onDark : isDanger ? styles.danger : styles.primary,
+        isOnDark ? styles.onDark : isDanger ? styles.danger : isSecondary ? styles.secondary : styles.primary,
         pressed && { opacity: 0.85 },
         style,
       ]}
     >
-      <Text style={[styles.label, isOnDark ? styles.labelOnDark : styles.labelPrimary]}>{label}</Text>
+      <Text style={[styles.label, isOnDark || isSecondary ? styles.labelOnDark : styles.labelPrimary]}>{label}</Text>
     </Pressable>
   );
 }
@@ -42,6 +43,9 @@ const styles = StyleSheet.create({
   },
   danger: {
     backgroundColor: colors.alertIcon,
+  },
+  secondary: {
+    backgroundColor: colors.primaryTint,
   },
   label: {
     fontFamily: fonts.bold,
