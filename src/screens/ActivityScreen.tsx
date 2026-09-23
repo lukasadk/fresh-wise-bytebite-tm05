@@ -959,6 +959,22 @@ const radioStyles = StyleSheet.create({
   },
 });
 
+// Each option is one FoodKeeper storage method for the same food, and its id
+// is `${foodkeeper_id}-${method}` (see getAlternativesFromFoodkeeper), so the
+// icon comes from the method -- same icons FoodDetailScreen's storage
+// guidance uses. The mockup's product pictures (carton / tin / ice cube)
+// assume product substitutes, which FoodKeeper doesn't provide.
+const METHOD_ICON = {
+  refrigerate: { Icon: Refrigerator, color: colors.slateTeal },
+  freeze: { Icon: Snowflake, color: colors.slateTealDark },
+  pantry: { Icon: Sun, color: colors.statusSoon },
+} as const;
+
+function methodIconFor(optionId: string) {
+  const method = optionId.split('-').pop() as keyof typeof METHOD_ICON;
+  return METHOD_ICON[method] ?? METHOD_ICON.refrigerate;
+}
+
 function AlternativeCard({
   option,
   selected,
@@ -968,15 +984,25 @@ function AlternativeCard({
   selected: boolean;
   onPress: () => void;
 }) {
+  const { Icon, color } = methodIconFor(option.id);
   return (
     <Pressable
       onPress={onPress}
       style={[alternativeStyles.card, selected ? alternativeStyles.cardSelected : alternativeStyles.cardUnselected]}
     >
       <RadioDot selected={selected} />
+      <View style={alternativeStyles.iconTile}>
+        <Icon size={22} color={color} strokeWidth={2} />
+      </View>
       <View style={alternativeStyles.body}>
-        {option.bestMatch && <Text style={alternativeStyles.bestMatch}>Best match</Text>}
-        <Text style={alternativeStyles.title}>{option.title}</Text>
+        <View style={alternativeStyles.titleRow}>
+          <Text style={alternativeStyles.title}>{option.title}</Text>
+          {option.bestMatch && (
+            <View style={alternativeStyles.bestMatchPill}>
+              <Text style={alternativeStyles.bestMatchText}>Best match</Text>
+            </View>
+          )}
+        </View>
         <Text style={alternativeStyles.meta}>{option.meta}</Text>
         <Text style={alternativeStyles.why}>Why: {option.why}</Text>
       </View>
@@ -987,6 +1013,7 @@ function AlternativeCard({
 const alternativeStyles = StyleSheet.create({
   card: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
     borderRadius: radii.lg,
     borderWidth: 1,
@@ -995,38 +1022,54 @@ const alternativeStyles = StyleSheet.create({
   cardSelected: {
     backgroundColor: colors.primaryTint,
     borderColor: colors.primary,
+    borderWidth: 2,
   },
   cardUnselected: {
     backgroundColor: colors.card,
     borderColor: colors.border,
   },
-  body: { flex: 1, gap: 4 },
-  bestMatch: {
-    alignSelf: 'flex-start',
-    fontFamily: fonts.semibold,
-    fontSize: fontSize.xs,
-    color: colors.primary,
-    backgroundColor: colors.primaryTint,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radii.sm,
-    overflow: 'hidden',
-    marginBottom: 2,
+  iconTile: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  body: { flex: 1, gap: 3 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
   },
   title: {
+    flex: 1,
     fontFamily: fonts.bold,
     fontSize: fontSize.title,
     color: colors.textPrimary,
+  },
+  // Mockup: solid green pill, top-right of the card.
+  bestMatchPill: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 3,
+  },
+  bestMatchText: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    color: colors.white,
   },
   meta: {
     fontFamily: fonts.regular,
     fontSize: fontSize.sm,
     color: colors.textSecondary,
   },
+  // Mockup: "Why:" line in bold green.
   why: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textPrimary,
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.sm,
+    color: colors.primary,
     marginTop: 2,
   },
 });
@@ -1051,6 +1094,8 @@ function AlternativesList({
           onPress={() => onSelect(option.id)}
         />
       ))}
+      <Text style={alternativesListStyles.note}>Your current item will not be replaced automatically.</Text>
+      <Text style={alternativesListStyles.source}>Based on FoodKeeper storage data · US FDA / USDA</Text>
     </View>
   );
 }
@@ -1058,9 +1103,21 @@ function AlternativesList({
 const alternativesListStyles = StyleSheet.create({
   wrap: { gap: spacing.md },
   heading: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.heading,
+    fontFamily: fonts.serif,
+    fontSize: 20,
     color: colors.textPrimary,
+  },
+  note: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    marginTop: -spacing.xs,
+  },
+  source: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    marginTop: -spacing.sm,
   },
 });
 
@@ -1075,11 +1132,6 @@ function AlternativesFooter({
 }) {
   return (
     <View style={alternativesFooterStyles.wrap}>
-      <View style={alternativesFooterStyles.noteBar}>
-        <Text style={alternativesFooterStyles.noteText}>
-          Your current item will not be replaced automatically.
-        </Text>
-      </View>
       <View style={alternativesFooterStyles.buttonRow}>
         <Pressable
           onPress={disabled ? undefined : onUse}
@@ -1103,19 +1155,7 @@ function AlternativesFooter({
 }
 
 const alternativesFooterStyles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  noteBar: {
-    backgroundColor: colors.primaryTint2,
-    borderRadius: radii.md,
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.md,
-  },
-  noteText: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
+  wrap: { gap: spacing.md, marginTop: spacing.sm },
   buttonRow: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -1747,7 +1787,7 @@ function useAlternatives() {
         data: {
           itemName,
           canonicalFoodName,
-          insightBody: `Different ways to store ${itemName} to extend shelf life and reduce waste.`,
+          insightBody: 'Consider longer-lasting alternatives to reduce waste.',
           options,
         },
       });
@@ -2013,11 +2053,16 @@ export default function ActivityScreen() {
     Patterns: 'See what is wasted most often — and why.',
     Trends: 'Track progress against your reduction goal.',
   };
-  const subtitle = showAlternatives
-    ? alternativesState.status === 'ready'
-      ? `Storage options for ${alternativesState.data.itemName} · ranked by shelf life.`
-      : 'Alternatives based on your waste history.'
-    : subtitleByTab[activeTab];
+  const subtitle = showAlternatives ? 'Smarter choices for a more sustainable kitchen.' : subtitleByTab[activeTab];
+
+  // Mockup 29: the "Best match" option is pre-selected when the list loads,
+  // so "Use selected alternative" is usable straight away.
+  useEffect(() => {
+    if (alternativesState.status === 'ready' && selectedAlternativeId === null) {
+      const best = alternativesState.data.options.find((o) => o.bestMatch) ?? alternativesState.data.options[0];
+      if (best) setSelectedAlternativeId(best.id);
+    }
+  }, [alternativesState, selectedAlternativeId]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
