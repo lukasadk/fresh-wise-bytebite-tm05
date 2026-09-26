@@ -6,6 +6,7 @@ import Button from '../components/Button';
 import StatCard from '../components/StatCard';
 import QuickAction from '../components/QuickAction';
 import AlertBanner from '../components/AlertBanner';
+import UrgencyOutline, { urgencyPalette } from '../components/UrgencyOutline';
 import { LayoutGrid, Plus, Sparkles, Sun, CloudSun, Moon } from '../icons/NavIcons';
 import { usePantry, getExpiryInfo } from '../data/pantryItems';
 
@@ -44,6 +45,7 @@ export default function HomeScreen({ navigation }: any) {
       : null;
 
   const { text: greetingText, Icon: GreetingIcon } = getGreeting();
+  const heroPalette = urgencyPalette(soonestItem?.expiry.expiryLevel);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -71,28 +73,33 @@ export default function HomeScreen({ navigation }: any) {
           />
         ) : null}
 
-        {/* Use First hero */}
-        <View style={styles.hero}>
-          <Text style={styles.heroEyebrow}>USE FIRST</Text>
-          {soonestItem ? (
-            <>
-              <Text style={styles.heroTitle}>
-                {soonestItem.item.name} {soonestItem.expiry.detailExpiryTitle.toLowerCase()}
-              </Text>
-              <Text style={styles.heroBody}>Use it today and keep one item from going to waste.</Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.heroTitle}>Nothing due soon</Text>
-              <Text style={styles.heroBody}>Your pantry is in good shape — nice work!</Text>
-            </>
-          )}
-          <Button
-            label="View Use First"
-            variant="onDark"
-            onPress={() => navigation.navigate('UseFirst')}
-          />
-        </View>
+        {/* Use First hero -- terracotta + pulsing coral outline when expired/today,
+            ochre + pulsing amber outline when 1-3 days, original green otherwise. */}
+        <UrgencyOutline level={soonestItem?.expiry.expiryLevel} borderRadius={radii.xl}>
+          <View style={[styles.hero, { backgroundColor: heroPalette.background }]}>
+            <Text style={[styles.heroEyebrow, { color: heroPalette.muted }]}>USE FIRST</Text>
+            {soonestItem ? (
+              <>
+                <Text style={[styles.heroTitle, { color: heroPalette.text }]}>
+                  {soonestItem.item.name} {soonestItem.expiry.detailExpiryTitle.toLowerCase()}
+                </Text>
+                <Text style={[styles.heroBody, { color: heroPalette.text }]}>
+                  Use it today and keep one item from going to waste.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.heroTitle}>Nothing due soon</Text>
+                <Text style={styles.heroBody}>Your pantry is in good shape — nice work!</Text>
+              </>
+            )}
+            <Button
+              label="View Use First"
+              variant={heroPalette.buttonVariant}
+              onPress={() => navigation.navigate('UseFirst')}
+            />
+          </View>
+        </UrgencyOutline>
 
         {/* Pantry overview */}
         <Text style={styles.sectionTitle}>Pantry overview</Text>
@@ -102,12 +109,14 @@ export default function HomeScreen({ navigation }: any) {
             value={`${items.length} item${items.length === 1 ? '' : 's'}`}
             label="in your pantry"
             variant="outline"
+            onPress={() => navigation.navigate('Main', { screen: 'Pantry' })}
           />
           <StatCard
             icon={<Sparkles size={20} color={colors.primary} />}
             value={`${expiringSoonCount} item${expiringSoonCount === 1 ? '' : 's'}`}
             label="expiring soon"
             variant="tinted"
+            onPress={() => navigation.navigate('Main', { screen: 'UseFirst' })}
           />
         </View>
 
@@ -117,7 +126,7 @@ export default function HomeScreen({ navigation }: any) {
           <QuickAction
             icon={<LayoutGrid size={22} color={colors.primary} />}
             label="Scan Groceries"
-            onPress={() => navigation.navigate('PhotoGrocery')}
+            onPress={() => navigation.navigate('ScanGroceries')}
           />
           <QuickAction
             icon={<Plus size={24} color={colors.primary} />}

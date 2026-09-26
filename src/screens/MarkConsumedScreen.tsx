@@ -100,9 +100,9 @@ export default function MarkConsumedScreen({ navigation, route }: any) {
       // "half a carton left" with "fully consumed" would misdescribe what
       // actually happened to the pantry.
       if (isFullyConsumed) {
-        navigation.navigate('Main', { screen: 'Pantry', params: { consumed: item.name } });
+        navigation.popTo('Main', { screen: 'Pantry', params: { consumed: item.name } });
       } else {
-        navigation.navigate('Main', {
+        navigation.popTo('Main', {
           screen: 'Pantry',
           params: { updated: `${item.name} updated to ${formatWithUnit(remaining, item.unit)}` },
         });

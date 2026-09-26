@@ -88,7 +88,7 @@ export default function WasteRecordedScreen({ navigation, route }: any) {
 
         <Button
           label="Back to My Pantry"
-          onPress={() => navigation.navigate('Main', { screen: 'Pantry', params: { wasted: item.name } })}
+          onPress={() => navigation.popTo('Main', { screen: 'Pantry', params: { wasted: item.name } })}
           style={styles.fullWidthButton}
         />
       </ScrollView>

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, FlatList, Pressable, ScrollView, StyleSheet, Platform, useWindowDimensions, LayoutAnimation } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
@@ -28,6 +28,9 @@ type ViewMode = 'list' | 'grid';
 // for "tablet" since RN has no direct device-class API.
 const TABLET_WIDTH_BREAKPOINT = 768;
 
+// How long just-added items stay pinned to the top before the normal sort takes over.
+const NEW_ITEM_PIN_MS = 4000;
+
 export default function PantryScreen({ navigation, route }: any) {
   const [query, setQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string>(ALL_FILTER);
@@ -37,6 +40,9 @@ export default function PantryScreen({ navigation, route }: any) {
   // action it confirms) -- 'added' and 'consumed' share the same success look.
   const [toastType, setToastType] = useState<'success' | 'removed'>('success');
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
+  // Just-added items (from Scan Groceries or Add Food), pinned to the top with a
+  // "New" tag for NEW_ITEM_PIN_MS before the list re-sorts normally.
+  const [newIds, setNewIds] = useState<string[]>([]);
 
   const { width } = useWindowDimensions();
   const [viewMode, setViewMode] = useState<ViewMode>(
@@ -63,6 +69,7 @@ export default function PantryScreen({ navigation, route }: any) {
       const wastedName = route?.params?.wasted;
       const removedName = route?.params?.removed;
       const highlightId = route?.params?.highlightId;
+      const incomingNewIds = route?.params?.newIds;
       if (addedName) {
         // Falls back to the generic label if addedName isn't a real name string
         // (e.g. some earlier caller passing just `true`) -- never shows "true
@@ -112,6 +119,10 @@ export default function PantryScreen({ navigation, route }: any) {
         setHighlightedItemId(highlightId);
         navigation.setParams({ highlightId: undefined });
       }
+      if (Array.isArray(incomingNewIds) && incomingNewIds.length > 0) {
+        setNewIds(incomingNewIds.map(String));
+        navigation.setParams({ newIds: undefined });
+      }
     }, [
       route?.params?.added,
       route?.params?.consumed,
@@ -119,6 +130,7 @@ export default function PantryScreen({ navigation, route }: any) {
       route?.params?.wasted,
       route?.params?.removed,
       route?.params?.highlightId,
+      route?.params?.newIds,
     ])
   );
 
@@ -138,6 +150,18 @@ export default function PantryScreen({ navigation, route }: any) {
     const timeout = setTimeout(() => setHighlightedItemId(null), 4500);
     return () => clearTimeout(timeout);
   }, [highlightedItemId]);
+
+  // Same pattern as above: own effect keyed on the state, so clearing the
+  // route param can't cancel the timer.
+  useEffect(() => {
+    if (newIds.length === 0) return;
+    const timeout = setTimeout(() => {
+      // Animates the rows sliding into their normal sorted positions.
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setNewIds([]);
+    }, NEW_ITEM_PIN_MS);
+    return () => clearTimeout(timeout);
+  }, [newIds]);
 
   const openItem = (item: PantryItem) => navigation.navigate('FoodDetail', { id: item.id });
 
@@ -217,8 +241,13 @@ export default function PantryScreen({ navigation, route }: any) {
         sortKey
       )
     );
-    return sorted.map((x) => x.item);
-  }, [itemsWithExpiry, sortKey, query, activeFilter]);
+    const ordered = sorted.map((x) => x.item);
+    // Just-added items float to the top (keeping their relative sort order)
+    // until the pin timer clears newIds.
+    if (newIds.length === 0) return ordered;
+    const newSet = new Set(newIds);
+    return [...ordered.filter((i) => newSet.has(i.id)), ...ordered.filter((i) => !newSet.has(i.id))];
+  }, [itemsWithExpiry, sortKey, query, activeFilter, newIds]);
 
   // "Needs attention" = anything not safely >3 days out (urgent or warn level) --
   // matches the same thresholds the border/dot colours use, see pantryItems.ts.
@@ -315,7 +344,7 @@ export default function PantryScreen({ navigation, route }: any) {
                   found it easy to miss up here, and it reads as an "add"-family
                   action when paired with the + button. */}
               <View style={styles.headerButtons}>
-                <Pressable style={styles.addButton} onPress={() => navigation.navigate('AddFood')}>
+                <Pressable style={styles.addButton} onPress={() => navigation.navigate('AddFoodChoice')}>
                   <Plus size={22} color={colors.white} />
                 </Pressable>
               </View>
@@ -326,7 +355,18 @@ export default function PantryScreen({ navigation, route }: any) {
             {/* One pill would just be "All", which filters nothing -- the row
                 only earns its space once there is a choice to make. */}
             {filters.length > 1 ? (
-              <View style={styles.filterRow}>
+              // Horizontal scroll so every category stays reachable on narrow
+              // screens instead of being clipped off the right edge. The row
+              // bleeds to the screen edges (negative margin cancels the list's
+              // side padding) so pills scroll out cleanly rather than cutting
+              // off mid-screen.
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.filterScroll}
+                contentContainerStyle={styles.filterRow}
+                keyboardShouldPersistTaps="handled"
+              >
                 {filters.map((filter) => (
                   <FilterPill
                     key={filter}
@@ -335,7 +375,7 @@ export default function PantryScreen({ navigation, route }: any) {
                     onPress={() => setActiveFilter(filter)}
                   />
                 ))}
-              </View>
+              </ScrollView>
             ) : null}
 
             {hasActiveFilter ? (
@@ -415,7 +455,7 @@ export default function PantryScreen({ navigation, route }: any) {
               <Text style={styles.emptyStateSubtext}>Start by adding the food you have at home.</Text>
               <Button
                 label="Add food"
-                onPress={() => navigation.navigate('AddFood')}
+                onPress={() => navigation.navigate('AddFoodChoice')}
                 style={styles.emptyStateButton}
               />
             </View>
@@ -429,13 +469,13 @@ export default function PantryScreen({ navigation, route }: any) {
           const expiry = getExpiryInfo(item);
           const subtitle = `${item.category} · ${formatQuantity(item)}`;
           const isSelected = selectedIds.has(item.id);
-          const isHighlighted = highlightedItemId === item.id;
+          const isNew = newIds.includes(item.id);
+          const isHighlighted = highlightedItemId === item.id || isNew;
           const handlePress = () => (selectMode ? toggleSelected(item.id) : openItem(item));
 
           if (viewMode === 'grid') {
-            return (
-              <View style={styles.gridCell}>
-                <FoodCard
+            const card = (
+              <FoodCard
                   name={item.name}
                   category={item.category}
                   subtitle={subtitle}
@@ -446,8 +486,24 @@ export default function PantryScreen({ navigation, route }: any) {
                   selectMode={selectMode}
                   selected={isSelected}
                   highlighted={isHighlighted}
+                  highlightLabel={isNew ? 'New' : undefined}
                   onPress={handlePress}
                 />
+            );
+            // Grid cards swipe to Recipes like the list rows do (was list-only).
+            // flex: 1 on both Swipeable wrappers keeps cards in a row equal height.
+            return (
+              <View style={styles.gridCell}>
+                {selectMode ? card : (
+                  <SwipeToManage
+                    onManage={() => navigation.navigate('Recipes')}
+                    actionLabel="Recipe"
+                    containerStyle={{ flex: 1 }}
+                    childrenContainerStyle={{ flex: 1 }}
+                  >
+                    {card}
+                  </SwipeToManage>
+                )}
               </View>
             );
           }
@@ -463,6 +519,7 @@ export default function PantryScreen({ navigation, route }: any) {
               selectMode={selectMode}
               selected={isSelected}
               highlighted={isHighlighted}
+              highlightLabel={isNew ? 'New' : undefined}
               onPress={handlePress}
             />
           );
@@ -626,9 +683,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  filterScroll: {
+    marginHorizontal: -spacing.xxl,
+    flexGrow: 0,
+  },
   filterRow: {
     flexDirection: 'row',
     gap: spacing.sm,
+    paddingHorizontal: spacing.xxl,
   },
   chipRow: {
     flexDirection: 'row',

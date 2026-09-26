@@ -13,6 +13,7 @@ import { getDeviceId } from './device';
 // can be read out of the built app. It filters bots and acts as a kill switch;
 // the server's rate limiter is what actually caps abuse.
 import { API_BASE_URL, API_KEY, API_KEY_HEADER, DEVICE_ID_HEADER } from '../api/config';
+import { ensureProfile, NO_PROFILE_DETAIL } from '../api/client';
 
 // Re-exported so existing importers of `API_BASE_URL` from this module keep working.
 export { API_BASE_URL };
@@ -31,36 +32,25 @@ export class ApiError extends Error {
   }
 }
 
-const MISSING_PROFILE_DETAIL = 'No profile for this device UUID yet. Call POST /v1/users first.';
-let profileRegistrationInFlight: Promise<void> | null = null;
-
-async function ensureProfileExistsForCurrentDevice(): Promise<void> {
-  if (profileRegistrationInFlight) return profileRegistrationInFlight;
-
-  profileRegistrationInFlight = (async () => {
-    const deviceId = await getDeviceId();
-    const response = await fetch(`${API_BASE_URL}/v1/users`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        [DEVICE_ID_HEADER]: deviceId,
-        ...(API_KEY ? { [API_KEY_HEADER]: API_KEY } : {}),
-      },
-      body: JSON.stringify({ user_id: deviceId, household_size: 1 }),
-    });
-
-    if (!response.ok) {
-      const raw = await response.text().catch(() => '');
-      throw new ApiError(raw || 'Could not create device profile.', response.status);
-    }
-  })().finally(() => {
-    profileRegistrationInFlight = null;
-  });
-
-  return profileRegistrationInFlight;
+// Same self-healing as src/api/client.ts: if the startup registration never
+// landed, the first "No profile" 404 registers this device (get-or-create) and
+// the request is retried once, instead of failing for the whole session.
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  try {
+    return await requestOnce<T>(path, options);
+  } catch (err) {
+    const isMissingProfile =
+      err instanceof ApiError &&
+      err.status === 404 &&
+      err.message.startsWith(NO_PROFILE_DETAIL) &&
+      path !== '/v1/users';
+    if (!isMissingProfile) throw err;
+    await ensureProfile();
+    return requestOnce<T>(path, options);
+  }
 }
 
-async function request<T>(path: string, options?: RequestInit, retriedAfterProfileCreate = false): Promise<T> {
+async function requestOnce<T>(path: string, options?: RequestInit): Promise<T> {
   const deviceId = await getDeviceId();
 
   const controller = new AbortController();
@@ -110,15 +100,6 @@ async function request<T>(path: string, options?: RequestInit, retriedAfterProfi
       }
     } catch {
       // Body wasn't JSON -- keep the raw text.
-    }
-    if (
-      !retriedAfterProfileCreate &&
-      response.status === 404 &&
-      message.includes(MISSING_PROFILE_DETAIL) &&
-      !path.startsWith('/v1/users')
-    ) {
-      await ensureProfileExistsForCurrentDevice();
-      return request<T>(path, options, true);
     }
     throw new ApiError(message, response.status);
   }

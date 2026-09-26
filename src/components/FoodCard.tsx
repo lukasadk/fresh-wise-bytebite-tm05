@@ -17,6 +17,7 @@ type Props = {
   selectMode?: boolean;
   selected?: boolean;
   highlighted?: boolean;
+  highlightLabel?: string; // e.g. "New" right after adding -- same as FoodRow
   onPress?: () => void;
 };
 
@@ -37,6 +38,7 @@ export default function FoodCard({
   selectMode,
   selected,
   highlighted,
+  highlightLabel,
   onPress,
 }: Props) {
   const Icon = foodIconFor(name, category);
@@ -59,6 +61,11 @@ export default function FoodCard({
         ) : (
           <View />
         )}
+        {highlighted && highlightLabel ? (
+          <View style={styles.newTag}>
+            <Text style={styles.newTagText}>{highlightLabel}</Text>
+          </View>
+        ) : null}
         {source ? (
           <View
             style={[
@@ -78,6 +85,8 @@ export default function FoodCard({
         {expiryLevel ? <View style={[styles.dot, { backgroundColor: borderColor }]} /> : null}
         <ExpiryPill label={expiryLabel} level={expiryLevel} />
       </View>
+      {/* Same hint as the list rows -- the grid cards swipe to Recipes too. */}
+      {!selectMode ? <Text style={styles.swipeHint}>Swipe for recipe →</Text> : null}
     </Pressable>
   );
 }
@@ -153,6 +162,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     marginTop: 4,
+  },
+  swipeHint: {
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    color: colors.textSecondary,
+  },
+  newTag: {
+    marginLeft: 'auto',
+    marginRight: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+  },
+  newTagText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.white,
   },
   dot: {
     width: 8,

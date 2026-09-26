@@ -110,7 +110,7 @@ export default function RecipeConsumeScreen() {
       return;
     }
     refresh();
-    navigation.navigate('Main', { screen: 'Pantry' });
+    navigation.popTo('Main', { screen: 'Pantry' });
   };
 
   return (

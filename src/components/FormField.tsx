@@ -219,6 +219,25 @@ export function DateField({ value, onChange, placeholder = 'Select date', maximu
           calendar, which looks closer to the Figma design. */}
       {open && Platform.OS === 'ios' && (
         <View style={styles.iosPickerCard}>
+          {/* Cancel / Done sit ABOVE the spinner (iOS toolbar style), right
+              under the field that was tapped. Below the spinner they were
+              pushed off-screen for the lower date fields, so confirming a
+              date meant scrolling down first. */}
+          <View style={styles.iosPickerToolbar}>
+            <Pressable hitSlop={8} onPress={() => setOpen(false)}>
+              <Text style={styles.toolbarCancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              hitSlop={8}
+              onPress={() => {
+                // Never let an epoch/Invalid Date escape into the form state.
+                if (isValidDate(draftDate)) onChange(draftDate);
+                setOpen(false);
+              }}
+            >
+              <Text style={styles.toolbarDoneText}>Done</Text>
+            </Pressable>
+          </View>
           {/* themeVariant/textColor are the fix for "the dates are invisible".
               The iOS spinner is a native view that follows the SYSTEM appearance,
               so on a phone in dark mode it draws near-white numerals -- onto our
@@ -239,21 +258,6 @@ export function DateField({ value, onChange, placeholder = 'Select date', maximu
             onDismiss={() => {}}
             style={styles.iosPicker}
           />
-          <View style={styles.iosPickerActions}>
-            <Pressable style={styles.cancelButton} onPress={() => setOpen(false)}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              style={styles.doneButton}
-              onPress={() => {
-                // Never let an epoch/Invalid Date escape into the form state.
-                if (isValidDate(draftDate)) onChange(draftDate);
-                setOpen(false);
-              }}
-            >
-              <Text style={styles.doneButtonText}>Done</Text>
-            </Pressable>
-          </View>
         </View>
       )}
     </>
@@ -354,35 +358,23 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     marginTop: spacing.sm,
   },
-  iosPickerActions: {
+  iosPickerToolbar: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  cancelButton: {
-    flex: 1,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderRadius: radii.pill,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  cancelButtonText: {
+  toolbarCancelText: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.textSecondary,
+  },
+  toolbarDoneText: {
     fontFamily: fonts.bold,
     fontSize: 15,
-    color: colors.textPrimary,
-  },
-  doneButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderRadius: radii.pill,
-    backgroundColor: colors.primary,
-  },
-  doneButtonText: {
-    fontFamily: fonts.bold,
-    fontSize: 15,
-    color: colors.white,
+    color: colors.primary,
   },
 });
