@@ -5,6 +5,7 @@ __pycache__/
 tests/
 .pytest_cache/
 src/wastewise_grocery_vlm/static/downloads/
-# APK artifacts are distributed separately; keeping them out of the API image
-# makes backend deploys small and avoids re-uploading a 39 MB binary each time.
-app/static/downloads/
+# Ship only the current public Android release. Older local test APKs stay out
+# of the API image so normal backend deploys do not accumulate binaries.
+app/static/downloads/*
+!app/static/downloads/FreshWise-v1.4.2-latest-main-20260927.apk
