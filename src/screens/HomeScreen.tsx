@@ -10,6 +10,32 @@ import UrgencyOutline, { urgencyPalette } from '../components/UrgencyOutline';
 import { LayoutGrid, Plus, Sparkles, Sun, CloudSun, Moon } from '../icons/NavIcons';
 import { usePantry, getExpiryInfo } from '../data/pantryItems';
 
+// Hero card copy that matches the soonest item's state. It used to say "Use it
+// today..." even for food that had already expired, which read as advice to
+// eat expired food.
+function heroCopy(name: string, daysLeft: number | null): { title: string; body: string } {
+  if (daysLeft === null) {
+    return { title: `${name} has no expiry date`, body: 'Add a date so FreshWise can remind you in time.' };
+  }
+  if (daysLeft < 0) {
+    const ago = -daysLeft;
+    return {
+      title: `${name} expired ${ago === 1 ? 'yesterday' : `${ago} days ago`}`,
+      body: 'Check it before eating. If it has gone off, record it as wasted.',
+    };
+  }
+  if (daysLeft === 0) {
+    return { title: `${name} expires today`, body: 'Use it today and keep one item from going to waste.' };
+  }
+  if (daysLeft <= 3) {
+    return {
+      title: `${name} expires ${daysLeft === 1 ? 'tomorrow' : `in ${daysLeft} days`}`,
+      body: 'Plan a meal with it in the next few days.',
+    };
+  }
+  return { title: `${name} expires in ${daysLeft} days`, body: 'Nothing urgent yet. This is next in line to use.' };
+}
+
 // Three buckets, matching the icons available: a rising/full sun for morning, a
 // sun-behind-cloud for afternoon, a moon for night. Re-evaluated on every render,
 // which is enough for a greeting -- it doesn't need to tick live.
@@ -81,10 +107,10 @@ export default function HomeScreen({ navigation }: any) {
             {soonestItem ? (
               <>
                 <Text style={[styles.heroTitle, { color: heroPalette.text }]}>
-                  {soonestItem.item.name} {soonestItem.expiry.detailExpiryTitle.toLowerCase()}
+                  {heroCopy(soonestItem.item.name, soonestItem.expiry.daysLeft).title}
                 </Text>
                 <Text style={[styles.heroBody, { color: heroPalette.text }]}>
-                  Use it today and keep one item from going to waste.
+                  {heroCopy(soonestItem.item.name, soonestItem.expiry.daysLeft).body}
                 </Text>
               </>
             ) : (
