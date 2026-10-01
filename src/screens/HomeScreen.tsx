@@ -95,7 +95,7 @@ export default function HomeScreen({ navigation }: any) {
             level={attentionHasUrgent ? 'urgent' : 'warn'}
             title={attentionHasUrgent ? 'Use or check food today' : 'Food entering Amber Gold zone'}
             subtitle={`Use or check: ${attentionNames}`}
-            onPress={() => navigation.navigate('UseFirst')}
+            onPress={() => navigation.navigate('UseFirst', { scrollToTop: Date.now() })}
           />
         ) : null}
 
@@ -122,7 +122,7 @@ export default function HomeScreen({ navigation }: any) {
             <Button
               label="View Use First"
               variant={heroPalette.buttonVariant}
-              onPress={() => navigation.navigate('UseFirst')}
+              onPress={() => navigation.navigate('UseFirst', { scrollToTop: Date.now() })}
             />
           </View>
         </UrgencyOutline>
@@ -135,14 +135,14 @@ export default function HomeScreen({ navigation }: any) {
             value={`${items.length} item${items.length === 1 ? '' : 's'}`}
             label="in your pantry"
             variant="outline"
-            onPress={() => navigation.navigate('Main', { screen: 'Pantry' })}
+            onPress={() => navigation.navigate('Main', { screen: 'Pantry', params: { scrollToTop: Date.now() } })}
           />
           <StatCard
             icon={<Sparkles size={20} color={colors.primary} />}
             value={`${expiringSoonCount} item${expiringSoonCount === 1 ? '' : 's'}`}
             label="expiring soon"
             variant="tinted"
-            onPress={() => navigation.navigate('Main', { screen: 'UseFirst' })}
+            onPress={() => navigation.navigate('Main', { screen: 'UseFirst', params: { scrollToTop: Date.now() } })}
           />
         </View>
 

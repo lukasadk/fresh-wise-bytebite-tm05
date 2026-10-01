@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, FlatList, Pressable, ScrollView, StyleSheet, Platform, useWindowDimensions, LayoutAnimation } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import { ALL_FILTER, categoryForFilter, deriveFilters, isFilterStillValid } from '../data/pantryFilters';
 import { DEFAULT_SORT, SORT_SHORT_LABEL, SortKey, compareItems, isDescending } from '../data/pantrySort';
@@ -32,6 +32,15 @@ const TABLET_WIDTH_BREAKPOINT = 768;
 const NEW_ITEM_PIN_MS = 4000;
 
 export default function PantryScreen({ navigation, route }: any) {
+  // Start at the top when opened from Home's overview card (route param is a
+  // timestamp, so every tap re-triggers), and when the My Pantry tab is tapped
+  // again while already open (useScrollToTop).
+  const listRef = useRef<FlatList<any>>(null);
+  useScrollToTop(listRef);
+  useEffect(() => {
+    if (route?.params?.scrollToTop) listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [route?.params?.scrollToTop]);
+
   const [query, setQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string>(ALL_FILTER);
   const { items, loading: itemsLoading, error: itemsError, refresh } = usePantry();
@@ -326,6 +335,7 @@ export default function PantryScreen({ navigation, route }: any) {
         </View>
       ) : null}
       <FlatList
+        ref={listRef}
         // Forces a remount when switching view modes -- FlatList doesn't support
         // changing numColumns on an already-mounted list.
         key={viewMode}
@@ -402,7 +412,7 @@ export default function PantryScreen({ navigation, route }: any) {
                 level={attentionHasUrgent ? 'urgent' : 'warn'}
                 title={`${attentionItems.length} item${attentionItems.length === 1 ? '' : 's'} need${attentionItems.length === 1 ? 's' : ''} attention`}
                 subtitle={`Use or check: ${attentionNames}. Closest expiry: ${closestAttentionLabel}`}
-                onPress={() => navigation.navigate('UseFirst')}
+                onPress={() => navigation.navigate('UseFirst', { scrollToTop: Date.now() })}
               />
             ) : null}
 

@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { useScrollToTop } from '@react-navigation/native';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
@@ -40,7 +41,15 @@ const SECTIONS = [
 
 const HERO_RADIUS = radii.xl + 2;
 
-export default function UseFirstScreen({ navigation }: any) {
+export default function UseFirstScreen({ navigation, route }: any) {
+  // Start at the top when opened from Home (timestamp param, so every tap
+  // re-triggers), and when the Use First tab is tapped again while open.
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
+  useEffect(() => {
+    if (route?.params?.scrollToTop) scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [route?.params?.scrollToTop]);
+
   // Every item, not just the expiring ones -- the "Fresh" band needs the rest
   // of the pantry to have anything to show. The API returns them already
   // ordered by expiry date ascending, so each bucket stays nearest-first
@@ -71,7 +80,7 @@ export default function UseFirstScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Use First</Text>
         <Text style={styles.subtitle}>Prioritised by expiry so nothing gets forgotten.</Text>
 

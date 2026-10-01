@@ -142,7 +142,7 @@ export default function RecipesScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statPill}>
             <Text style={styles.statNumber}>{inventory.length}</Text>
-            <Text style={styles.statLabel}>Pantry items</Text>
+            <Text style={styles.statLabel}>{inventory.length === 1 ? 'Pantry item' : 'Pantry items'}</Text>
           </View>
           <View style={[styles.statPill, expiringCount > 0 && styles.statPillWarn]}>
             <Text style={[styles.statNumber, expiringCount > 0 && styles.statNumberWarn]}>{expiringCount}</Text>
