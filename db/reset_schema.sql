@@ -16,6 +16,8 @@ BEGIN;
 DROP VIEW IF EXISTS weekly_waste_summary;
 
 DROP TABLE IF EXISTS
+    shopping_list_item,
+    dismissed_suggestion,
     consumption_waste_log,
     diet_preference,
     food_item,

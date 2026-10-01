@@ -24,6 +24,25 @@ function makeImageIcon(source: number) {
   };
 }
 
+// For the line-art category icons (transparent PNG, coloured strokes, no
+// background of their own). Drawn centred on the same soft rounded tile the
+// generic fallback uses, so they sit at the same visual weight as the filled
+// cartoon item icons instead of looking like floating outlines.
+function makeLineIcon(source: number) {
+  return function LineIcon({ size = 48 }: IconProps) {
+    return (
+      <View
+        style={[
+          styles.tile,
+          { width: size, height: size, borderRadius: size * CORNER_RADIUS_RATIO },
+        ]}
+      >
+        <Image source={source} style={{ width: size * 0.68, height: size * 0.68 }} resizeMode="contain" />
+      </View>
+    );
+  };
+}
+
 export const MilkIcon = makeImageIcon(require('../../assets/food-icons/milk.png'));
 export const BreadIcon = makeImageIcon(require('../../assets/food-icons/bread.png'));
 export const PastaIcon = makeImageIcon(require('../../assets/food-icons/pasta.png'));
@@ -32,16 +51,16 @@ export const SoupIcon = makeImageIcon(require('../../assets/food-icons/soup.png'
 export const SpinachIcon = makeImageIcon(require('../../assets/food-icons/spinach.png'));
 export const ChickenIcon = makeImageIcon(require('../../assets/food-icons/chicken.png'));
 
-// The remaining six assets in /assets/food-icons are the "anime style" CATEGORY
-// icon set (Feature 99 reference) -- one per AddFoodScreen.CATEGORIES value,
-// distinct from the item-NAME-keyword icons above. Dairy and Vegetables reuse
-// MilkIcon/SpinachIcon rather than needing their own category-specific asset.
+// CATEGORY icons -- one per AddFoodScreen.CATEGORIES value, distinct from the
+// item-NAME-keyword icons above. Dairy and Vegetables reuse MilkIcon/SpinachIcon.
+// protein.png is still the older filled "anime style" art; the other five are
+// the newer line-art set (transparent PNGs) and use makeLineIcon.
 export const ProteinIcon = makeImageIcon(require('../../assets/food-icons/protein.png'));
-export const FruitIcon = makeImageIcon(require('../../assets/food-icons/fruit.png'));
-export const PantryFoodIcon = makeImageIcon(require('../../assets/food-icons/pantry.png'));
-export const FrozenIcon = makeImageIcon(require('../../assets/food-icons/frozen.png'));
-export const BeveragesIcon = makeImageIcon(require('../../assets/food-icons/beverages.png'));
-export const OtherCategoryIcon = makeImageIcon(require('../../assets/food-icons/other.png'));
+export const FruitIcon = makeLineIcon(require('../../assets/food-icons/fruit.png'));
+export const PantryFoodIcon = makeLineIcon(require('../../assets/food-icons/pantry.png'));
+export const FrozenIcon = makeLineIcon(require('../../assets/food-icons/frozen.png'));
+export const BeveragesIcon = makeLineIcon(require('../../assets/food-icons/beverages.png'));
+export const OtherCategoryIcon = makeLineIcon(require('../../assets/food-icons/other.png'));
 
 // Neutral fallback -- a plain rounded square with a soft dot, distinct from every
 // real food icon so an unrecognised name doesn't masquerade as milk (or anything
@@ -50,7 +69,7 @@ export function GenericFoodIcon({ size = 48 }: IconProps) {
   return (
     <View
       style={[
-        styles.genericBg,
+        styles.tile,
         { width: size, height: size, borderRadius: size * CORNER_RADIUS_RATIO },
       ]}
     >
@@ -68,20 +87,28 @@ export function GenericFoodIcon({ size = 48 }: IconProps) {
 }
 
 const styles = StyleSheet.create({
-  genericBg: {
+  tile: {
     backgroundColor: colors.foodIconBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
 });
 
+// Common fruit names, so a fruit shows the fruit icon from its NAME alone --
+// needed because the photo model sometimes files fruit under the wrong
+// category (e.g. "Green apples" came back as Vegetables). Checked AFTER the
+// specific item icons, so "tomato" still gets the tomato icon.
+const FRUIT_KEYWORDS = [
+  'fruit', 'apple', 'banana', 'orange', 'mandarin', 'grape', 'mango', 'pear',
+  'berry', 'berries', 'melon', 'lemon', 'lime', 'papaya', 'pineapple', 'kiwi',
+  'peach', 'plum', 'cherry', 'cherries', 'durian', 'rambutan', 'guava', 'longan',
+  'lychee', 'pomelo', 'avocado',
+];
+
 // Maps a pantry item's name (and, failing that, its category) to an icon. Name is
 // checked first since it's the most specific signal (e.g. "Chicken breast" should
 // show chicken even if its category happens to be something generic); category is
-// a coarser fallback for items whose name doesn't hit a keyword -- only mapped for
-// categories with a real matching asset (Dairy/Protein/Vegetables). Categories with
-// no good matching icon (Fruit, Pantry, Frozen, Beverages, Other) intentionally
-// fall through to GenericFoodIcon rather than showing a food they aren't.
+// the fallback for items whose name doesn't hit a keyword.
 export function foodIconFor(name: string, category?: string) {
   const key = name.toLowerCase();
   if (key.includes('milk')) return MilkIcon;
@@ -100,23 +127,20 @@ export function foodIconFor(name: string, category?: string) {
     return PastaIcon;
   if (key.includes('tomato')) return TomatoIcon;
   if (key.includes('soup') || key.includes('broth') || key.includes('stew')) return SoupIcon;
+  if (FRUIT_KEYWORDS.some((k) => key.includes(k))) return FruitIcon;
 
-  const cat = category?.toLowerCase();
-  if (cat === 'dairy') return MilkIcon;
-  if (cat === 'protein') return ChickenIcon;
-  if (cat === 'vegetables') return SpinachIcon;
+  // No name match -- use the item's category icon. Covers all 8 categories now
+  // that Fruit/Pantry/Frozen/Beverages/Other have their own artwork.
+  if (category && category.trim()) return categoryIconFor(category);
 
   return GenericFoodIcon;
 }
 
 /** Maps one of AddFoodScreen's 8 fixed CATEGORIES values to its icon -- for
  *  contexts that only have a category, not a specific item name (the
- *  Patterns tab's category-weight bars, which aggregate across many items
- *  at once). Case-insensitive; anything outside the fixed 8 falls back to
- *  OtherCategoryIcon rather than the unrelated GenericFoodIcon, since a
- *  category context always carries SOME categorical meaning even if it's
- *  an unexpected value (the category column is free-text in the DB, even
- *  though the UI only ever writes one of the 8). */
+ *  Patterns tab's category bars), and as foodIconFor's fallback.
+ *  Case-insensitive; anything outside the fixed 8 falls back to
+ *  OtherCategoryIcon. */
 export function categoryIconFor(category: string) {
   switch (category.trim().toLowerCase()) {
     case 'dairy':
