@@ -36,7 +36,11 @@ type RecipeRagOptions = {
   useAi?: boolean;
   cuisineProfile?: 'malaysia';
   focusFoodName?: string;
+  /** Recipes already shown ("Show other recipes"): leave these out. */
+  excludeTitles?: string[];
 };
+
+const recipeKey = (recipe: RecipeRecommendation) => (recipe.title || recipe.recipe_name || '').trim().toLowerCase();
 
 function normaliseRecipeText(value: string | null | undefined): string {
   return String(value ?? '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -64,19 +68,213 @@ function priorityUsageScore(recipe: RecipeRecommendation, focusFoodName?: string
   return priority.length * 10 + matched.length + (focusHit ? 100 : 0) + Number(recipe.score ?? 0);
 }
 
+// --- Expiry-first ranking -----------------------------------------------------
+// "Cook what expires first": a recipe that uses pantry food expiring within
+// URGENT_DAYS always ranks above one that doesn't, then the recipe using the
+// soonest-expiring food wins. priorityUsageScore (above) is only the tie-breaker.
+// Before this, recipes were sorted by priorityUsageScore alone, which mostly
+// counts how many "priority uses" a recipe lists in the library -- so a rice
+// dish listing 3 beat a spinach soup listing 2 even with spinach expiring tomorrow.
+const URGENT_DAYS = 3;
+
+// Library recipes carry extra pantry keywords (pantrySignals, e.g. "spinach"
+// for a recipe whose ingredient is "leafy vegetables"); kept here so matching
+// can use them without adding a field to RecipeRecommendation.
+const recipePantrySignals = new WeakMap<RecipeRecommendation, string[]>();
+
+// --- Matching a pantry item to a recipe ingredient ------------------------------
+// Stricter than textMentionsNeedle (plain substring, either direction), which let
+// "Milk" count as the "soy milk" in a chia pudding and listed "Apple" and
+// "Green apples" as two separate ingredients. Here a pantry item matches when
+// every word of the shorter name is in the longer one (plurals ignored), and the
+// extra words don't make it a different product.
+const PRODUCT_CHANGING_WORDS = new Set([
+  'soy', 'soya', 'oat', 'almond', 'coconut', 'condensed', 'evaporated', 'peanut', 'milk',
+  'juice', 'sauce', 'powder', 'paste', 'oil', 'vinegar', 'cake', 'flour', 'chip', 'jam',
+  'butter', 'syrup', 'ketchup', 'stock', 'cube', 'noodle', 'cracker', 'biscuit', 'keropok',
+  'seed', 'ball', 'spread', 'essence', 'extract', 'candy',
+]);
+
+// Recipe words that name a whole pantry category ("Top with fruit").
+const CATEGORY_WORDS: Record<string, string> = {
+  fruit: 'fruit',
+  vegetable: 'vegetables',
+  veggie: 'vegetables',
+  greens: 'vegetables',
+  dairy: 'dairy',
+  protein: 'protein',
+};
+
+function singularWord(word: string): string {
+  if (word.length > 4 && word.endsWith('ies')) return word === 'chillies' ? 'chilli' : `${word.slice(0, -3)}y`;
+  if (word.length > 4 && word.endsWith('oes')) return word.slice(0, -2);
+  if (word.length > 3 && word.endsWith('s') && !word.endsWith('ss')) return word.slice(0, -1);
+  return word;
+}
+
+function foodWords(value: string): string[] {
+  return normaliseRecipeText(value).split(' ').filter(Boolean).map(singularWord);
+}
+
+/** Which food `term` and pantry `name` both are ("apple"), or null if they differ.
+ *  "chia seeds or oats" is checked as two alternatives. */
+function sharedFood(term: string, name: string): string | null {
+  const nameWords = foodWords(name);
+  if (!nameWords.length) return null;
+  for (const alternative of String(term ?? '').split(/\s+or\s+|\//i)) {
+    const termWords = foodWords(alternative);
+    if (!termWords.length) continue;
+    const [shorter, longer] = termWords.length <= nameWords.length ? [termWords, nameWords] : [nameWords, termWords];
+    if (!shorter.every((word) => longer.includes(word))) continue;
+    const extra = longer.filter((word) => !shorter.includes(word));
+    if (extra.some((word) => PRODUCT_CHANGING_WORDS.has(word))) continue;
+    return shorter.join(' ');
+  }
+  return null;
+}
+
+/** What `term` is to this pantry item: the food they share, or the item's
+ *  category when the recipe just says e.g. "fruit". null if unrelated. */
+function pantryMatch(term: string, item: FoodItem): string | null {
+  const byName =
+    sharedFood(term, item.name) ?? (item.canonical_food_name ? sharedFood(term, item.canonical_food_name) : null);
+  if (byName) return byName;
+  const category = normaliseRecipeText(item.category);
+  if (!category) return null;
+  const categoryWord = foodWords(term).map((word) => CATEGORY_WORDS[word]).find(Boolean);
+  return categoryWord && categoryWord === category ? `category:${category}` : null;
+}
+
+function daysLeft(item: FoodItem): number {
+  return item.days_to_expiry ?? Number.POSITIVE_INFINITY;
+}
+
+type ExpiryRank = {
+  used: FoodItem[];
+  urgent: FoodItem[];
+  /** Urgent items the recipe names itself ("spinach"), not just via a category word ("vegetables"). */
+  urgentByName: number;
+  soonest: number;
+  covers: (ingredient: string) => boolean;
+};
+
+function expiryRank(recipe: RecipeRecommendation, inventory: FoodItem[]): ExpiryRank {
+  const terms = [
+    recipe.title ?? '',
+    recipe.recipe_name ?? '',
+    ...(recipe.ingredient_tokens ?? []),
+    ...(recipe.available_ingredients ?? []),
+    ...(recipe.matched_ingredients ?? []),
+    ...(recipePantrySignals.get(recipe) ?? []),
+  ].filter(Boolean);
+  // One pantry item per food: with both "Apple" and "Green apples" at home the
+  // card lists whichever expires first, not both.
+  const claimed = new Set<string>();
+  const used: FoodItem[] = [];
+  const byName = new Set<FoodItem>();
+  for (const item of [...inventory].sort((a, b) => daysLeft(a) - daysLeft(b))) {
+    const matches = terms.map((term) => pantryMatch(term, item)).filter((key): key is string => Boolean(key));
+    if (!matches.length) continue;
+    const key = matches.find((match) => !match.startsWith('category:')) ?? matches[0];
+    if (claimed.has(key)) continue;
+    claimed.add(key);
+    used.push(item);
+    if (!key.startsWith('category:')) byName.add(item);
+  }
+  // Expired food (days < 0) is never a reason to recommend a recipe.
+  const dated = used.filter((item) => item.days_to_expiry !== null && item.days_to_expiry >= 0);
+  const urgent = dated.filter((item) => (item.days_to_expiry as number) <= URGENT_DAYS);
+  const soonest = dated.reduce((min, item) => Math.min(min, item.days_to_expiry as number), Number.POSITIVE_INFINITY);
+  const covers = (ingredient: string) => inventory.some((item) => pantryMatch(ingredient, item) !== null);
+  const urgentByName = urgent.filter((item) => byName.has(item)).length;
+  return { used, urgent, urgentByName, soonest, covers };
+}
+
+function usesFocusFood(recipe: RecipeRecommendation, focusFoodName?: string): boolean {
+  if (!focusFoodName) return false;
+  const priority = recipe.priority_ingredients ?? recipe.expiring_ingredients_matched ?? [];
+  const matched = recipe.available_ingredients ?? recipe.matched_ingredients ?? [];
+  return [...priority, ...matched, recipe.title ?? '', recipe.recipe_name ?? ''].some((value) =>
+    textMentionsNeedle(value, focusFoodName),
+  );
+}
+
+function expiresIn(days: number): string {
+  if (days <= 0) return 'today';
+  if (days === 1) return 'tomorrow';
+  return `in ${days} days`;
+}
+
+/** Makes the card describe the user's actual pantry:
+ *    Priority  -- the pantry food in this recipe that expires within URGENT_DAYS
+ *                 (or, if none does, the one that expires first)
+ *    Available -- the pantry items the recipe uses, one per food, soonest first
+ *    Missing   -- recipe ingredients nothing in the pantry covers */
+function withPantryPriority(recipe: RecipeRecommendation, rank: ExpiryRank): RecipeRecommendation {
+  const unique = (values: string[]) =>
+    values.filter((value, index) => values.findIndex((v) => v.toLowerCase() === value.toLowerCase()) === index);
+  if (!rank.used.length) return recipe;
+
+  const dated = rank.used.filter((item) => item.days_to_expiry !== null && item.days_to_expiry >= 0);
+  const priorityItems = rank.urgent.length ? rank.urgent : dated.slice(0, 1);
+  const priority = priorityItems.slice(0, 3).map((item) => item.name);
+  const available = unique(rank.used.map((item) => item.name));
+  const missing = unique([
+    ...(recipe.missing_ingredients ?? []),
+    ...(recipe.source === 'local_malaysian_rag' ? recipe.ingredient_tokens ?? [] : []),
+  ]).filter((ingredient) => !rank.covers(ingredient));
+
+  let reason = recipe.reason;
+  if (recipe.source === 'local_malaysian_rag') {
+    const first = rank.urgent[0];
+    reason = first
+      ? `Uses ${first.name} before it expires ${expiresIn(first.days_to_expiry as number)}.`
+      : `Uses ${available.slice(0, 3).join(', ')} from your pantry.`;
+  }
+
+  return {
+    ...recipe,
+    reason,
+    priority_ingredients: priority.length ? priority : recipe.priority_ingredients,
+    expiring_ingredients_matched: rank.urgent.map((item) => item.name),
+    available_ingredients: available,
+    matched_ingredients: available,
+    missing_ingredients: missing,
+  };
+}
+
 function rankRecipeRecommendations(
   recipes: RecipeRecommendation[],
+  inventory: FoodItem[],
   focusFoodName?: string,
 ): RecipeRecommendation[] {
-  return [...recipes].sort(
-    (a, b) => priorityUsageScore(b, focusFoodName) - priorityUsageScore(a, focusFoodName),
-  );
+  const ranked = recipes.map((recipe) => ({ recipe, rank: expiryRank(recipe, inventory) }));
+  ranked.sort((a, b) => {
+    // 1. The food the user tapped "Find recipes" on comes first.
+    const focus = Number(usesFocusFood(b.recipe, focusFoodName)) - Number(usesFocusFood(a.recipe, focusFoodName));
+    if (focus) return focus;
+    // 2. More pantry items expiring within URGENT_DAYS.
+    const urgent = b.rank.urgent.length - a.rank.urgent.length;
+    if (urgent) return urgent;
+    // 2b. ...and prefers a recipe that names that food over one that only says "vegetables".
+    const named = b.rank.urgentByName - a.rank.urgentByName;
+    if (named) return named;
+    // 3. Uses the soonest-expiring food.
+    if (a.rank.soonest !== b.rank.soonest) return a.rank.soonest < b.rank.soonest ? -1 : 1;
+    // 4. Prefer the AI service's recipes over the local fallback library.
+    const local = Number(a.recipe.source === 'local_malaysian_rag') - Number(b.recipe.source === 'local_malaysian_rag');
+    if (local) return local;
+    // 5. The original score.
+    return priorityUsageScore(b.recipe, focusFoodName) - priorityUsageScore(a.recipe, focusFoodName);
+  });
+  return ranked.map(({ recipe, rank }) => withPantryPriority(recipe, rank));
 }
 
 function localMalaysianRecipeRecommendations(
   inventory: FoodItem[],
   limit = 3,
   focusFoodName?: string,
+  exclude: Set<string> = new Set(),
 ): RecipeRecommendation[] {
   const rankedInventory = focusFoodName
     ? [...inventory].sort((a, b) => {
@@ -85,7 +283,11 @@ function localMalaysianRecipeRecommendations(
         return bHit - aHit;
       })
     : inventory;
-  return selectMalaysianRecipeHints(rankedInventory, Math.max(limit * 3, 8)).map((hint, index) => {
+  // A wider candidate pool than the 3 shown, so the expiry-first ranking below
+  // can reach a recipe that uses whatever expires soonest.
+  const candidates = selectMalaysianRecipeHints(rankedInventory, Math.max(limit * 20, 60) + exclude.size)
+    .filter((hint) => !exclude.has(hint.title.trim().toLowerCase()))
+    .map((hint, index) => {
     const inventoryNames = rankedInventory.map((item) => item.canonical_food_name || item.name).filter(Boolean);
     const available = hint.ingredients.filter((ingredient) => ingredientIsOnHand(ingredient, inventoryNames));
     const matched = available;
@@ -94,7 +296,7 @@ function localMalaysianRecipeRecommendations(
       : []
     ).concat(hint.priorityUses).filter((value, valueIndex, values) => values.indexOf(value) === valueIndex).slice(0, 3);
     const score = Math.max(0.6, 1 - index * 0.08);
-    return {
+    const recipe: RecipeRecommendation = {
       recipe_id: `local-malaysia-${index + 1}-${hint.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
       recipe_name: hint.title,
       title: hint.title,
@@ -123,7 +325,14 @@ function localMalaysianRecipeRecommendations(
       expiry_weight_score: 0,
       total_score: score,
     };
-  }).sort((a, b) => priorityUsageScore(b, focusFoodName) - priorityUsageScore(a, focusFoodName)).slice(0, limit);
+    recipePantrySignals.set(recipe, hint.pantrySignals);
+    return recipe;
+  });
+  return rankRecipeRecommendations(candidates, inventory, focusFoodName)
+    // When showing "other recipes", stop at the ones that use something you
+    // have, rather than padding with unrelated dishes (the screen starts over).
+    .filter((recipe) => !exclude.size || (recipe.available_ingredients ?? []).length > 0)
+    .slice(0, limit);
 }
 
 function ensureThreeRecipeRecommendations(
@@ -131,19 +340,22 @@ function ensureThreeRecipeRecommendations(
   inventory: FoodItem[],
   limit = 3,
   focusFoodName?: string,
+  exclude: Set<string> = new Set(),
 ): RecipeRecommendation[] {
-  const next = rankRecipeRecommendations(recipes, focusFoodName).slice(0, limit);
-  if (next.length >= limit) return next;
-  const seen = new Set(next.map((recipe) => (recipe.title || recipe.recipe_name || '').toLowerCase()));
-  for (const recipe of localMalaysianRecipeRecommendations(inventory, limit, focusFoodName)) {
-    const title = (recipe.title || recipe.recipe_name || '').toLowerCase();
+  // The AI's recipes are pooled with the library's best expiry-first picks and
+  // ranked together: AI recipes still win ties (rule 4 in rankRecipeRecommendations),
+  // but if none of them uses food that expires soon, a library recipe that does
+  // can take a slot. Also tops the list up to `limit` when the AI returns fewer.
+  const pool = recipes.filter((recipe) => !exclude.has(recipeKey(recipe)));
+  const seen = new Set(pool.map(recipeKey));
+  for (const recipe of localMalaysianRecipeRecommendations(inventory, limit, focusFoodName, exclude)) {
+    const title = recipeKey(recipe);
     if (!seen.has(title)) {
-      next.push(recipe);
+      pool.push(recipe);
       seen.add(title);
     }
-    if (next.length >= limit) break;
   }
-  return rankRecipeRecommendations(next, focusFoodName).slice(0, limit);
+  return rankRecipeRecommendations(pool, inventory, focusFoodName).slice(0, limit);
 }
 
 // --- Identity -------------------------------------------------------------
@@ -472,6 +684,7 @@ export async function getRagRecipeRecommendations(
   inventory: FoodItem[],
   opts: RecipeRagOptions = {},
 ): Promise<RecipeRecommendation[]> {
+  const exclude = new Set((opts.excludeTitles ?? []).map((title) => title.trim().toLowerCase()).filter(Boolean));
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), groceryAiTimeoutMs);
   const headers: Record<string, string> = {
@@ -492,6 +705,7 @@ export async function getRagRecipeRecommendations(
         cuisine_profile: opts.cuisineProfile ?? 'malaysia',
         locale: 'Malaysia',
         focus_food: opts.focusFoodName ? { name: opts.focusFoodName } : null,
+        exclude_recipes: opts.excludeTitles ?? [],
         cuisine_guidance: {
           style: 'Malaysian everyday home cooking',
           priority: [
@@ -508,6 +722,9 @@ export async function getRagRecipeRecommendations(
             'keep recipes practical for a student or household kitchen in Malaysia',
             'avoid pork and alcohol unless the pantry item explicitly contains them',
             'return exactly three recipe cards when enough pantry items are available',
+            ...(exclude.size
+              ? [`the user wants different recipes: do not return any of these already shown recipes: ${(opts.excludeTitles ?? []).join('; ')}`]
+              : []),
           ],
           examples: [
             'nasi goreng',
@@ -520,7 +737,9 @@ export async function getRagRecipeRecommendations(
             'sambal-style stir fry',
           ],
         },
-        local_recipe_hints: selectMalaysianRecipeHints(inventory, 24),
+        local_recipe_hints: selectMalaysianRecipeHints(inventory, 24 + exclude.size)
+          .filter((hint) => !exclude.has(hint.title.trim().toLowerCase()))
+          .slice(0, 24),
         inventory: inventory.map((item) => ({
           name: item.canonical_food_name || item.name,
           quantity: item.quantity,
@@ -585,12 +804,12 @@ export async function getRagRecipeRecommendations(
         total_score: Number.isFinite(Number(recipe?.score)) ? Number(recipe.score) : 0,
       };
     });
-    return ensureThreeRecipeRecommendations(mapped, inventory, opts.limit ?? 3, opts.focusFoodName);
+    return ensureThreeRecipeRecommendations(mapped, inventory, opts.limit ?? 3, opts.focusFoodName, exclude);
   } catch (error: any) {
     if (error?.name === 'AbortError') {
-      return localMalaysianRecipeRecommendations(inventory, opts.limit ?? 3, opts.focusFoodName);
+      return localMalaysianRecipeRecommendations(inventory, opts.limit ?? 3, opts.focusFoodName, exclude);
     }
-    return localMalaysianRecipeRecommendations(inventory, opts.limit ?? 3, opts.focusFoodName);
+    return localMalaysianRecipeRecommendations(inventory, opts.limit ?? 3, opts.focusFoodName, exclude);
   } finally {
     clearTimeout(timer);
   }

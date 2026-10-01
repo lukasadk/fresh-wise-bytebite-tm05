@@ -77,8 +77,11 @@ export default function RecipesScreen() {
   // Recipe generation sends no progress events either -- estimated bar, as on
   // the scanning screen (components/EstimatedProgressBar).
   const progress = useEstimatedProgress('recipes', 12000);
+  // Every recipe title shown since the last full reload, so "Show other
+  // recipes" keeps moving on to new ones instead of repeating.
+  const shownTitles = React.useRef<string[]>([]);
 
-  const load = React.useCallback(async (isRefresh = false) => {
+  const load = React.useCallback(async (isRefresh = false, different = false) => {
     if (isRefresh) setRefreshing(true);
     else {
       setLoading(true);
@@ -93,15 +96,25 @@ export default function RecipesScreen() {
         setRecipes([]);
         return;
       }
-      const recommended = await getRagRecipeRecommendations(usablePantry, {
+      const options = {
         limit: 3,
-        language: 'en',
+        language: 'en' as const,
         useAi: true,
-        cuisineProfile: 'malaysia',
+        cuisineProfile: 'malaysia' as const,
         focusFoodName: focusFoodName ?? undefined,
-      });
+      };
+      const exclude = different ? shownTitles.current : [];
+      let recommended = await getRagRecipeRecommendations(usablePantry, { ...options, excludeTitles: exclude });
+      let seenBefore = exclude;
+      if (different && recommended.length === 0) {
+        // Every matching recipe has been shown: start again from the best three.
+        recommended = await getRagRecipeRecommendations(usablePantry, options);
+        seenBefore = [];
+      }
       if (!isRefresh) await progress.finish(); // fill to 100% before showing the cards
-      setRecipes(recommended.slice(0, 3));
+      const shown = recommended.slice(0, 3);
+      shownTitles.current = [...seenBefore, ...shown.map(recipeTitle)];
+      setRecipes(shown);
     } catch (e: any) {
       setError(e?.message || 'Could not load recipe recommendations.');
     } finally {
@@ -253,6 +266,15 @@ export default function RecipesScreen() {
                 );
               })}
             </ScrollView>
+            <Pressable
+              style={({ pressed }) => [styles.otherButton, pressed && { opacity: 0.85 }]}
+              onPress={() => load(false, true)}
+              accessibilityRole="button"
+              accessibilityHint="Replaces these three with other recipes that still use your soon-to-expire food"
+            >
+              <RefreshCcw size={16} color={colors.primary} />
+              <Text style={styles.otherText}>Show other recipes</Text>
+            </Pressable>
           </View>
         )}
       </ScrollView>
@@ -571,5 +593,21 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 13,
     color: colors.white,
+  },
+  otherButton: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  otherText: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.primary,
   },
 });
