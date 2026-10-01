@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  ActivityIndicator,
   Image,
   Platform,
   Pressable,
@@ -17,6 +16,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import { getRagRecipeRecommendations, listPantry } from '../api/freshwise';
 import type { FoodItem, RecipeRecommendation } from '../api/types';
+import EstimatedProgressBar, { useEstimatedProgress } from '../components/EstimatedProgressBar';
 
 function recipeTitle(recipe: RecipeRecommendation): string {
   return recipe.title || recipe.recipe_name || 'Untitled recipe';
@@ -74,10 +74,16 @@ export default function RecipesScreen() {
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  // Recipe generation sends no progress events either -- estimated bar, as on
+  // the scanning screen (components/EstimatedProgressBar).
+  const progress = useEstimatedProgress('recipes', 12000);
 
   const load = React.useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+    else {
+      setLoading(true);
+      progress.start();
+    }
     setError(null);
     try {
       const pantry = await listPantry();
@@ -94,14 +100,16 @@ export default function RecipesScreen() {
         cuisineProfile: 'malaysia',
         focusFoodName: focusFoodName ?? undefined,
       });
+      if (!isRefresh) await progress.finish(); // fill to 100% before showing the cards
       setRecipes(recommended.slice(0, 3));
     } catch (e: any) {
       setError(e?.message || 'Could not load recipe recommendations.');
     } finally {
       setLoading(false);
       setRefreshing(false);
+      if (!isRefresh) progress.cancel();
     }
-  }, [focusFoodName]);
+  }, [focusFoodName, progress.start, progress.finish, progress.cancel]);
 
   React.useEffect(() => {
     load();
@@ -144,9 +152,10 @@ export default function RecipesScreen() {
 
         {loading ? (
           <View style={styles.stateCard}>
-            <ActivityIndicator color={colors.primary} />
+            <ChefHat size={24} color={colors.primary} strokeWidth={2.2} />
             <Text style={styles.stateTitle}>Building recommendations...</Text>
             <Text style={styles.stateText}>Checking your pantry and matching Malaysian-style recipe ideas.</Text>
+            <EstimatedProgressBar {...progress.barProps} />
           </View>
         ) : error ? (
           <View style={[styles.stateCard, styles.errorCard]}>

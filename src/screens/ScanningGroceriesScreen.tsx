@@ -1,42 +1,21 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Sparkles } from 'lucide-react-native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import { analyzeGroceryImage } from '../vlm/apiRecognitionEngine';
 import { editableItems } from '../vlm/editableItem';
+import EstimatedProgressBar, { useEstimatedProgress } from '../components/EstimatedProgressBar';
 
-// Indeterminate progress bar -- there's no real progress signal from the
-// recognition API (no streaming/progress events), so this loops
-// continuously rather than claiming a specific, fabricated completion
-// percentage. It communicates "still working", not "73% done".
-function IndeterminateBar() {
-  const anim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(anim, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: false }),
-        Animated.timing(anim, { toValue: 0, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: false }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [anim]);
-
-  const width = anim.interpolate({ inputRange: [0, 1], outputRange: ['15%', '85%'] });
-
-  return (
-    <View style={styles.progressTrack}>
-      <Animated.View style={[styles.progressFill, { width }]} />
-    </View>
-  );
-}
+// The recognition API sends no progress events, so the bar shows an ESTIMATED
+// percentage based on how long scans have recently taken on this phone (see
+// components/EstimatedProgressBar). It only reaches 100% when the result is in.
 
 export default function ScanningGroceriesScreen({ navigation, route }: any) {
   const imageUri: string | undefined = route?.params?.imageUri;
   const imageMimeType: string | null = route?.params?.imageMimeType ?? null;
   const imageRatio: number = route?.params?.imageRatio ?? 3 / 4;
+  const progress = useEstimatedProgress('scan', 15000);
 
   useEffect(() => {
     if (!imageUri) {
@@ -44,6 +23,7 @@ export default function ScanningGroceriesScreen({ navigation, route }: any) {
       return;
     }
     let cancelled = false;
+    progress.start();
 
     (async () => {
       try {
@@ -85,6 +65,8 @@ export default function ScanningGroceriesScreen({ navigation, route }: any) {
         });
         if (cancelled) return;
 
+        await progress.finish(); // fill to 100% before moving on
+        if (cancelled) return;
         navigation.replace('DetectionComplete', {
           items: nextItems,
           displayImageUri: nextDisplayUri,
@@ -126,7 +108,7 @@ export default function ScanningGroceriesScreen({ navigation, route }: any) {
           </View>
           <Text style={styles.scanCardTitle}>Detecting items…</Text>
           <Text style={styles.scanCardSubtitle}>Looking for food names and quantities</Text>
-          <IndeterminateBar />
+          <EstimatedProgressBar {...progress.barProps} />
         </View>
 
         <Text style={styles.hint}>This usually takes a moment.</Text>
@@ -184,18 +166,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
     marginBottom: spacing.sm,
-  },
-  progressTrack: {
-    alignSelf: 'stretch',
-    height: 6,
-    borderRadius: radii.pill,
-    backgroundColor: colors.card,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: radii.pill,
-    backgroundColor: colors.primary,
   },
   hint: {
     fontFamily: fonts.regular,
