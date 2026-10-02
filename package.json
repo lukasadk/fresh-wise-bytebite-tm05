@@ -23,6 +23,12 @@
     "expo-asset": "~57.0.16",
     "expo-clipboard": "~57.0.2",
     "expo-crypto": "~57.0.3",
+<<<<<<< refs/remotes/origin/feature/iteration-2-epic-5
+=======
+    "expo-dev-client": "~57.0.19",
+    "expo-file-system": "~57.0.7",
+    "expo-image-manipulator": "~57.0.19",
+>>>>>>> local
     "expo-image-picker": "~57.0.16",
     "expo-modules-core": "57.0.16",
     "expo-splash-screen": "~57.0.9",
