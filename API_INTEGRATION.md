@@ -195,7 +195,7 @@ service. Configure its URL and matching client key in the Git-ignored root
 `.env` before building:
 
 ```dotenv
-EXPO_PUBLIC_API_BASE_URL=https://freshwise-api-production.up.railway.app
+EXPO_PUBLIC_API_BASE_URL=https://freshwise-api-iteration-3.up.railway.app
 EXPO_PUBLIC_API_KEY=<same value as Railway API_KEY>
 ```
 

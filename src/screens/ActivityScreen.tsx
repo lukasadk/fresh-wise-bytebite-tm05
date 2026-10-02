@@ -46,9 +46,17 @@
  * code never made it past a local, unpushed branch. Check git log for
  * "monthly-report" before reintroducing it.
  *
- * NOTE: The donut chart (Overview) is drawn with plain View components, not
- * react-native-svg, so it keeps working in Expo Go without a native rebuild.
- * The Trends line chart DOES use react-native-svg (already a dependency).
+ * NOTE: The donut chart (Overview) uses react-native-svg's stroke-dasharray
+ * ring technique (same dependency the Trends line chart already uses). It
+ * used to be hand-rolled from plain Views to avoid SVG, but that rotated-
+ * half-disk approach was geometrically broken -- it clipped to exactly half
+ * the circle at every rotation angle, so the "filled" arc never actually
+ * tracked the percentage (e.g. 0% utilisation rendered as a 50% green arc).
+ * A fixed-pattern dasharray (always [circumference, circumference]) with a
+ * variable strokeDashoffset is the standard, most broadly-compatible way to
+ * draw this; an earlier SVG version instead varied the dash LENGTH itself,
+ * which reproduced the exact same "stuck at ~50%" symptom on Android for
+ * certain dash/gap combinations.
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -201,7 +209,9 @@ function LeafBadge({
 }
 
 // ---------------------------------------------------------------------------
-// Donut chart — pure View, no SVG, works in Expo Go
+// Donut chart -- SVG stroke-dasharray ring (see header NOTE for why this
+// replaced a plain-View rotation trick that didn't actually track the
+// percentage).
 // ---------------------------------------------------------------------------
 
 function DonutChart({
@@ -213,90 +223,78 @@ function DonutChart({
   size?: number;
   thickness?: number;
 }) {
-  const holeSize = size - thickness * 2;
-  const utilisedDeg = utilisation * 360;
-  const rightRotation = utilisedDeg - 90; // starts at 12 o'clock
-  const showFullLeftHalf = utilisation > 0.5;
+  // Defensive clamp -- a malformed 0/0 division upstream should render as
+  // "0% utilised" rather than a NaN-driven blank/broken ring.
+  const clamped = Number.isFinite(utilisation) ? Math.max(0, Math.min(1, utilisation)) : 0;
+
+  const center = size / 2;
+  const radius = (size - thickness) / 2;
+  const circumference = 2 * Math.PI * radius;
+  // Fixed-pattern + variable-offset technique: the dash array is ALWAYS
+  // exactly [circumference, circumference] -- one full-length dash, one
+  // full-length gap -- and only strokeDashoffset varies with the data. This
+  // is the standard, most broadly-compatible way to draw an SVG progress
+  // ring. The previous version instead varied the dash LENGTH itself
+  // (`${utilisedLength} ${circumference}`), which hit an Android rendering
+  // quirk in react-native-svg for certain dash/gap combinations -- the
+  // symptom (a ring stuck at a fixed ~50% fill regardless of the actual
+  // percentage) exactly matches this file's OWN header note describing the
+  // prior rotated-half-disk bug, which is what originally motivated moving
+  // to SVG in the first place.
+  const dashOffset = circumference * (1 - clamped);
 
   return (
-    <View style={{ width: size, height: size, position: 'relative' }}>
-      {/* Base circle — coral (wasted) fills the whole ring */}
-      <View
-        style={{
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: colors.statusToday,
-          position: 'absolute',
-        }}
-      />
+    <View style={{ width: size, height: size }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Base ring -- wasted (coral), the full circumference. The utilised
+            arc below is drawn on top of this, so this ring only needs to
+            cover the REMAINING (wasted) portion visually, not be a separate
+            second arc -- simpler and can't drift out of sync with it. */}
+        <Circle cx={center} cy={center} r={radius} stroke={colors.statusToday} strokeWidth={thickness} fill="none" />
 
-      {/* Clip container for green arcs */}
-      <View
-        style={{
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          overflow: 'hidden',
-          position: 'absolute',
-        }}
-      >
-        <View
-          style={{
-            position: 'absolute',
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            overflow: 'hidden',
-          }}
-        >
-          <View
-            style={{
-              width: size / 2,
-              height: size,
-              left: size / 2,
-              position: 'absolute',
-              backgroundColor: colors.primary,
-              transform: [
-                { translateX: -(size / 2) },
-                { rotate: `${rightRotation}deg` },
-                { translateX: size / 2 },
-              ],
-              transformOrigin: `0px ${size / 2}px`,
-            }}
-          />
-        </View>
-
-        {showFullLeftHalf && (
-          <View
-            style={{
-              position: 'absolute',
-              width: size / 2,
-              height: size,
-              left: 0,
-              backgroundColor: colors.primary,
-            }}
+        {/* Utilised arc -- green. SVG circles start their path at 3 o'clock
+            going clockwise, so rotate -90° around the centre to start at 12
+            o'clock instead, matching the mockup. See dashOffset comment
+            above for why the dasharray itself never changes with the data. */}
+        {clamped > 0 && (
+          <Circle
+            cx={center}
+            cy={center}
+            r={radius}
+            stroke={colors.primary}
+            strokeWidth={thickness}
+            fill="none"
+            strokeDasharray={`${circumference} ${circumference}`}
+            strokeDashoffset={dashOffset}
+            strokeLinecap={clamped < 1 ? 'round' : 'butt'}
+            transform={`rotate(-90 ${center} ${center})`}
           />
         )}
-      </View>
 
-      {/* Donut hole */}
-      <View
-        style={{
-          position: 'absolute',
-          width: holeSize,
-          height: holeSize,
-          borderRadius: holeSize / 2,
-          backgroundColor: colors.card,
-          top: thickness,
-          left: thickness,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Text style={donutStyles.pct}>{Math.round(utilisation * 100)}%</Text>
-        <Text style={donutStyles.sub}>utilised</Text>
-      </View>
+        {/* Percentage text, centred in the ring's hollow middle -- drawn as
+            SVG text (not an absolutely-positioned RN <Text> overlay) so it's
+            guaranteed to stay centred on the ring regardless of size prop. */}
+        <SvgText
+          x={center}
+          y={center - 2}
+          textAnchor="middle"
+          fontSize={fontSize.lg}
+          fontFamily={fonts.bold}
+          fill={colors.textPrimary}
+        >
+          {Math.round(clamped * 100)}%
+        </SvgText>
+        <SvgText
+          x={center}
+          y={center + 14}
+          textAnchor="middle"
+          fontSize={fontSize.xs}
+          fontFamily={fonts.regular}
+          fill={colors.textSecondary}
+        >
+          utilised
+        </SvgText>
+      </Svg>
     </View>
   );
 }
@@ -1303,9 +1301,17 @@ function TrendChart({
   const allValues = [...points, goal];
   const dataMax = Math.max(...allValues);
   const dataMin = Math.min(...allValues);
-  const span = Math.max(dataMax - dataMin, 0.1);
-  const maxV = dataMax + span * 0.12;
-  const minV = Math.max(0, dataMin - span * 0.12);
+  const rawSpan = dataMax - dataMin;
+  // When points genuinely vary, zoom into that range with a little headroom
+  // (unchanged below). When the data is flat or nearly flat -- a single
+  // point, or several periods with the same count, both common early in
+  // testing -- that data-driven span collapses toward zero, which rounded
+  // all three Y-axis gridlines to the same displayed number. In that case,
+  // anchor at zero and scale headroom off the value itself instead, so the
+  // three gridlines are always meaningfully distinct.
+  const isFlat = rawSpan < Math.max(dataMax, 1) * 0.15;
+  const maxV = isFlat ? Math.max(dataMax * 1.2, dataMax + 1, 2) : dataMax + rawSpan * 0.12;
+  const minV = isFlat ? 0 : Math.max(0, dataMin - rawSpan * 0.12);
   const valueSpan = Math.max(maxV - minV, 0.0001);
 
   const toX = (i: number) =>
