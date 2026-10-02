@@ -2,7 +2,7 @@
   "expo": {
     "name": "FreshWise",
     "slug": "freshwise",
-    "version": "1.4.2",
+    "version": "1.4.3",
     "orientation": "portrait",
     "icon": "./assets/logo/freshwise-logo.png",
     "backgroundColor": "#FCF9F2",
@@ -11,7 +11,8 @@
         "foregroundImage": "./assets/logo/freshwise-logo.png",
         "backgroundColor": "#FCF9F2"
       },
-      "package": "com.bytebite.freshwise"
+      "package": "com.bytebite.freshwise",
+      "versionCode": 21
     },
     "plugins": [
       "expo-asset",
@@ -33,7 +34,7 @@
       }
     },
     "owner": "bytebite",
-    "runtimeVersion": "1.4.2",
+    "runtimeVersion": "1.4.3",
     "updates": {
       "enabled": true,
       "url": "https://u.expo.dev/6bc0972b-c6bd-42b0-a69b-ac5f603a0954",

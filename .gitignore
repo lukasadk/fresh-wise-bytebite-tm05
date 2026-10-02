@@ -15,6 +15,8 @@ android/.gradle/
 android/build/
 android/app/build/
 .gradle-build-home/
+.gradle-build-home-*/
+.gradle-host-build-home/
 *.class
 modules/*/android/.cxx/
 modules/*/android/build/

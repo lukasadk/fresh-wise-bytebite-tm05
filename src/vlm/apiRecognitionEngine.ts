@@ -1,5 +1,6 @@
 import { API_BASE_URL, API_KEY, API_KEY_HEADER } from '../api/config.ts';
 import { hasNativeImageBase64Reader, readImageBase64 } from '../native/photoFilePicker';
+import { preferPrintedExpiry } from './expiryPriority.ts';
 import { GROCERY_UNITS, mapToAppCategory } from './schema.ts';
 import type {
   GroceryBoundingBox,
@@ -159,6 +160,13 @@ export function mapApiAnalysisResponse(payload: ApiAnalysis, imageUri: string): 
     const reasons = stringList(item.review_reasons);
     const itemQuantity = positiveNumber(item.quantity);
     const itemBox = boundingBox(item.bounding_box);
+    const expiryDateCandidate = nullableText(item.expiry_date_candidate);
+    const expiryFallback = preferPrintedExpiry(
+      expiryDateCandidate,
+      nullableText(item.estimated_expiry_date),
+      positiveNumber(item.expiry_estimate_days),
+      nullableText(item.expiry_estimate_basis),
+    );
     if (itemQuantity === null && !reasons.includes('quantity_uncertain')) reasons.push('quantity_uncertain');
     if (itemBox === null && !reasons.includes('position_uncertain')) reasons.push('position_uncertain');
     return {
@@ -176,11 +184,11 @@ export function mapApiAnalysisResponse(payload: ApiAnalysis, imageUri: string): 
       reviewRequired: item.review_required !== false || reasons.length > 0,
       reviewReasons: reasons,
       packagingTextEvidence: stringList(item.packaging_text_evidence),
-      expiryDateCandidate: nullableText(item.expiry_date_candidate),
+      expiryDateCandidate,
       expiryTextEvidence: nullableText(item.expiry_text_evidence),
-      estimatedExpiryDate: nullableText(item.estimated_expiry_date),
-      expiryEstimateDays: positiveNumber(item.expiry_estimate_days),
-      expiryEstimateBasis: nullableText(item.expiry_estimate_basis),
+      // Printed dates always win. Ignore any stale estimate fields if an API
+      // response ever contains both for the same item.
+      ...expiryFallback,
     };
   }).filter((item): item is GroceryCandidate => item !== null);
 

@@ -1,4 +1,5 @@
 import type { FoodItem } from '../api/types';
+import { API_BASE_URL } from '../api/config';
 
 export type MalaysianRecipeHint = {
   title: string;
@@ -2229,19 +2230,43 @@ const RECIPE_IMAGES = {
   vegetable: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=80',
   soup: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1200&q=80',
   fish: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=1200&q=80',
-  bread: 'https://images.unsplash.com/photo-1484723091739-30a097e8f929?auto=format&fit=crop&w=1200&q=80',
+  bread: '/static/recipe-images/fallback-bread-v2.png',
+  milk: '/static/recipe-images/fallback-milk-v2.png',
+  fruit: '/static/recipe-images/fallback-fruit-v2.png',
 } as const;
 
+const recipeImageBaseUrl = (
+  process.env.EXPO_PUBLIC_GROCERY_AI_API_URL
+  ?? process.env.EXPO_PUBLIC_WASTEWISE_BROWSER_MODEL_API_URL
+  ?? API_BASE_URL
+).trim().replace(/\/+$/, '');
+
+function hostedRecipeImage(path: string): string {
+  return path.startsWith('/') ? `${recipeImageBaseUrl}${path}` : path;
+}
+
 function imageForRecipe(hint: MalaysianRecipeHint): string {
+  const title = normalise(hint.title);
   const text = normalise([hint.title, ...hint.ingredients].join(' '));
-  if (/noodle|mee|bee hoon|vermicelli|laksa|ramen/.test(text)) return RECIPE_IMAGES.noodles;
-  if (/curry|kari|masak lemak|santan|coconut milk/.test(text)) return RECIPE_IMAGES.curry;
-  if (/fish|ikan|sardine|salmon|prawn|shrimp/.test(text)) return RECIPE_IMAGES.fish;
-  if (/soup|sup|porridge|bubur/.test(text)) return RECIPE_IMAGES.soup;
-  if (/bread|roti|toast|sandwich/.test(text)) return RECIPE_IMAGES.bread;
-  if (/vegetable|kangkung|choy sum|spinach|sawi|salad|kerabu/.test(text)) return RECIPE_IMAGES.vegetable;
-  if (/egg|telur|omelette/.test(text)) return RECIPE_IMAGES.egg;
-  return RECIPE_IMAGES.rice;
+  let image: string;
+  if (/noodle|mee|bee hoon|vermicelli|laksa|ramen/.test(text)) image = RECIPE_IMAGES.noodles;
+  else if (/bread|roti|toast|sandwich/.test(title)) image = RECIPE_IMAGES.bread;
+  else if (/curry|kari|masak lemak|santan|coconut milk/.test(text)) image = RECIPE_IMAGES.curry;
+  else if (/fish|ikan|sardine|salmon|prawn|shrimp/.test(text)) image = RECIPE_IMAGES.fish;
+  else if (/soup|sup|porridge|bubur/.test(text)) image = RECIPE_IMAGES.soup;
+  else if (/bread|roti|toast|sandwich/.test(text)) image = RECIPE_IMAGES.bread;
+  else if (
+    /fruit|banana|apple|mango|orange|blueberry|watermelon/.test(title)
+    && !/rice|noodle|chicken|fish|beef|curry|soup/.test(title)
+  ) image = RECIPE_IMAGES.fruit;
+  else if (
+    /milk|yogurt|yoghurt|dairy/.test(title)
+    && !/rice|noodle|chicken|fish|beef|curry|soup/.test(title)
+  ) image = RECIPE_IMAGES.milk;
+  else if (/vegetable|kangkung|choy sum|spinach|sawi|salad|kerabu/.test(text)) image = RECIPE_IMAGES.vegetable;
+  else if (/egg|telur|omelette/.test(text)) image = RECIPE_IMAGES.egg;
+  else image = RECIPE_IMAGES.rice;
+  return hostedRecipeImage(image);
 }
 
 function quantityForIngredient(ingredient: string): string {

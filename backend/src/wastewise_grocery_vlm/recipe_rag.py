@@ -44,7 +44,12 @@ RECIPE_IMAGE_URLS: dict[str, str] = {
     "vegetable": "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=80",
     "soup": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=1200&q=80",
     "fish": "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=1200&q=80",
-    "bread": "https://images.unsplash.com/photo-1484723091739-30a097e8f929?auto=format&fit=crop&w=1200&q=80",
+    # Project-owned fallback photos. These deliberately show the named food
+    # category instead of pretending that one generic rice/toast photo is the
+    # exact finished dish for hundreds of different recipes.
+    "bread": "/static/recipe-images/fallback-bread-v2.png",
+    "milk": "/static/recipe-images/fallback-milk-v2.png",
+    "fruit": "/static/recipe-images/fallback-fruit-v2.png",
 }
 
 
@@ -279,17 +284,33 @@ def _display_name(canonical: str) -> str:
 
 
 def _image_for_keywords(*values: str) -> str:
+    title = _clean(values[0]) if values else ""
     text = " ".join(values).lower()
     if any(value in text for value in ("noodle", "mee", "bee hoon", "vermicelli", "laksa")):
         return RECIPE_IMAGE_URLS["noodles"]
+    # When the recipe itself is a toast/roti/sandwich dish, bread is the
+    # identity of the finished plate even if curry or egg appears as a side.
+    if any(value in title for value in ("bread", "roti", "toast", "sandwich")):
+        return RECIPE_IMAGE_URLS["bread"]
     if any(value in text for value in ("curry", "kari", "masak lemak", "santan")):
         return RECIPE_IMAGE_URLS["curry"]
     if any(value in text for value in ("fish", "ikan", "sardine", "salmon")):
         return RECIPE_IMAGE_URLS["fish"]
     if any(value in text for value in ("soup", "sup", "porridge", "bubur")):
         return RECIPE_IMAGE_URLS["soup"]
-    if any(value in text for value in ("bread", "roti", "toast")):
+    if any(value in text for value in ("bread", "roti", "toast", "sandwich")):
         return RECIPE_IMAGE_URLS["bread"]
+    fruit_words = ("fruit", "banana", "apple", "mango", "orange", "blueberry", "watermelon")
+    savoury_words = ("rice", "noodle", "chicken", "fish", "beef", "curry", "soup")
+    if any(value in title for value in fruit_words) and not any(value in title for value in savoury_words):
+        return RECIPE_IMAGE_URLS["fruit"]
+    # Coconut/soy milk used inside a savoury dish must not select a dairy
+    # photo. A milk image is only used when milk is the recipe's main identity.
+    if (
+        any(value in title for value in ("milk", "yogurt", "yoghurt", "dairy"))
+        and not any(value in title for value in savoury_words)
+    ):
+        return RECIPE_IMAGE_URLS["milk"]
     if any(value in text for value in ("vegetable", "kangkung", "choy sum", "spinach", "sawi")):
         return RECIPE_IMAGE_URLS["vegetable"]
     if "egg" in text or "telur" in text:
@@ -344,7 +365,12 @@ def _image_for_recipe(
         if required.issubset(recipe_tokens):
             return image_url
 
-    if explicit_url and explicit_url.strip():
+    # The 500 synthetic hf-my records reused eleven representative source
+    # images across hundreds of ingredient variants. Those URLs are useful as
+    # dataset provenance but are not reliable recipe-card photos. Prefer the
+    # title/ingredient fallback unless an exact per-recipe AI image exists in
+    # the manifest (handled first above).
+    if explicit_url and explicit_url.strip() and not recipe_id.startswith("hf-my-"):
         return explicit_url.strip()
     return _image_for_keywords(title, *ingredients)
 

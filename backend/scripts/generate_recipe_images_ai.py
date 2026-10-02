@@ -120,6 +120,7 @@ def _generate_one(
     api_key: str,
     endpoint: str,
     model: str,
+    client: httpx.Client,
     submit_gate: Lock,
     last_submit: list[float],
 ) -> tuple[str, dict[str, Any]]:
@@ -155,8 +156,7 @@ def _generate_one(
             # A provider-side job can occasionally leave the synchronous
             # connection open indefinitely. Fail fast enough that a worker
             # can retry instead of blocking the whole batch for ten minutes.
-            with httpx.Client(timeout=httpx.Timeout(120, connect=20), follow_redirects=True) as client:
-                response = client.post(endpoint, headers=headers, json=payload)
+            response = client.post(endpoint, headers=headers, json=payload)
             if response.is_error:
                 try:
                     provider_error = response.json()
@@ -175,8 +175,7 @@ def _generate_one(
             )
             if not image_url:
                 raise RuntimeError(f"Image URL missing from provider response ({result.get('code', 'unknown')}).")
-            with httpx.Client(timeout=httpx.Timeout(90, connect=20), follow_redirects=True) as client:
-                image_response = client.get(image_url)
+            image_response = client.get(image_url)
             image_response.raise_for_status()
             filename = _safe_filename(recipe_id)
             destination = OUTPUT_DIR / filename
@@ -233,32 +232,40 @@ def main() -> None:
     submit_gate = Lock()
     last_submit = [0.0]
     failures: list[str] = []
-    with ThreadPoolExecutor(max_workers=max(1, min(args.workers, 12))) as executor:
-        futures = {
-            executor.submit(
-                _generate_one,
-                recipe,
-                api_key=api_key,
-                endpoint=_endpoint(),
-                model=args.model,
-                submit_gate=submit_gate,
-                last_submit=last_submit,
-            ): str(recipe["recipe_id"])
-            for recipe in pending
-        }
-        for index, future in enumerate(as_completed(futures), start=1):
-            recipe_id = futures[future]
-            try:
-                result_id, entry = future.result()
-                manifest[result_id] = entry
-                MANIFEST_PATH.write_text(
-                    json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-                    encoding="utf-8",
-                )
-                print(f"[{index}/{len(pending)}] generated {result_id}", flush=True)
-            except Exception as exc:
-                failures.append(f"{recipe_id}: {exc}")
-                print(f"[{index}/{len(pending)}] FAILED {recipe_id}: {exc}", flush=True)
+    limits = httpx.Limits(
+        max_connections=max(16, min(args.workers * 2, 24)),
+        max_keepalive_connections=max(8, min(args.workers, 12)),
+        keepalive_expiry=60,
+    )
+    timeout = httpx.Timeout(150, connect=30, read=150, write=30, pool=30)
+    with httpx.Client(timeout=timeout, follow_redirects=True, limits=limits) as client:
+        with ThreadPoolExecutor(max_workers=max(1, min(args.workers, 12))) as executor:
+            futures = {
+                executor.submit(
+                    _generate_one,
+                    recipe,
+                    api_key=api_key,
+                    endpoint=_endpoint(),
+                    model=args.model,
+                    client=client,
+                    submit_gate=submit_gate,
+                    last_submit=last_submit,
+                ): str(recipe["recipe_id"])
+                for recipe in pending
+            }
+            for index, future in enumerate(as_completed(futures), start=1):
+                recipe_id = futures[future]
+                try:
+                    result_id, entry = future.result()
+                    manifest[result_id] = entry
+                    MANIFEST_PATH.write_text(
+                        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf-8",
+                    )
+                    print(f"[{index}/{len(pending)}] generated {result_id}", flush=True)
+                except Exception as exc:
+                    failures.append(f"{recipe_id}: {exc}")
+                    print(f"[{index}/{len(pending)}] FAILED {recipe_id}: {exc}", flush=True)
 
     print(f"complete={len(manifest)}/{len(recipes)} failures={len(failures)}", flush=True)
     if failures:

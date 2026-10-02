@@ -5,5 +5,5 @@ __pycache__/
 .pytest_cache/
 tests/
 app/static/downloads/*
-!app/static/downloads/FreshWise-v1.4.2-latest-main-20260927.apk
+!app/static/downloads/FreshWise-v1.4.3-latest-main-20261002.apk
 src/wastewise_grocery_vlm/static/downloads/

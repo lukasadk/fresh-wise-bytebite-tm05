@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import re
 
+import pytest_asyncio
+
 from wastewise_grocery_vlm.recipe_rag import (
+    PROJECT_ROOT,
     _image_for_recipe,
     hosted_recipe_image_path,
     load_recipe_docs,
@@ -11,12 +14,18 @@ from wastewise_grocery_vlm.recipe_rag import (
 from wastewise_grocery_vlm.schemas import RecipeInventoryItem, RecipeRecommendRequest
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def _clean_core_tables():
+    """Override the integration suite's Postgres fixture for these unit tests."""
+    yield
+
+
 def test_curated_malaysian_recipe_docs_have_images_quantities_and_precise_steps() -> None:
     docs = load_recipe_docs()
 
     assert len(docs) >= 530
     for recipe in docs:
-        assert recipe.image_url.startswith("https://")
+        assert recipe.image_url.startswith(("https://", "/static/recipe-images/"))
         assert recipe.image_alt.strip()
         assert recipe.ingredient_quantities
         assert recipe.prep_minutes is not None and recipe.prep_minutes > 0
@@ -43,7 +52,7 @@ def test_rule_based_response_preserves_recipe_visuals_and_detail() -> None:
 
     assert len(response.recommendations) == 3
     for recipe in response.recommendations:
-        assert recipe.image_url.startswith("https://")
+        assert recipe.image_url.startswith(("https://", "/static/recipe-images/"))
         assert recipe.image_alt
         assert recipe.ingredient_quantities
         assert len(recipe.steps) >= 5
@@ -74,7 +83,7 @@ def test_multi_ingredient_recipe_images_override_misleading_single_keyword_image
         old_egg_breakfast_image,
     )
 
-    assert "Telur_goreng_tomato_kacau_dengan_nasi" in tomato_egg_rice
+    assert tomato_egg_rice == "/static/recipe-images/ai-generated/my-009-9237b0d3.jpg"
     assert potato_egg_rice == "/static/recipe-images/potato-egg-rice-v2.jpg"
     assert "Egg_Fried_rice" in egg_fried_rice
     assert old_egg_breakfast_image not in {
@@ -89,4 +98,10 @@ def test_every_recipe_image_has_a_same_origin_cached_copy() -> None:
     hosted_paths = [hosted_recipe_image_path(recipe.image_url) for recipe in docs]
 
     assert all(path.startswith("/static/recipe-images/") for path in hosted_paths)
-    assert len(set(hosted_paths)) >= 20
+    assert len(docs) == 530
+    assert len(set(hosted_paths)) == len(docs)
+    assert all("/ai-generated/" in path for path in hosted_paths)
+    for path in hosted_paths:
+        asset = PROJECT_ROOT / "app" / "static" / path.removeprefix("/static/")
+        assert asset.is_file()
+        assert asset.stat().st_size > 100_000

@@ -8,4 +8,4 @@ src/wastewise_grocery_vlm/static/downloads/
 # Ship only the current public Android release. Older local test APKs stay out
 # of the API image so normal backend deploys do not accumulate binaries.
 app/static/downloads/*
-!app/static/downloads/FreshWise-v1.4.2-latest-main-20260927.apk
+!app/static/downloads/FreshWise-v1.4.3-latest-main-20261002.apk

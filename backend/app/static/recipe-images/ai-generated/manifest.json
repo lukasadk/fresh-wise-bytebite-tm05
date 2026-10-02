@@ -630,5 +630,3613 @@
     "prompt_sha256": "dc82fca2c564492c8bc5c4a369a2f71af062d52d6164dbd70b22b5c569db6c63",
     "request_id": "62c01a41-bf34-9157-9291-390f85117b64",
     "generated_at": "2026-09-21T20:00:16.770541+00:00"
+  },
+  "hf-my-000043": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000043-280990fe.png",
+    "title": "Fish Choy Sum Sambal Nasi Campur",
+    "model": "openai-imagegen-built-in",
+    "prompt_sha256": "3fac6f45af869517bd57b7403de721a073badc8023acade6d7e4fb3407c5b638",
+    "request_id": "codex-exec-e9a75a0e-7ea1-4c61-8aae-717d45d7b59e",
+    "generated_at": "2026-10-02T00:00:00+08:00"
+  },
+  "hf-my-000044": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000044-bd0a0c8b.png",
+    "title": "Tofu Choy Sum Sambal Ramly-Style Burger",
+    "model": "openai-imagegen-built-in",
+    "prompt_sha256": "be16bdfe27c0129380d25993d77f05dd7aa9feb5e4495d873f45550e1d78fcdb",
+    "request_id": "codex-exec-d4d1d932-143a-4de3-adb5-5df526d8c361",
+    "generated_at": "2026-10-02T00:00:00+08:00"
+  },
+  "hf-my-000045": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000045-763e0045.jpg",
+    "title": "Egg Choy Sum Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "1c925620c71021f80f6e4ef0cb79be04502c3ac6784ce4cd258c7c99094856df",
+    "request_id": "b483b588-b9ab-94ca-9686-3c028ed47335",
+    "generated_at": "2026-10-01T18:09:20.197849+00:00"
+  },
+  "hf-my-000048": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000048-f6385c1d.jpg",
+    "title": "Tempeh Choy Sum Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "1df32ad1a31fbdeb90b29e7c6115c41f583ebae4dba4d1d5605f91ee8aa8a275",
+    "request_id": "e448c742-156a-9822-aa3b-2b2618b81df7",
+    "generated_at": "2026-10-01T18:09:52.060825+00:00"
+  },
+  "hf-my-000059": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000059-c898cd8e.jpg",
+    "title": "Beef Choy Sum Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "63ec56b43da47aa40dcce09ba435b7e341325dbd4c00e90e720430d2686a6601",
+    "request_id": "6a286ece-90be-9d3e-aea1-7e80fdec5f69",
+    "generated_at": "2026-10-01T18:09:58.626638+00:00"
+  },
+  "hf-my-000060": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000060-2807056a.jpg",
+    "title": "Anchovy Choy Sum Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "759b8972729fd8067e7c36e1fc6ec9b1b88b615024bc48c45c353724852984f3",
+    "request_id": "1c5e9f25-2de0-9294-8b03-e45c35ac32c3",
+    "generated_at": "2026-10-01T18:10:22.813807+00:00"
+  },
+  "hf-my-000056": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000056-243df4aa.jpg",
+    "title": "Sambal Choy Sum Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "925d3a55e3b4d63daa6c0160f72ed334eeb47187c7e758d6b6caec7e6dd06d99",
+    "request_id": "e28366ae-ba76-9aa5-b154-d5c7e16fbd9a",
+    "generated_at": "2026-10-01T18:10:42.611490+00:00"
+  },
+  "hf-my-000055": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000055-a7d1b391.jpg",
+    "title": "Beef Choy Sum Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7266b307710b65d40d11542b6bef8264d41a4104ed09808a992b595d0a903b25",
+    "request_id": "54353412-3760-904e-82de-f798a9939175",
+    "generated_at": "2026-10-01T18:10:53.427319+00:00"
+  },
+  "hf-my-000062": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000062-0f274618.jpg",
+    "title": "Tofu Choy Sum Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "82027cdfaee27693379555d1500f81a0cc870b155d1f9fe1eae7d7f9a76eee2b",
+    "request_id": "d9436f0d-0163-9f84-9749-49b6deb8b300",
+    "generated_at": "2026-10-01T18:11:11.460357+00:00"
+  },
+  "hf-my-000064": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000064-b5614bef.jpg",
+    "title": "Beef Choy Sum Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5cf63ebb1bea1d2994aac70faf530b7420e2d0cf21630c3e422e96e0185d95f6",
+    "request_id": "c75d7430-5b88-9027-85f6-d5d193f85d12",
+    "generated_at": "2026-10-01T18:11:37.229769+00:00"
+  },
+  "hf-my-000049": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000049-202f8d41.jpg",
+    "title": "Mushroom Choy Sum Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "588d751b1f809b22747fd40a9a3779f8b697dfc2bcdb80d80a9f424ce29a98f0",
+    "request_id": "bccb3c8b-70ca-9341-8fe4-547fff3b2ca3",
+    "generated_at": "2026-10-01T18:11:50.196941+00:00"
+  },
+  "hf-my-000066": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000066-68a59541.jpg",
+    "title": "Sambal Choy Sum Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "925d3a55e3b4d63daa6c0160f72ed334eeb47187c7e758d6b6caec7e6dd06d99",
+    "request_id": "d37bf7e2-8623-911f-a21c-46f35b128d8e",
+    "generated_at": "2026-10-01T18:12:14.684401+00:00"
+  },
+  "hf-my-000067": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000067-455eee89.jpg",
+    "title": "Egg Choy Sum Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7b1adbead98af9e29c459f36d37e6fb9d6662d4f74b3b34e8c554766fd52cc7b",
+    "request_id": "01f3acc8-27e8-98f9-8167-fb39ab12ba65",
+    "generated_at": "2026-10-01T18:12:28.778491+00:00"
+  },
+  "hf-my-000057": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000057-c4da80b1.jpg",
+    "title": "Beef Choy Sum Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "50f2c29be219faf60098fdc6ff74e5eb6a14cf118aa1cb148f599cee7f0aa62c",
+    "request_id": "4ba50ec7-1634-92f7-90c9-b5b4f32a904d",
+    "generated_at": "2026-10-01T18:13:15.093645+00:00"
+  },
+  "hf-my-000058": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000058-94378689.jpg",
+    "title": "Tempeh Choy Sum Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "eb5c507c20debc60211011149f05dfe86f00efe4bd53523a417dad638139958b",
+    "request_id": "c89cb228-5cc6-91a6-998b-a1042ebc3493",
+    "generated_at": "2026-10-01T18:13:59.417530+00:00"
+  },
+  "hf-my-000061": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000061-cd47011d.jpg",
+    "title": "Fish Choy Sum Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9a4131681c3fba09e6c5b16628f06f8e90a632d4fb32634e89fb52a1c74f89ac",
+    "request_id": "45f00d25-d90b-94b5-b2f3-de632b3c2839",
+    "generated_at": "2026-10-01T18:14:02.285020+00:00"
+  },
+  "hf-my-000047": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000047-36955d66.jpg",
+    "title": "Fish Choy Sum Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "aad80fae6c4c3b9c1c187777df8af4b34f5cc2414506d86fa34607902d6bdf24",
+    "request_id": "4e6c2d09-ed29-96d9-a4d8-32dc60ab55b2",
+    "generated_at": "2026-10-01T18:14:08.747461+00:00"
+  },
+  "hf-my-000069": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000069-209232fc.jpg",
+    "title": "Sambal Choy Sum Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "925d3a55e3b4d63daa6c0160f72ed334eeb47187c7e758d6b6caec7e6dd06d99",
+    "request_id": "cec771a6-d7d8-9fe6-a55f-905123507171",
+    "generated_at": "2026-10-01T18:14:12.917944+00:00"
+  },
+  "hf-my-000075": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000075-d6e5cea1.jpg",
+    "title": "Beef Choy Sum Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2dfed9c9d16a5fab4f1cfad45cc403a4dce4b67071190fdc99ffc0a71d161230",
+    "request_id": "f04fb8a9-f366-9226-9d04-7da34f362db6",
+    "generated_at": "2026-10-01T18:14:20.677179+00:00"
+  },
+  "hf-my-000077": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000077-e251e134.jpg",
+    "title": "Mushroom Choy Sum Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e791109bd8a8cfad417f28edc5cc721f5938b34b4cce7a298a09e16e878da00d",
+    "request_id": "c0bd349e-d821-9efb-bf9b-c733af3c6e30",
+    "generated_at": "2026-10-01T18:14:21.500313+00:00"
+  },
+  "hf-my-000065": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000065-f5e6f22c.jpg",
+    "title": "Mushroom Choy Sum Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "a6eedaaf65ff18ad291d4d7dc30bc9edd487679efdfde8bf1061c0a4ac13f1ec",
+    "request_id": "24d40e8d-be30-94d7-afe2-d4f3ea7d6fea",
+    "generated_at": "2026-10-01T18:14:22.965303+00:00"
+  },
+  "hf-my-000071": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000071-cc735e87.jpg",
+    "title": "Chicken Bean Sprout Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0a6cfecf40d001ea7f6725dd9934fa17438f18b4c405c96f6d2bf8512b2ac12d",
+    "request_id": "1dac7800-1800-9278-99de-9f7b5d3f4b68",
+    "generated_at": "2026-10-01T18:14:24.637546+00:00"
+  },
+  "hf-my-000072": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000072-f0fd7b60.jpg",
+    "title": "Sambal Choy Sum Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "925d3a55e3b4d63daa6c0160f72ed334eeb47187c7e758d6b6caec7e6dd06d99",
+    "request_id": "f1f3c271-c723-9c76-952b-0ff698ffddba",
+    "generated_at": "2026-10-01T18:14:29.961946+00:00"
+  },
+  "hf-my-000078": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000078-c311b2ce.jpg",
+    "title": "Mushroom Choy Sum Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "811c67f073a00e00476ab57efd0ae9592f205834801172bb14b003e435665140",
+    "request_id": "adbcaaea-c8e7-9d77-9ff2-9a5b9d2f2dfe",
+    "generated_at": "2026-10-01T18:14:35.039093+00:00"
+  },
+  "hf-my-000074": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000074-c3920eaf.jpg",
+    "title": "Anchovy Choy Sum Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "cbce887749d7022b503bb5cb877760fc74ca5ac8ff16cbd3a9689b0d7871f5c5",
+    "request_id": "084166fc-ed4a-9099-9fd7-953ddb759e74",
+    "generated_at": "2026-10-01T18:14:35.299743+00:00"
+  },
+  "hf-my-000080": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000080-b933419a.jpg",
+    "title": "Sambal Choy Sum Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "925d3a55e3b4d63daa6c0160f72ed334eeb47187c7e758d6b6caec7e6dd06d99",
+    "request_id": "264a3bf7-f464-989c-9448-cf173bbe8ed9",
+    "generated_at": "2026-10-01T18:15:06.412309+00:00"
+  },
+  "hf-my-000085": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000085-c43c7745.jpg",
+    "title": "Anchovy Choy Sum Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3cba8f0b221cbd61945119061b0b282ebefb99027a017cceb74bd587e7854a63",
+    "request_id": "60214b16-c26e-94f6-8324-1ad114300837",
+    "generated_at": "2026-10-01T18:15:10.642922+00:00"
+  },
+  "hf-my-000087": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000087-9537d30a.jpg",
+    "title": "Sambal Choy Sum Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "925d3a55e3b4d63daa6c0160f72ed334eeb47187c7e758d6b6caec7e6dd06d99",
+    "request_id": "02636126-3149-92f0-81e7-e2165c84e878",
+    "generated_at": "2026-10-01T18:15:28.474441+00:00"
+  },
+  "hf-my-000063": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000063-60d55ef3.jpg",
+    "title": "Sardine Choy Sum Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "aef55bf76ef5bfd9dddc107253c0116748c3967f0f16d2684b63f4346eb947a5",
+    "request_id": "47c944b2-c853-930a-aecc-5a052e755028",
+    "generated_at": "2026-10-01T18:15:31.626097+00:00"
+  },
+  "hf-my-000079": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000079-75fe6e16.jpg",
+    "title": "Anchovy Choy Sum Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "ec80d98805443e94e564f3633103e4712f645e00580e4cb46c62bbcadb87c456",
+    "request_id": "800e9b26-654f-9c99-9d42-362554859de3",
+    "generated_at": "2026-10-02T05:46:29.752900+00:00"
+  },
+  "hf-my-000081": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000081-af1c54ff.jpg",
+    "title": "Tofu Choy Sum Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "94874a42120414f95ab11c6eaf842a4d3af8f41ad6696f584710ecdc7622348d",
+    "request_id": "4af248fa-4110-9fd9-ba14-5fe41233ecfe",
+    "generated_at": "2026-10-02T05:46:29.850739+00:00"
+  },
+  "hf-my-000076": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000076-b2f9ee0f.jpg",
+    "title": "Mushroom Choy Sum Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7b5e5423f1e68f87ac5e3dbb1a449176bd27b205f1294b1f8e6dfbe27a27d1b0",
+    "request_id": "c799da02-9838-9e0b-9ecd-1cd65e41c3bf",
+    "generated_at": "2026-10-02T05:46:30.821750+00:00"
+  },
+  "hf-my-000070": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000070-1a5f4788.jpg",
+    "title": "Tempeh Choy Sum Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "65f9d4767c5b2773043b7a247fcf4f18260c5beed6ce5b48d1a79ff22da98605",
+    "request_id": "1ecf51e2-e605-9deb-befa-a0ba5a380fd7",
+    "generated_at": "2026-10-02T05:46:37.752482+00:00"
+  },
+  "hf-my-000082": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000082-b6c8dfbe.jpg",
+    "title": "Tempeh Choy Sum Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6b332db02486b2714320420dca8a365620fa683aa605e67eaa8069b9433e42f5",
+    "request_id": "e6a8f3d4-b3fd-95b7-8b11-2486b9363145",
+    "generated_at": "2026-10-02T05:46:53.507704+00:00"
+  },
+  "hf-my-000089": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000089-47175ea5.jpg",
+    "title": "Mushroom Choy Sum Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b3ebeb6ff5e357fcc28b80832f48a05ca31975f13a7445aa4b08c99609bab420",
+    "request_id": "253de674-69f5-9ddf-b7f3-d519bbee49cf",
+    "generated_at": "2026-10-02T05:46:53.511490+00:00"
+  },
+  "hf-my-000088": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000088-e07eb022.jpg",
+    "title": "Fish Choy Sum Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "bd22d5d249d8b28ed50bd90be119cc991a0ba14dbd98d7b1f48dedb5033efe89",
+    "request_id": "c7378e07-93ad-963f-8d92-ba481051feb5",
+    "generated_at": "2026-10-02T05:47:03.688511+00:00"
+  },
+  "hf-my-000097": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000097-a772458b.jpg",
+    "title": "Prawn Bean Sprout Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "cd7ec5658ca2fe659815c0647898c98cbbd23d04c8d915df21974d62b2c0b7f2",
+    "request_id": "423ee137-0ec6-9b29-8a4d-b0e38bbe4768",
+    "generated_at": "2026-10-02T05:47:16.059699+00:00"
+  },
+  "hf-my-000091": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000091-332c982c.jpg",
+    "title": "Anchovy Choy Sum Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "01dc719e5bfad62f6518f8e051b9700775081ea7b5f9e9042ec03fbce513e16f",
+    "request_id": "3164882c-6e51-9524-a51e-0a62d572c687",
+    "generated_at": "2026-10-02T05:47:26.613269+00:00"
+  },
+  "hf-my-000100": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000100-891d5fca.jpg",
+    "title": "Chicken Bean Sprout Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "99651b83562893a598f28683faf35b763dd1f3bbd738471d783d441fa43f3c15",
+    "request_id": "55befa59-e722-9670-ac16-3a180805bd95",
+    "generated_at": "2026-10-02T05:47:43.135486+00:00"
+  },
+  "hf-my-000096": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000096-4f829e24.jpg",
+    "title": "Chicken Bean Sprout Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "498022f5b6952b400b2fbd98e877748616566ca791c5b9d659690341ba099783",
+    "request_id": "fea35df2-eafb-92f6-91c5-cb59003b7763",
+    "generated_at": "2026-10-02T05:48:13.591443+00:00"
+  },
+  "hf-my-000101": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000101-53ad22ec.jpg",
+    "title": "Sardine Choy Sum Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4f75047e03b0c6e72de393ce1691185b39db63bc6d1be76e215fd87f0f44ef23",
+    "request_id": "7cc3fac2-16ad-99b6-896c-9a72da011035",
+    "generated_at": "2026-10-02T05:48:31.171521+00:00"
+  },
+  "hf-my-000104": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000104-efcee80a.jpg",
+    "title": "Sardine Choy Sum Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7a82c54c7de6e42ffebb99c7f2e9f2fdacdbd4f355d427d6e04bac10962d16e4",
+    "request_id": "f6c62770-2e29-970c-9a07-660e0db90c92",
+    "generated_at": "2026-10-02T05:48:32.438205+00:00"
+  },
+  "hf-my-000103": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000103-75574d7d.jpg",
+    "title": "Sardine Choy Sum Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "57862a0d24887b718cf956d9c59ec11c9bdcc0b5fbd8fece9c23f4db32f469a0",
+    "request_id": "6a181da1-cb60-90ad-8e42-e48e98e85aac",
+    "generated_at": "2026-10-02T05:48:46.666989+00:00"
+  },
+  "hf-my-000107": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000107-99f32280.jpg",
+    "title": "Beef Choy Sum Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "063fff725c67650f5838e66f2e1fa2a3c084de38e0b42a00a1a746904d80eeeb",
+    "request_id": "5e645d10-5a73-9505-8bec-d3701df97a46",
+    "generated_at": "2026-10-02T05:48:47.708675+00:00"
+  },
+  "hf-my-000102": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000102-8e6d6c51.jpg",
+    "title": "Prawn Bean Sprout Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "538d1ea8a44747a403bbc083d4ddd51e6feb6564205992c9e53a7f9f0d90904c",
+    "request_id": "e8df18ef-6734-96cd-9afd-e4792a8ce0a6",
+    "generated_at": "2026-10-02T05:48:50.245931+00:00"
+  },
+  "hf-my-000106": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000106-0a507885.jpg",
+    "title": "Sardine Choy Sum Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e22dd10154536fd5f3a199a155443485fadb63370d9d08325bcfa004e76c2c5b",
+    "request_id": "6ba97c8a-9c54-9ed8-8109-6e5a916ac5a0",
+    "generated_at": "2026-10-02T05:48:56.795588+00:00"
+  },
+  "hf-my-000099": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000099-367e303a.jpg",
+    "title": "Fish Choy Sum Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f6c78bdd547af7e18f34422b93fd592afb977082be1e04f27832a41652ca9a1e",
+    "request_id": "277ae421-5336-94fd-b02d-5dffa4c9e6dc",
+    "generated_at": "2026-10-02T05:49:07.239098+00:00"
+  },
+  "hf-my-000092": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000092-09d73da8.jpg",
+    "title": "Egg Choy Sum Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "fb54b975fee0dcd9056794870615d9e63bedf5d4b78da71d7b293f572fb652c5",
+    "request_id": "c898f9e0-d342-9adf-9aa6-056633c14fe2",
+    "generated_at": "2026-10-02T05:49:07.240840+00:00"
+  },
+  "hf-my-000108": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000108-0cffeb01.jpg",
+    "title": "Sambal Choy Sum Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "925d3a55e3b4d63daa6c0160f72ed334eeb47187c7e758d6b6caec7e6dd06d99",
+    "request_id": "3ee08a0c-63de-9f88-bcd4-134f12c3a48c",
+    "generated_at": "2026-10-02T05:49:14.063542+00:00"
+  },
+  "hf-my-000111": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000111-0156339a.jpg",
+    "title": "Tempeh Choy Sum Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "217881bc13c1563495d75a044a5558c8a690279916d186a5eeb9a09c1dfa3adf",
+    "request_id": "43c8cddc-e705-9311-a3c9-4c83331868b7",
+    "generated_at": "2026-10-02T05:49:20.882210+00:00"
+  },
+  "hf-my-000094": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000094-5491c930.jpg",
+    "title": "Sardine Choy Sum Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "21e527e896794382c8fa8c24701c75617d1d316aebba16378609173f57e2677e",
+    "request_id": "dfeaa662-07b4-938b-969b-289e1ca81fc5",
+    "generated_at": "2026-10-02T05:49:26.486089+00:00"
+  },
+  "hf-my-000110": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000110-9342b31e.jpg",
+    "title": "Prawn Bean Sprout Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b31b38e77a587376d136388be4c311291afc850e6044b9ca68a10f1fe35e2ed0",
+    "request_id": "80bd5ee0-fdaa-9478-8fa6-baa9a482ad49",
+    "generated_at": "2026-10-02T05:49:27.612349+00:00"
+  },
+  "hf-my-000119": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000119-9955c66d.jpg",
+    "title": "Chicken Bean Sprout Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f89e41179b0b3a75294fcfcaeaf64c78f34500b997844ff2fc54f8145a254dcc",
+    "request_id": "4a495d0f-1702-907d-ab91-3298ec1755a8",
+    "generated_at": "2026-10-02T06:27:55.668629+00:00"
+  },
+  "hf-my-000120": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000120-b90e007e.jpg",
+    "title": "Prawn Bean Sprout Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3448a755657e87821dd7090eaa14a251465fcfb3355ba5feb7a040a39925f27e",
+    "request_id": "f163e30e-88da-9420-9696-d7eb879d48ce",
+    "generated_at": "2026-10-02T06:28:09.542299+00:00"
+  },
+  "hf-my-000105": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000105-42ad5409.jpg",
+    "title": "Anchovy Choy Sum Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2dc6571824145ec156e3c8649dae1722f38a7e531cbe79a1965ab2518ec5765f",
+    "request_id": "8b9687d8-9c37-91ce-8783-32e9d33ce8f7",
+    "generated_at": "2026-10-02T06:28:10.740981+00:00"
+  },
+  "hf-my-000113": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000113-1fa0a290.jpg",
+    "title": "Chicken Bean Sprout Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b5adaa849ef928d7fff040c1dbda112c7651457c0b5a2f593dfddf2372528929",
+    "request_id": "4fcb949a-79a4-92f8-bb28-4c754f99dc43",
+    "generated_at": "2026-10-02T06:28:16.254021+00:00"
+  },
+  "hf-my-000114": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000114-b21767e3.jpg",
+    "title": "Prawn Bean Sprout Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "49707bdb52f2c396a54da828bb8e854c59bda3e3c462290e112c570d28ce9fa6",
+    "request_id": "8d4af2c2-0778-9f2b-981b-1821c4ed3579",
+    "generated_at": "2026-10-02T06:28:38.254106+00:00"
+  },
+  "hf-my-000122": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000122-c2c6f773.jpg",
+    "title": "Prawn Bean Sprout Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e27c43bed2938c1242bacc05e74c0ee1ec95d022d6e017dd95eb0123e8675a8f",
+    "request_id": "fd19b9cc-4846-9a64-8b6f-c14d575b1589",
+    "generated_at": "2026-10-02T06:28:56.070145+00:00"
+  },
+  "hf-my-000124": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000124-c3930b33.jpg",
+    "title": "Sambal Bean Sprout Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dd72c2720a720b1a73b0c84dfa454a600e472c932661e84567a8111fdf298174",
+    "request_id": "f2664ce4-b8f4-9838-88f6-c7c12a9e244f",
+    "generated_at": "2026-10-02T06:28:58.224722+00:00"
+  },
+  "hf-my-000127": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000127-91e6c72d.jpg",
+    "title": "Tofu Bean Sprout Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "38b6208865854abe0de8817225598281236e99118a7446982ea76ad08755aa99",
+    "request_id": "e2f9fdb4-bb26-952e-b0f5-2f32a1123a24",
+    "generated_at": "2026-10-02T06:29:41.315218+00:00"
+  },
+  "hf-my-000123": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000123-978aa88c.jpg",
+    "title": "Sambal Bean Sprout Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dd72c2720a720b1a73b0c84dfa454a600e472c932661e84567a8111fdf298174",
+    "request_id": "fcc5841e-449e-9fdb-9dfa-b7a5f0abd684",
+    "generated_at": "2026-10-02T06:30:04.930600+00:00"
+  },
+  "hf-my-000130": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000130-635cb1c5.jpg",
+    "title": "Tofu Bean Sprout Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8456dbc9402e812d16c676f228632f5519d376f0b1707fb9fc68080894a89d4a",
+    "request_id": "f07f4620-249f-97f9-a133-60328c6e1f30",
+    "generated_at": "2026-10-02T06:30:24.218616+00:00"
+  },
+  "hf-my-000131": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000131-ca93dcf8.jpg",
+    "title": "Fish Bean Sprout Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "cff36c3b9ed4b5e9e6ac9e3568961b1ea19068cada0661e30b84b073cca8f33a",
+    "request_id": "ae4caaae-dd57-9d13-945c-3b657c996ca7",
+    "generated_at": "2026-10-02T06:30:29.094746+00:00"
+  },
+  "hf-my-000133": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000133-30644f82.jpg",
+    "title": "Egg Bean Sprout Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "bc453d3b6148e7753894461916d12818c272771e68012d8be00b9b8e8e93203a",
+    "request_id": "a1df8ef0-975a-9694-8769-0936889064c1",
+    "generated_at": "2026-10-02T06:30:32.939131+00:00"
+  },
+  "hf-my-000132": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000132-7c3d7f08.jpg",
+    "title": "Egg Bean Sprout Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "613c29fbddfc0420e31b1a32b2e4d5944dea1e1e1be09c24fd5f59b64d1842b7",
+    "request_id": "4a4e734b-08e4-93e2-b5f2-78aa09796c78",
+    "generated_at": "2026-10-02T06:30:39.562467+00:00"
+  },
+  "hf-my-000138": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000138-189cdac0.jpg",
+    "title": "Chicken Bean Sprout Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e21406dfc957cef1042d50b6bb8881ff0f588354769bed6b57fc1bc7405aeb61",
+    "request_id": "c1f00497-074c-9e71-927a-cb7445d1e185",
+    "generated_at": "2026-10-02T06:31:01.674268+00:00"
+  },
+  "hf-my-000142": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000142-9157fecd.jpg",
+    "title": "Tempeh Bean Sprout Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7b05198970fd90bbbd09d790e11f70589ff9f23f8ecc81d69a2f1e69545d119d",
+    "request_id": "8cd3e9c6-28ff-93de-8b83-0f387a70915b",
+    "generated_at": "2026-10-02T06:31:31.771566+00:00"
+  },
+  "hf-my-000141": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000141-5c3f7f8d.jpg",
+    "title": "Tofu Bean Sprout Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "29bf07d97e67606edb80ffab326b2a4848c66abae98342e067d58bf4d8729b3f",
+    "request_id": "8c0bb24c-ee06-92ad-a218-eb28370b773b",
+    "generated_at": "2026-10-02T06:31:40.038245+00:00"
+  },
+  "hf-my-000144": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000144-61321425.jpg",
+    "title": "Anchovy Choy Sum Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8544a3349dc88545c84f245874e9aec9f0e53158302cb6f142408fec374e0012",
+    "request_id": "579c3963-eca2-9ee6-8841-68c4bbed3b87",
+    "generated_at": "2026-10-02T06:31:55.525819+00:00"
+  },
+  "hf-my-000143": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000143-87b3bfe5.jpg",
+    "title": "Fish Bean Sprout Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c7cad9209ddaf58217a20b3f3b3dddc4bf5c12ab13ae2ece2477cafcfc70b699",
+    "request_id": "8a3b2e24-a2bf-9ae3-b0b4-72754782fa40",
+    "generated_at": "2026-10-02T06:31:55.943142+00:00"
+  },
+  "hf-my-000095": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000095-34414988.jpg",
+    "title": "Anchovy Choy Sum Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "14480e18c5c2e51b3a00a4bbf5f2271d712f13b1d3770348396725544c9c5f84",
+    "request_id": "9bb9dc92-5268-9b2d-af68-6cf0c656165b",
+    "generated_at": "2026-10-02T06:32:45.612552+00:00"
+  },
+  "hf-my-000083": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000083-5aa43661.jpg",
+    "title": "Sardine Choy Sum Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f27888e8f6f411fc8a8918c1041617715a34426d512454ef184d97c75c662ece",
+    "request_id": "5db9642c-afc2-94bb-9b95-3583fa33ae9a",
+    "generated_at": "2026-10-02T06:33:46.525451+00:00"
+  },
+  "hf-my-000068": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000068-cf188b1d.jpg",
+    "title": "Chicken Bean Sprout Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7c1c46e883d850fd06752b02055ed61596147e26bcc961d7934b1ca796e93410",
+    "request_id": "532ba5f8-e083-9e5b-b083-f7b92019a1d6",
+    "generated_at": "2026-10-02T06:34:29.252605+00:00"
+  },
+  "hf-my-000098": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000098-7957cacd.jpg",
+    "title": "Tofu Bean Sprout Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "bbccd2f243025c1b651c3678f7261f8bba4847fb4ab345d2ac8b34f2d68a1a7c",
+    "request_id": "0f438095-5157-9853-98a6-d067a468fb47",
+    "generated_at": "2026-10-02T06:34:38.270579+00:00"
+  },
+  "hf-my-000115": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000115-a7516953.jpg",
+    "title": "Fish Bean Sprout Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "33a4beb1b829888bf7e0d39049f66ec3a7c5644b1cf7ea15f5e66f6ca861451e",
+    "request_id": "150fea44-7cb3-99e4-96d0-2cbab987467e",
+    "generated_at": "2026-10-02T06:35:00.314381+00:00"
+  },
+  "hf-my-000118": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000118-0d75dc34.jpg",
+    "title": "Beef Choy Sum Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "1e01d20916ede7a7973c005be7e92bbf80834eb0fb573c1fbd66dc9c33b4472d",
+    "request_id": "dde4006e-5d99-9c04-a7e4-cccbb2c2b15d",
+    "generated_at": "2026-10-02T06:35:28.417522+00:00"
+  },
+  "hf-my-000125": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000125-082a918c.jpg",
+    "title": "Tofu Bean Sprout Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "d995c165dd2ded754704a520de1e0a508d52461f106eed025711420a332c0048",
+    "request_id": "7070ea79-d334-9e20-beef-43d0d3d972d3",
+    "generated_at": "2026-10-02T06:36:22.648388+00:00"
+  },
+  "hf-my-000128": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000128-00227169.jpg",
+    "title": "Egg Bean Sprout Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "58a8e6d2fc73c4e769d3e08660e19b825590a8caa0829a5e62fd82f5c2131ad9",
+    "request_id": "e6ed46a1-3f50-9536-a0e8-8d1a476feb92",
+    "generated_at": "2026-10-02T06:37:10.066748+00:00"
+  },
+  "hf-my-000134": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000134-78b644c9.jpg",
+    "title": "Prawn Bean Sprout Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "92064780aab5a50c6eb32cd4436cd36e9eff4c475dfd410c6363c9ece04f3e1a",
+    "request_id": "4a935916-c6d7-9f1c-b531-16234d1b7dda",
+    "generated_at": "2026-10-02T06:37:10.393034+00:00"
+  },
+  "hf-my-000073": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000073-deca0314.jpg",
+    "title": "Sambal Choy Sum Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "925d3a55e3b4d63daa6c0160f72ed334eeb47187c7e758d6b6caec7e6dd06d99",
+    "request_id": "a367c484-d6eb-9cd6-bd3b-5e530872d0cc",
+    "generated_at": "2026-10-02T06:39:15.551461+00:00"
+  },
+  "hf-my-000116": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000116-ccc049ff.jpg",
+    "title": "Mushroom Choy Sum Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e4bacf7fe135f507afedd76853b28ff6b40a4a44b34cfd6e70ece4ebe30bf894",
+    "request_id": "7f2afe54-a8d0-9528-b0f3-a11bc7eb2097",
+    "generated_at": "2026-10-02T06:39:18.191349+00:00"
+  },
+  "hf-my-000109": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000109-9f09fa0e.jpg",
+    "title": "Egg Bean Sprout Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "46061c7fa73b56793865d0fc1b1602bb1dc50c309db79d60688bb0656bc53dfd",
+    "request_id": "1ac7c595-3f3f-9aa2-84d1-b9f0ecf0c348",
+    "generated_at": "2026-10-02T06:39:30.562745+00:00"
+  },
+  "hf-my-000093": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000093-631d294c.jpg",
+    "title": "Tempeh Choy Sum Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "981412db69cafeb036829983f3ae0ddc6ea98c00453b10623c14c4e8a7a34e04",
+    "request_id": "3716558a-1c5c-95f7-86a8-498d4b384007",
+    "generated_at": "2026-10-02T06:39:54.000287+00:00"
+  },
+  "hf-my-000129": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000129-55181e6c.jpg",
+    "title": "Mushroom Choy Sum Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "023f282a3ce33a6ca94658c3d28ad25f9408499d6515ed4cfaf9922e63de1b13",
+    "request_id": "d9f9d6e2-cdc2-96e6-b3df-cc8f977c57a5",
+    "generated_at": "2026-10-02T06:40:13.380739+00:00"
+  },
+  "hf-my-000139": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000139-90140621.jpg",
+    "title": "Anchovy Choy Sum Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "da620ed2acc2e1e90bf2b0f3541e234723dbbd580b72991be81dc051c2e3a39a",
+    "request_id": "629c732e-4251-967a-a221-aa19013ceaef",
+    "generated_at": "2026-10-02T06:40:13.915939+00:00"
+  },
+  "hf-my-000145": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000145-9ac2e318.jpg",
+    "title": "Beef Bean Sprout Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "143838fa8e9dc96037b75e108c017d634621d8ae5281482352b8e7bfe26dafeb",
+    "request_id": "f844a85c-490c-90a5-ae54-287a7bf2e8fc",
+    "generated_at": "2026-10-02T06:40:28.404868+00:00"
+  },
+  "hf-my-000135": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000135-8dbaf661.jpg",
+    "title": "Egg Bean Sprout Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "ea345e32c0c1b7df65ccf1362803cb94dae56208dbfbfac2965bc2b68630679b",
+    "request_id": "753cb17f-ec53-94be-9a6c-e9e0a3b41701",
+    "generated_at": "2026-10-02T06:40:43.911250+00:00"
+  },
+  "hf-my-000136": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000136-c8d23ed9.jpg",
+    "title": "Tempeh Bean Sprout Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2453b875eecbc030ce043419ac43e522b39a22c44877def1dfd97dd52076d653",
+    "request_id": "3ca78ae9-4289-99c3-8617-f60597adbb3d",
+    "generated_at": "2026-10-02T06:41:23.129290+00:00"
+  },
+  "hf-my-000147": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000147-dc7b5b8f.jpg",
+    "title": "Sardine Choy Sum Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "461830d1a43d00af38a106aea7429e8cff8f70db4fb158bab6348a82e2cccaa4",
+    "request_id": "78f52933-3e39-9577-90b6-80c920ed73c2",
+    "generated_at": "2026-10-02T06:41:25.663885+00:00"
+  },
+  "hf-my-000148": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000148-e4593741.jpg",
+    "title": "Egg Bean Sprout Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "bceaabdc7b84533a353245259c0fa94fb9be468a48bf578e8aa7012dde451c8f",
+    "request_id": "724b57b7-2c89-90d9-9300-3fffb0803fff",
+    "generated_at": "2026-10-02T06:41:33.647294+00:00"
+  },
+  "hf-my-000146": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000146-d2047012.jpg",
+    "title": "Sardine Choy Sum Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6a65f025f1e55131e6de3c3dfd1dce8d987216f5982666c4707c9446ff62fc5e",
+    "request_id": "eff1ea62-4e65-9fbf-a836-61ae10bdf050",
+    "generated_at": "2026-10-02T06:41:36.615829+00:00"
+  },
+  "hf-my-000149": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000149-02d58c2f.jpg",
+    "title": "Beef Bean Sprout Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "be1002a830bea359fc0c9f911b767f32ee8033e18b3d22ff7969917027c23ce8",
+    "request_id": "3a693ffc-1bb7-9dc2-a97a-91edb35913dd",
+    "generated_at": "2026-10-02T06:41:37.022005+00:00"
+  },
+  "hf-my-000137": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000137-a8cb5a45.jpg",
+    "title": "Fish Bean Sprout Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "d110b9c2b13ecb61558f87b00e3df5f08fb13897f665b2f7b5d3ac2ad4ff19cf",
+    "request_id": "bc9fce4f-f1ad-98de-ac47-3f3e7dae32e6",
+    "generated_at": "2026-10-02T06:41:41.633369+00:00"
+  },
+  "hf-my-000121": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000121-5d56c72a.jpg",
+    "title": "Sambal Bean Sprout Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dd72c2720a720b1a73b0c84dfa454a600e472c932661e84567a8111fdf298174",
+    "request_id": "a6a75a8d-c64b-90f9-b1bc-28dfc90c66e6",
+    "generated_at": "2026-10-02T06:41:43.094649+00:00"
+  },
+  "hf-my-000152": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000152-dcd4d8a6.jpg",
+    "title": "Sambal Bean Sprout Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dd72c2720a720b1a73b0c84dfa454a600e472c932661e84567a8111fdf298174",
+    "request_id": "59172be9-8779-9613-88e6-c53d10bf64d7",
+    "generated_at": "2026-10-02T06:41:47.157616+00:00"
+  },
+  "hf-my-000150": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000150-16d5cecc.jpg",
+    "title": "Mushroom Bean Sprout Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "165480fb67972a2e209b54422bd437b917a18074e4f13be5af557f32006dea1e",
+    "request_id": "60ef93ea-e6cd-9b76-8ba8-c2f670ff8be2",
+    "generated_at": "2026-10-02T06:41:48.613864+00:00"
+  },
+  "hf-my-000117": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000117-26b08761.jpg",
+    "title": "Chicken Bean Sprout Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8626b5b91baa43bccfff9178bc6d10a2440044383f5489f51ec56de8546f9c12",
+    "request_id": "5a292743-7398-9275-8960-f7af97ee987e",
+    "generated_at": "2026-10-02T06:41:53.154613+00:00"
+  },
+  "hf-my-000151": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000151-395a0608.jpg",
+    "title": "Sambal Bean Sprout Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dd72c2720a720b1a73b0c84dfa454a600e472c932661e84567a8111fdf298174",
+    "request_id": "4ea940b2-6c16-9809-8606-038743dd81d4",
+    "generated_at": "2026-10-02T06:41:54.200484+00:00"
+  },
+  "hf-my-000155": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000155-6444d68a.jpg",
+    "title": "Egg Bean Sprout Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "40849210f045a9db897ea4588bb47ea5921fb340f30436268c410c19d944bb88",
+    "request_id": "25f8e5d3-69d1-9337-bfc2-1df524328cfa",
+    "generated_at": "2026-10-02T06:41:58.785130+00:00"
+  },
+  "hf-my-000156": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000156-b6f3dd8f.jpg",
+    "title": "Chicken Bean Sprout Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "d68e8a0563416ef014199c90c21f35e2f2c09a1a876ef05ece501db8b11dc515",
+    "request_id": "b917482f-052f-9807-b33d-06ed4229bbb1",
+    "generated_at": "2026-10-02T06:42:00.665596+00:00"
+  },
+  "hf-my-000153": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000153-c82a027e.jpg",
+    "title": "Tempeh Bean Sprout Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "24b3f40f754b489021d960ca0ec81326f4bbe32966751f0e726e4a1c28f12550",
+    "request_id": "7653fd2a-f365-99d6-8e15-157e39e513f8",
+    "generated_at": "2026-10-02T06:42:07.600087+00:00"
+  },
+  "hf-my-000159": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000159-4855115f.jpg",
+    "title": "Beef Bean Sprout Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "82786c4d5fa477657584013e30397790b46404efab42bc5f19c2da754348939a",
+    "request_id": "d77a6117-dd52-9fe6-a8a0-02b99f799338",
+    "generated_at": "2026-10-02T06:42:08.959220+00:00"
+  },
+  "hf-my-000157": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000157-6b487922.jpg",
+    "title": "Fish Bean Sprout Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f4976ffc4df7b4985afc80c5ec441a6d0a3826b11208ba559f498f0c8687f379",
+    "request_id": "6afa4bab-b28f-9c37-8963-a63a1e2a92ef",
+    "generated_at": "2026-10-02T06:42:10.179029+00:00"
+  },
+  "hf-my-000158": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000158-fb6d40ae.jpg",
+    "title": "Tempeh Bean Sprout Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b420c0fd205eb251a3861b027c470bfe5bffefafd91e51fde5ddc453c3446602",
+    "request_id": "aac32d79-941b-9d82-9407-06e7174f99a9",
+    "generated_at": "2026-10-02T06:42:13.552960+00:00"
+  },
+  "hf-my-000164": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000164-6fabb02d.jpg",
+    "title": "Sambal Bean Sprout Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dd72c2720a720b1a73b0c84dfa454a600e472c932661e84567a8111fdf298174",
+    "request_id": "44ef7256-797d-9f07-bfc9-ed9b69562fd0",
+    "generated_at": "2026-10-02T06:42:20.909516+00:00"
+  },
+  "hf-my-000163": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000163-98e59b0f.jpg",
+    "title": "Tempeh Bean Sprout Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "1ca47f5054cc902dcd401e7b08c321c302cf602164039747aff0cd29fb84a0a0",
+    "request_id": "43c3cd60-4ebf-9a91-9eba-8c897f04b4c7",
+    "generated_at": "2026-10-02T06:42:24.162755+00:00"
+  },
+  "hf-my-000165": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000165-72a827fa.jpg",
+    "title": "Sambal Bean Sprout Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dd72c2720a720b1a73b0c84dfa454a600e472c932661e84567a8111fdf298174",
+    "request_id": "99103ed0-261a-9927-9e60-7388b019f050",
+    "generated_at": "2026-10-02T06:42:24.716608+00:00"
+  },
+  "hf-my-000167": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000167-da430496.jpg",
+    "title": "Tofu Bean Sprout Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c41bfa0d7a73959b88541233d91fd0c77b771e5aa6dd049bf0770593fc6fcc2b",
+    "request_id": "468566b6-9d40-9e3d-a23a-c7b4c1db5909",
+    "generated_at": "2026-10-02T06:42:42.415963+00:00"
+  },
+  "hf-my-000170": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000170-b78d3017.jpg",
+    "title": "Anchovy Bean Sprout Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "166ccf9f1d0765879a6fbf2ed144f2347633ad290ffb6a7f5764727bdf815881",
+    "request_id": "ba739214-9b3d-9429-8d0a-8e37057b2257",
+    "generated_at": "2026-10-02T06:42:55.903440+00:00"
+  },
+  "hf-my-000162": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000162-4ca03adf.jpg",
+    "title": "Fish Bean Sprout Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f755898680345d53dfa9cf2c835afd850e2d0d4b608a1de5dd3be6419ad61ad7",
+    "request_id": "e5b43549-a84d-9f4e-b5f9-31c1c55363bf",
+    "generated_at": "2026-10-02T06:43:05.117204+00:00"
+  },
+  "hf-my-000171": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000171-79cdfdd0.jpg",
+    "title": "Beef Bean Sprout Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "d4f825b1b3c4c53448f6548a7c2113f6053823177df175a7ac333a1c41bb5f1e",
+    "request_id": "9c1f7d77-e340-9292-9bb7-a97d1e85d334",
+    "generated_at": "2026-10-02T06:43:06.381104+00:00"
+  },
+  "hf-my-000169": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000169-3c521bc0.jpg",
+    "title": "Mushroom Bean Sprout Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f6284b931e1bb39cb0d2615cf6fbe43b9fde125de6e895de2c055e40ccad9566",
+    "request_id": "bf68d277-4362-9f3b-b3cf-344adb3148ba",
+    "generated_at": "2026-10-02T06:43:26.791999+00:00"
+  },
+  "hf-my-000161": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000161-31e59d8d.jpg",
+    "title": "Prawn Bean Sprout Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "990a00c4996120bf5501fca3e57f4f7b39502766f416064071771fa0b92d4587",
+    "request_id": "a19efaea-3280-9963-8b8e-ca34941d39b4",
+    "generated_at": "2026-10-02T06:43:35.772733+00:00"
+  },
+  "hf-my-000168": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000168-9772f0c7.jpg",
+    "title": "Fish Bean Sprout Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "88d3af8fc83f422b204fba174c3bca2735f5b462ad9df8b6109368ab0ccca109",
+    "request_id": "7abc0f78-f447-9f85-8798-7e74cdc86f62",
+    "generated_at": "2026-10-02T06:43:45.944821+00:00"
+  },
+  "hf-my-000174": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000174-81e321a2.jpg",
+    "title": "Tempeh Bean Sprout Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b39f5ee94096459cb3a3883c07653dd5c3f9ec1ddf95c6856e724e8801dfa7f2",
+    "request_id": "11c6ec6b-d374-989f-a97c-29905e78b875",
+    "generated_at": "2026-10-02T06:43:47.379929+00:00"
+  },
+  "hf-my-000154": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000154-eb28b9bd.jpg",
+    "title": "Tofu Bean Sprout Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "42204e9019801d654d256c1eb0f21679ed76837aa68d4bc382c78466f23d1679",
+    "request_id": "3d37d6cd-f47c-92d4-950b-7db719281020",
+    "generated_at": "2026-10-02T06:43:54.953081+00:00"
+  },
+  "hf-my-000176": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000176-67c5855f.jpg",
+    "title": "Egg Bean Sprout Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5a4af1afc4f8f03c96dfb38714b2d617a600be3a998be2dfa246ac778d42d07f",
+    "request_id": "e320b095-c3a6-9dd7-94b2-df0be0ba2cda",
+    "generated_at": "2026-10-02T06:43:57.462041+00:00"
+  },
+  "hf-my-000140": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000140-96d561b6.jpg",
+    "title": "Prawn Bean Sprout Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "1b02e8306ccf7ad3810f66b3dbe82ab95b738b0b0bd842c3aad6e4fde1755d8b",
+    "request_id": "0712a673-945c-915c-9f56-a680e7d478a2",
+    "generated_at": "2026-10-02T06:43:57.801903+00:00"
+  },
+  "hf-my-000178": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000178-7500097a.jpg",
+    "title": "Anchovy Bean Sprout Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c90e9581f381bb7c92f0ba2bd03eb47a0b3e900f572331eccb509cd062e2b8ca",
+    "request_id": "46eb39c6-64f3-92ba-91dd-d1bc208b2964",
+    "generated_at": "2026-10-02T06:44:06.275177+00:00"
+  },
+  "hf-my-000084": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000084-b6b59e22.jpg",
+    "title": "Mushroom Choy Sum Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "ea1d78539788691297aad24b4689bcd83a002ce24dd6e3fcb5026c7f7ec09208",
+    "request_id": "8a9fa061-f096-9b40-9dad-e88de1ab5fb3",
+    "generated_at": "2026-10-02T06:44:10.690321+00:00"
+  },
+  "hf-my-000179": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000179-1dfbade3.jpg",
+    "title": "Beef Bean Sprout Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e84ebace987d6901465c03e2481706f5adaf39dedf76715bee1278872a6558f9",
+    "request_id": "c21d3d4e-dad8-9632-891d-71f868cc42da",
+    "generated_at": "2026-10-02T06:44:11.035770+00:00"
+  },
+  "hf-my-000090": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000090-5af40c51.jpg",
+    "title": "Sambal Choy Sum Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "925d3a55e3b4d63daa6c0160f72ed334eeb47187c7e758d6b6caec7e6dd06d99",
+    "request_id": "d1a7c8ce-1b42-912e-a47e-1124772b0b8f",
+    "generated_at": "2026-10-02T06:44:18.837971+00:00"
+  },
+  "hf-my-000182": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000182-7545cfc7.jpg",
+    "title": "Chicken Carrot Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c6af19b5f51a3e76bf4da3bb66ffec6b9d17ecfddba04b65cce1951d2d24e651",
+    "request_id": "dfdf03c9-aa07-992e-a7a7-2e2e67a3379f",
+    "generated_at": "2026-10-02T06:44:19.818965+00:00"
+  },
+  "hf-my-000175": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000175-116cdacc.jpg",
+    "title": "Chicken Bean Sprout Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "bb2b7f5e94de3b0b1e57ce986314d1b05efc5236a1162be9db6ca864f9eadd07",
+    "request_id": "177c7406-b8a1-93a8-a2b7-388fee49eadd",
+    "generated_at": "2026-10-02T06:44:27.489775+00:00"
+  },
+  "hf-my-000185": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000185-dc277bdf.jpg",
+    "title": "Prawn Bean Sprout Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "a22d6e3afafa6891222e78db78f163203a6fa7d26245090696bd75a163ab47d1",
+    "request_id": "4fddfe49-3d38-9cce-8598-e3879682e108",
+    "generated_at": "2026-10-02T06:44:30.482497+00:00"
+  },
+  "hf-my-000180": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000180-92985435.jpg",
+    "title": "Fish Bean Sprout Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "316d471479066bab08f26d0c48d2ee9f87f194f60d0d96a9debcfaa9e3ce51d9",
+    "request_id": "d29e977d-fe9f-9fbf-a6b9-9f66c0130bed",
+    "generated_at": "2026-10-02T06:44:47.633383+00:00"
+  },
+  "hf-my-000189": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000189-11c579f2.jpg",
+    "title": "Sambal Bean Sprout Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dd72c2720a720b1a73b0c84dfa454a600e472c932661e84567a8111fdf298174",
+    "request_id": "65b0d953-c25e-9597-a207-f33eddc4036c",
+    "generated_at": "2026-10-02T06:44:57.161422+00:00"
+  },
+  "hf-my-000181": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000181-b8f6e9d9.jpg",
+    "title": "Chicken Carrot Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "d7a2a899af29a2d465993931f3fcc09b06d4b784ea7d7d3ad03933e061f8dc66",
+    "request_id": "8e270a3f-e3fe-96a7-a38f-fbed9bde0413",
+    "generated_at": "2026-10-02T06:45:29.187327+00:00"
+  },
+  "hf-my-000191": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000191-4f2f26d2.jpg",
+    "title": "Beef Bean Sprout Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f7d71f016612da794bcca96316269ae3d947f0f4384fdd8a84b4e6c3d8e789d4",
+    "request_id": "43bd57a4-043c-9a44-84e1-b19f2ab13863",
+    "generated_at": "2026-10-02T06:45:38.980823+00:00"
+  },
+  "hf-my-000190": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000190-6354f694.jpg",
+    "title": "Tempeh Bean Sprout Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "80f89e1709af023e594ec659ca411e281cdc0922ac80b521d6ff9a332a12e4da",
+    "request_id": "7553e763-a0ac-9079-a037-7e5fac11e925",
+    "generated_at": "2026-10-02T06:45:43.479210+00:00"
+  },
+  "hf-my-000192": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000192-ac2a920c.jpg",
+    "title": "Egg Bean Sprout Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4250c2ea7a636ef7ca0720ffd120ebce31945674d4e671809965f7bdd9bb082d",
+    "request_id": "873f6e52-cf12-9a52-bacf-4b456ffaa11a",
+    "generated_at": "2026-10-02T06:45:49.325880+00:00"
+  },
+  "hf-my-000194": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000194-e8bd5634.jpg",
+    "title": "Tempeh Bean Sprout Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2e0b7a18ac754866daacbc0fca28de278a44967a88aecd5c1710437b81a802ae",
+    "request_id": "34c58af5-c974-9b3d-afe3-15a543bb81ad",
+    "generated_at": "2026-10-02T06:46:00.294364+00:00"
+  },
+  "hf-my-000160": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000160-a48ff306.jpg",
+    "title": "Mushroom Bean Sprout Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b94effb54fc123b838fa6b5d7f373230dd5b28ac6295fcde6596befd6c725eed",
+    "request_id": "f93de6a8-428d-944c-95ca-f2a526331e1c",
+    "generated_at": "2026-10-02T06:46:07.610756+00:00"
+  },
+  "hf-my-000195": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000195-c5a96f82.jpg",
+    "title": "Sambal Bean Sprout Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dd72c2720a720b1a73b0c84dfa454a600e472c932661e84567a8111fdf298174",
+    "request_id": "fc867e14-4f43-99e6-aac5-0629f6175ada",
+    "generated_at": "2026-10-02T06:46:10.300343+00:00"
+  },
+  "hf-my-000196": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000196-c0d6464c.jpg",
+    "title": "Egg Bean Sprout Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7e8fbd1f6cc545b3d777d3503d31d96357f5d86f4c894647b0c948af9f3d0a2e",
+    "request_id": "38c55baa-cdb1-975d-aca1-d8c6d1301b34",
+    "generated_at": "2026-10-02T06:46:17.766169+00:00"
+  },
+  "hf-my-000177": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000177-5a3abac7.jpg",
+    "title": "Sardine Bean Sprout Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "db50ea822a15043538c1d01ea8c0defa96cf6355802b95cacfb3570d10f77c53",
+    "request_id": "7387c1f7-041f-936f-b594-fc6e9d41bbaa",
+    "generated_at": "2026-10-02T06:46:28.439853+00:00"
+  },
+  "hf-my-000199": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000199-35fb3f1d.jpg",
+    "title": "Fish Bean Sprout Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7e2ccb3b781475a39ce9801ce594b8471c181e2662530f98acfd88f24cfa1052",
+    "request_id": "6f0f7f73-7d76-9ea9-87e9-dde6d6dc19d8",
+    "generated_at": "2026-10-02T06:46:28.664675+00:00"
+  },
+  "hf-my-000197": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000197-e1a5142d.jpg",
+    "title": "Beef Bean Sprout Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c776db477a4e802582e148af7c191060147e68b772498bd8e4880bd838c4be09",
+    "request_id": "5f874a53-0537-9b1e-b347-b2c18b347080",
+    "generated_at": "2026-10-02T06:46:30.345572+00:00"
+  },
+  "hf-my-000201": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000201-5fc75cf6.jpg",
+    "title": "Beef Bean Sprout Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "cf48d1f680e8cce5498cbeaf7784721a6787948008ff4c50b1c9e383a6759a4b",
+    "request_id": "bb9b4dd8-932a-960e-8f0e-718687ea59e6",
+    "generated_at": "2026-10-02T06:46:38.061175+00:00"
+  },
+  "hf-my-000166": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000166-7f0f3740.jpg",
+    "title": "Anchovy Bean Sprout Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5919e2fab07e1582475fe6d789c14899685bddc6e81c24004dd9b8566dbc4430",
+    "request_id": "068c6c91-8c0e-9084-8909-959ca51c69e4",
+    "generated_at": "2026-10-02T06:46:42.552672+00:00"
+  },
+  "hf-my-000205": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000205-71412547.jpg",
+    "title": "Sambal Carrot Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "26a32bbbbd2664e4e341d8dcd3e10513f403b49c545bc8c21151b6a9d2fb81e8",
+    "request_id": "ccc2a08e-0d16-95c6-84bc-34ad12b6f363",
+    "generated_at": "2026-10-02T06:46:52.044177+00:00"
+  },
+  "hf-my-000188": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000188-9d3f43ba.jpg",
+    "title": "Chicken Carrot Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8bb230bdab01c0c04a26d7adfb7aefd346f3c7bc04a1bae64b5cf971d97254fe",
+    "request_id": "c4d2a311-0c30-9174-8d6c-5044ff720943",
+    "generated_at": "2026-10-02T06:46:55.299092+00:00"
+  },
+  "hf-my-000206": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000206-650d5ab6.jpg",
+    "title": "Sardine Bean Sprout Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "45e249de108103b41c088f62ecc16b17d94e743f2565dfefecb1afd318165ac7",
+    "request_id": "1f3070bb-4b89-9ec2-8b9a-1690ad5e7b4e",
+    "generated_at": "2026-10-02T06:47:02.415048+00:00"
+  },
+  "hf-my-000208": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000208-15cc1a9c.jpg",
+    "title": "Sardine Bean Sprout Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5678b4d8849756656150787e40b8ddcc3d1063af764df301691033444d85259c",
+    "request_id": "d27f0783-38f2-98a0-9766-2d5880227c05",
+    "generated_at": "2026-10-02T06:47:14.080414+00:00"
+  },
+  "hf-my-000207": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000207-27b92479.jpg",
+    "title": "Anchovy Bean Sprout Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "d457c3cd212337a57b77300d91486a57599a2b7649c46453c608d1eeb15cf003",
+    "request_id": "1ae141b9-fc19-9f8d-8937-60b07e40fbc1",
+    "generated_at": "2026-10-02T06:47:17.579513+00:00"
+  },
+  "hf-my-000204": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000204-d8416323.jpg",
+    "title": "Tempeh Bean Sprout Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4d2ba24d297cb24e298e089114afbc02d6e07c78b130ded079b8c460b671c8a6",
+    "request_id": "d5c8c93c-6935-9f6c-b326-75849b4d4814",
+    "generated_at": "2026-10-02T06:47:29.529136+00:00"
+  },
+  "hf-my-000209": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000209-bfe61951.jpg",
+    "title": "Prawn Carrot Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "fe2b32d5d0b4109520a493d6b72c6b214de154b34693517ec300dd7177600832",
+    "request_id": "7d9a6a54-799d-99eb-9159-0e32fe1f0ff2",
+    "generated_at": "2026-10-02T06:48:02.427793+00:00"
+  },
+  "hf-my-000214": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000214-a26adf94.jpg",
+    "title": "Prawn Carrot Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c42c4fe26a78dd172e4acbfe5f5167c45b8c6501ca0da6b8a87c44685bec99e2",
+    "request_id": "8e0927c1-5064-9c69-9c29-10729dc15de6",
+    "generated_at": "2026-10-02T06:48:13.895318+00:00"
+  },
+  "hf-my-000213": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000213-f0d03e8e.jpg",
+    "title": "Beef Bean Sprout Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "750f0d307f0280d91b4e7c91bfb1ae536cd898fe6cb3d9eb5044d68c492bf099",
+    "request_id": "62d58015-801d-9ca1-9388-41afb450a61d",
+    "generated_at": "2026-10-02T06:48:36.653760+00:00"
+  },
+  "hf-my-000203": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000203-522b3095.jpg",
+    "title": "Anchovy Bean Sprout Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "873a980019b942e8db4e9c1a5ead5eb87a80534b20515d878fb4fba8733fd542",
+    "request_id": "969d9351-25ce-9524-8379-9ec11b0e2a0c",
+    "generated_at": "2026-10-02T06:48:38.045539+00:00"
+  },
+  "hf-my-000186": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000186-db3f0831.jpg",
+    "title": "Tofu Bean Sprout Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "eb28c0fc21ba40039b9b5f0cd22b79cb801af490558d6cc507f5fb40704248e4",
+    "request_id": "8a79aca6-e960-9558-9349-cc9a76909652",
+    "generated_at": "2026-10-02T06:48:43.278912+00:00"
+  },
+  "hf-my-000216": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000216-8f710fae.jpg",
+    "title": "Mushroom Bean Sprout Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dc54547243f9c0a0b2c6722ec3d5facf75f9ed8573366449c8185a97f4197178",
+    "request_id": "29d7533e-4662-9ad1-90cc-430a8e95574a",
+    "generated_at": "2026-10-02T06:48:47.550689+00:00"
+  },
+  "hf-my-000211": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000211-cfac40a9.jpg",
+    "title": "Mushroom Bean Sprout Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f1866c8d978495485a5391ab0365a8072e23b91a30c7b4b688b9305e5eab2276",
+    "request_id": "d4b66d58-4e85-9673-878d-635ee0182e53",
+    "generated_at": "2026-10-02T06:48:48.898286+00:00"
+  },
+  "hf-my-000215": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000215-69574bba.jpg",
+    "title": "Tofu Carrot Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e534e569e842e6a41504793ee92bc959a5cad796668ef255eb6445ab5907264b",
+    "request_id": "07ba1e09-66d5-9749-81db-efa75e5ba3e2",
+    "generated_at": "2026-10-02T06:48:59.133371+00:00"
+  },
+  "hf-my-000219": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000219-d2ce09a3.jpg",
+    "title": "Anchovy Bean Sprout Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "83cc8fcfd7bf13967f6c54c6495cffc9e502a4d59476e009551a99fc213fc7ce",
+    "request_id": "3160f932-f467-9668-9c0a-a396e38d317f",
+    "generated_at": "2026-10-02T06:48:59.223357+00:00"
+  },
+  "hf-my-000220": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000220-8246db73.jpg",
+    "title": "Egg Carrot Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "45e446f181f5cda4c8ae0ffe19b0c7f20b71d66afa631a8d9ab1dd7c18ebfd2a",
+    "request_id": "da3c7f53-7799-9ad5-94e5-5681e8f2a08d",
+    "generated_at": "2026-10-02T06:48:59.900294+00:00"
+  },
+  "hf-my-000183": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000183-e1d31cbf.jpg",
+    "title": "Sambal Bean Sprout Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dd72c2720a720b1a73b0c84dfa454a600e472c932661e84567a8111fdf298174",
+    "request_id": "1e921cfa-a2c2-9773-b9bd-44614fcbb1fb",
+    "generated_at": "2026-10-02T06:49:02.677475+00:00"
+  },
+  "hf-my-000221": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000221-a162b561.jpg",
+    "title": "Sardine Bean Sprout Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c292f1e9600fb608c999ad5d4493dafd1dc314767c641088ae6f0c4671baf19d",
+    "request_id": "0c15c193-85c0-9632-9855-2b9ff7ceb8b1",
+    "generated_at": "2026-10-02T06:49:09.556611+00:00"
+  },
+  "hf-my-000223": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000223-c6b0eca2.jpg",
+    "title": "Sambal Carrot Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "26a32bbbbd2664e4e341d8dcd3e10513f403b49c545bc8c21151b6a9d2fb81e8",
+    "request_id": "ef5d979b-569e-9f07-9cde-f2f22f2121c4",
+    "generated_at": "2026-10-02T06:49:11.679081+00:00"
+  },
+  "hf-my-000222": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000222-d187135b.jpg",
+    "title": "Sambal Carrot Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "26a32bbbbd2664e4e341d8dcd3e10513f403b49c545bc8c21151b6a9d2fb81e8",
+    "request_id": "a6ae1ba3-0fe7-9484-8b75-0730e05ef729",
+    "generated_at": "2026-10-02T06:49:12.151023+00:00"
+  },
+  "hf-my-000224": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000224-b446c8db.jpg",
+    "title": "Tofu Carrot Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "584f9a3212d11b827d5aeb486d4037c673a48122982f3c539928b0df23216f1a",
+    "request_id": "aed11c2d-eb05-93bd-8b2e-f475970fe763",
+    "generated_at": "2026-10-02T06:49:14.154110+00:00"
+  },
+  "hf-my-000193": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000193-7ab56be5.jpg",
+    "title": "Fish Bean Sprout Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "54a729115214dff6babc3060196a2936772fd034eab5f3cb8508d72cec15fe8f",
+    "request_id": "f79a5b77-79f9-903c-a58c-efda9caf13ff",
+    "generated_at": "2026-10-02T06:49:17.562326+00:00"
+  },
+  "hf-my-000226": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000226-982f8398.jpg",
+    "title": "Tofu Carrot Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3dd11e014e7432b6d8efa68ed00974a72a4ce740c6a68b952e6773c210af94db",
+    "request_id": "2a6e8062-54a0-986e-845b-c48794a68708",
+    "generated_at": "2026-10-02T06:49:23.106737+00:00"
+  },
+  "hf-my-000202": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000202-ac7c6db1.jpg",
+    "title": "Beef Bean Sprout Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "fa23fa6e376d9d3ac60285ae86346b792294244af49bd31fa705b32dc03d628a",
+    "request_id": "c183e40a-0a6c-95a8-9877-004a103464e9",
+    "generated_at": "2026-10-02T06:49:26.004799+00:00"
+  },
+  "hf-my-000198": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000198-3ee24163.jpg",
+    "title": "Mushroom Bean Sprout Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "ecc856fb5864ff3df92285f1d3122d7c3559fd20c53db59db479bc1b21efe5f9",
+    "request_id": "9eb4e3ce-2bb1-99b2-b652-cfae58933be9",
+    "generated_at": "2026-10-02T06:49:43.645531+00:00"
+  },
+  "hf-my-000233": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000233-28728a01.jpg",
+    "title": "Prawn Carrot Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "1ba94cb0db2b41f1a73a81febc0d963780e9b0efb0b48cdf5d82a3da18923d3f",
+    "request_id": "8a5389a0-fd19-9421-bea4-db1696149ee2",
+    "generated_at": "2026-10-02T06:49:53.244143+00:00"
+  },
+  "hf-my-000234": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000234-46da6366.jpg",
+    "title": "Anchovy Bean Sprout Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b06319cb41d3154c47b9100f6c5ca47f8043dcf826f6b3c8e4c328f95d0797d8",
+    "request_id": "1af952ee-9d50-9185-adb8-e40f25bf986e",
+    "generated_at": "2026-10-02T06:50:46.162038+00:00"
+  },
+  "hf-my-000235": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000235-2e0d0747.jpg",
+    "title": "Tempeh Carrot Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f12e9696c343b589e832932f8d668256f6e59484dd8a93f098d9d40c0c331df1",
+    "request_id": "69b8536a-40b6-988b-a335-837f9eaf568e",
+    "generated_at": "2026-10-02T06:51:08.243532+00:00"
+  },
+  "hf-my-000225": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000225-d4129bfe.jpg",
+    "title": "Prawn Carrot Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3191d180a7811699861e61dca29fae636397d8fa552485862359fa3b54f04f3b",
+    "request_id": "2e7776db-87bb-94b1-bfc5-e81d67e2650f",
+    "generated_at": "2026-10-02T06:51:11.666245+00:00"
+  },
+  "hf-my-000232": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000232-ef7e3f7d.jpg",
+    "title": "Egg Carrot Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b6f9ecac1e90cce6533da81a9de8b4fb79309250b3a05957aec4134850ef49d8",
+    "request_id": "d7611d7e-712c-9f1c-bf4e-3e21653e40fd",
+    "generated_at": "2026-10-02T06:51:22.952172+00:00"
+  },
+  "hf-my-000237": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000237-68cc3844.jpg",
+    "title": "Tofu Carrot Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "ef28862f6f27252dde34ed67aa77a82809789bf9128b0845fbb0ee1ade010091",
+    "request_id": "eb824c03-70ef-9bd3-8fe8-de100cf9097d",
+    "generated_at": "2026-10-02T06:51:30.430944+00:00"
+  },
+  "hf-my-000231": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000231-1a0fc6ec.jpg",
+    "title": "Fish Carrot Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b351249c90a4978b2e072b36d775b19413e08024e5f610beba3c75bd500c869c",
+    "request_id": "169560bf-a9cc-914b-9d5a-9144cfae4d61",
+    "generated_at": "2026-10-02T06:51:32.078117+00:00"
+  },
+  "hf-my-000238": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000238-2975f927.jpg",
+    "title": "Prawn Carrot Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f5044f81ed1a8ccbffe87321111233e8872389bc01b347d9a47ec01ed7c9c07c",
+    "request_id": "aef7ea73-f2d9-9cfd-86af-8754536c1daf",
+    "generated_at": "2026-10-02T06:51:32.616978+00:00"
+  },
+  "hf-my-000240": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000240-f1849ae1.jpg",
+    "title": "Tempeh Carrot Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "af2ed5b9f01037823098d2721e87dedeabec183417823538e6862b10400afbdd",
+    "request_id": "b2ff775a-7a59-9e1e-b18e-b531317a8c96",
+    "generated_at": "2026-10-02T06:51:42.612309+00:00"
+  },
+  "hf-my-000217": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000217-e2cf67f8.jpg",
+    "title": "Mushroom Bean Sprout Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2c337901c51c11a1b5f49afeb7dfc779a1b865594f7fee130de1043ee77887da",
+    "request_id": "2ae9b9a3-4c63-9cf8-8708-e083e2646631",
+    "generated_at": "2026-10-02T06:51:55.647682+00:00"
+  },
+  "hf-my-000239": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000239-249800b4.jpg",
+    "title": "Egg Carrot Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "a4a57fed6b0dfb67cbf342e0d119f5c7a2ddb02e3019703005f8f73e173ed744",
+    "request_id": "7f0f930b-5222-9987-9aff-3ed2bc38ef66",
+    "generated_at": "2026-10-02T06:52:01.260176+00:00"
+  },
+  "hf-my-000243": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000243-045df985.jpg",
+    "title": "Chicken Carrot Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "df0f708fb408200afa56dd7dafd669339fedaa8aee86aa6908060f8cf7438e6b",
+    "request_id": "f572401c-037b-90b1-84fa-2c7f42a687b1",
+    "generated_at": "2026-10-02T06:52:20.362017+00:00"
+  },
+  "hf-my-000212": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000212-917ad64e.jpg",
+    "title": "Sambal Carrot Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "26a32bbbbd2664e4e341d8dcd3e10513f403b49c545bc8c21151b6a9d2fb81e8",
+    "request_id": "4f9ee2f8-e10a-9dae-838e-5ba0746d0df3",
+    "generated_at": "2026-10-02T06:52:25.275211+00:00"
+  },
+  "hf-my-000245": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000245-726c8154.jpg",
+    "title": "Anchovy Bean Sprout Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "51782e23c94277c81a22ccc0e19a2000dca600209053d9c55d9cdc5e6a4f7f63",
+    "request_id": "9c808ba0-126b-9e48-8785-1b05b6aac6f0",
+    "generated_at": "2026-10-02T06:52:30.731223+00:00"
+  },
+  "hf-my-000246": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000246-dbc5481f.jpg",
+    "title": "Tofu Carrot Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4a64109a2de4b111d4b2b66f78dedcdad101f39b4b42b0e3a881cb1739a2893a",
+    "request_id": "c1f3ba38-8b6a-960d-be11-b8a656c681e1",
+    "generated_at": "2026-10-02T06:52:36.248884+00:00"
+  },
+  "hf-my-000242": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000242-3d5f3122.jpg",
+    "title": "Beef Carrot Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "db59faca43349c09f4fce1eb3c782bb47c278758079f3a643fd32637bcf21315",
+    "request_id": "44d94197-0ca2-9a92-98e4-7092c85e054d",
+    "generated_at": "2026-10-02T06:52:47.814926+00:00"
+  },
+  "hf-my-000249": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000249-1420c974.jpg",
+    "title": "Prawn Carrot Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8570b37546e9cccdc23dbf2a64b7e65f1d4c339b0cb9d3ed6ffbb586a6a8aa18",
+    "request_id": "6d252869-f334-974f-a52f-1666ca6b3811",
+    "generated_at": "2026-10-02T06:53:00.875273+00:00"
+  },
+  "hf-my-000248": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000248-5a772618.jpg",
+    "title": "Tofu Carrot Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "601c16058cad57ccfbcd519d8a06eefaef039e8ef5d8e4cbb20e4bfb000da26e",
+    "request_id": "c6f0f0e6-09c5-9523-abc4-c21f5f7d5937",
+    "generated_at": "2026-10-02T06:53:16.556520+00:00"
+  },
+  "hf-my-000236": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000236-fc857eef.jpg",
+    "title": "Prawn Carrot Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4af4472d3f760b3095a4b00c2c145f31df22e07aa0c1b14930fd7cf385f3e5a7",
+    "request_id": "7d3e95b1-6d26-9a86-a779-fcc0a1ec8582",
+    "generated_at": "2026-10-02T06:53:21.653508+00:00"
+  },
+  "hf-my-000252": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000252-bb849a50.jpg",
+    "title": "Sambal Carrot Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "26a32bbbbd2664e4e341d8dcd3e10513f403b49c545bc8c21151b6a9d2fb81e8",
+    "request_id": "b05d3d0b-b8dd-9a06-95db-0fea3854b4dc",
+    "generated_at": "2026-10-02T06:53:25.237222+00:00"
+  },
+  "hf-my-000253": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000253-12b61292.jpg",
+    "title": "Sambal Carrot Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "26a32bbbbd2664e4e341d8dcd3e10513f403b49c545bc8c21151b6a9d2fb81e8",
+    "request_id": "9d7541d2-9898-9719-9d81-6b03726085c1",
+    "generated_at": "2026-10-02T06:53:28.176400+00:00"
+  },
+  "hf-my-000254": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000254-4c78c564.jpg",
+    "title": "Chicken Carrot Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "bb733685be8493db2ba7e4242eb7736d62445b9860016714d20357087226af80",
+    "request_id": "f3d958de-81cc-9e51-b2d7-0c17e10ea693",
+    "generated_at": "2026-10-02T06:53:33.775838+00:00"
+  },
+  "hf-my-000228": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000228-27b5ebf7.jpg",
+    "title": "Egg Carrot Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8a00b017c2cca60c6541eb85ac890b7294f8c36c4660717d85a5423f2554fc6e",
+    "request_id": "e99c5a5c-88b1-9e31-ad56-332ad7d11cb0",
+    "generated_at": "2026-10-02T06:53:35.793987+00:00"
+  },
+  "hf-my-000257": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000257-3b385c67.jpg",
+    "title": "Anchovy Carrot Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6f63530c5da29eca50dcf5193d7183f6017b7d3f31f0acd0c93ba408d4d91100",
+    "request_id": "c8fd8f6f-702a-986f-96b5-b60cba2a8db1",
+    "generated_at": "2026-10-02T06:53:44.670766+00:00"
+  },
+  "hf-my-000258": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000258-bf96f6ef.jpg",
+    "title": "Anchovy Bean Sprout Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7f2d64eeb6a555aea85cf0a0ef2b9c58ee1623ad12181a012ddfeb20c8a5ac19",
+    "request_id": "f00d3b01-3410-9471-90c0-d75ce8bc50e1",
+    "generated_at": "2026-10-02T06:53:46.269045+00:00"
+  },
+  "hf-my-000256": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000256-e5dd9764.jpg",
+    "title": "Egg Carrot Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "75f31f77431761198753f6b693ffa348e387a23180ba3dfd9999984a2032c5e8",
+    "request_id": "5f3bc5a7-5be5-956c-ae20-3d4dd19afb91",
+    "generated_at": "2026-10-02T06:53:47.476499+00:00"
+  },
+  "hf-my-000259": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000259-fd1fae3d.jpg",
+    "title": "Sardine Carrot Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "510935ea4a761dc4c7cd74d9c4028b9d5db1f74e6f7fd48001cc18882ae31805",
+    "request_id": "3665a321-f18d-937a-bff2-179b3b39792c",
+    "generated_at": "2026-10-02T06:53:54.392645+00:00"
+  },
+  "hf-my-000261": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000261-e31569a2.jpg",
+    "title": "Beef Carrot Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9f4a9aa21dc6ba39b80e5c3831aed0522158033e9c455a16bf717d1bbee091c8",
+    "request_id": "e9f5929d-cce2-9131-bfd7-ce6b7853645e",
+    "generated_at": "2026-10-02T06:54:00.073634+00:00"
+  },
+  "hf-my-000263": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000263-90b5a9a5.jpg",
+    "title": "Tempeh Carrot Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5ba34d013e72aeb0faac3c7dba07e3d10bdcb4ef2e5e96f14c8dfa19680cbe97",
+    "request_id": "faf56cb6-dcf9-935a-ac57-068676b6e40b",
+    "generated_at": "2026-10-02T06:54:04.624168+00:00"
+  },
+  "hf-my-000250": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000250-3a65dfbe.jpg",
+    "title": "Tofu Carrot Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e7fcd2a3bad0fff289110b676787175c040dfb22070f635c5d55e55b2e3dc154",
+    "request_id": "392d4b3d-ecd0-9f8e-8aed-35f6501b54c5",
+    "generated_at": "2026-10-02T06:54:08.184724+00:00"
+  },
+  "hf-my-000229": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000229-00daea41.jpg",
+    "title": "Chicken Carrot Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "05f2d6803ba8e6a280095dcc61b2f6183c2b49b53d36fa3721f27505fd81cc22",
+    "request_id": "ded399f7-fb8c-9559-974b-26c7711a5c7a",
+    "generated_at": "2026-10-02T06:54:18.202153+00:00"
+  },
+  "hf-my-000265": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000265-05144ee5.jpg",
+    "title": "Fish Carrot Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "de7141a373cacb803bf1832209c33e6e839f6760be9c6fcf23f6d79a3f00ce05",
+    "request_id": "cf9b375f-ea0b-9a84-b93e-ee535edd794d",
+    "generated_at": "2026-10-02T06:54:19.233738+00:00"
+  },
+  "hf-my-000262": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000262-7ac6afe3.jpg",
+    "title": "Sambal Carrot Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "26a32bbbbd2664e4e341d8dcd3e10513f403b49c545bc8c21151b6a9d2fb81e8",
+    "request_id": "502a0174-1229-9a72-92c4-c09a928493b4",
+    "generated_at": "2026-10-02T06:54:20.296549+00:00"
+  },
+  "hf-my-000266": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000266-d98d17aa.jpg",
+    "title": "Tempeh Carrot Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "86a12fdee6959e724f7bdc615c79545d718e5103e70bad4620c8a68cdf5e1e92",
+    "request_id": "1b541c3b-efbf-9fd3-a270-11000d0bcc1e",
+    "generated_at": "2026-10-02T06:54:24.013320+00:00"
+  },
+  "hf-my-000267": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000267-09b2378a.jpg",
+    "title": "Prawn Carrot Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e1207dc65bfef6e5a8ec32ef1fb62bbcde8e1ee23815cdabfa5c8e3bd8b07dce",
+    "request_id": "eb12876d-c206-9381-b568-3758a6180063",
+    "generated_at": "2026-10-02T06:54:29.348517+00:00"
+  },
+  "hf-my-000268": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000268-158c5663.jpg",
+    "title": "Tofu Carrot Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f7522bd78a41e2b5449baf05d5ccefa085a3d7d7afba4d6662d270c8bb30d51a",
+    "request_id": "186d4f55-add4-916b-a7d2-2c2752090abc",
+    "generated_at": "2026-10-02T06:54:29.414686+00:00"
+  },
+  "hf-my-000227": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000227-3527edd6.jpg",
+    "title": "Mushroom Bean Sprout Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0ea17a5bc2dd88f13e12bb0e598859b6366f35a1fe2d823dadb04cef47e26722",
+    "request_id": "99e99bee-3e54-9e6c-bef9-0ecbf266b06e",
+    "generated_at": "2026-10-02T06:54:29.792586+00:00"
+  },
+  "hf-my-000269": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000269-150807f5.jpg",
+    "title": "Chicken Long Bean Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "a39f7dee77a13dbd305ce2511024c5549a03101b0ef05d5addeab489ddf84a0b",
+    "request_id": "4871aa29-41b0-90b8-8358-a8affcd95711",
+    "generated_at": "2026-10-02T06:54:34.592603+00:00"
+  },
+  "hf-my-000264": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000264-47879438.jpg",
+    "title": "Fish Carrot Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "398b639f0c9e4335e0c27a5d6cca73058db63a9b1efb952d475f0c15b1aa172c",
+    "request_id": "1ab2286f-4937-950d-ab61-52667343f45e",
+    "generated_at": "2026-10-02T06:54:45.122315+00:00"
+  },
+  "hf-my-000271": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000271-030a89d3.jpg",
+    "title": "Beef Carrot Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "d717fd6e1790c1db2a9e5c394c6a95a0bc4bda9c780a18e32d9731358e8e365a",
+    "request_id": "67ce77fd-0787-9567-a749-a4b04bb1de09",
+    "generated_at": "2026-10-02T06:54:55.170834+00:00"
+  },
+  "hf-my-000260": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000260-6d82069d.jpg",
+    "title": "Sambal Carrot Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "26a32bbbbd2664e4e341d8dcd3e10513f403b49c545bc8c21151b6a9d2fb81e8",
+    "request_id": "033fb460-991b-96c4-bec9-9723fade6d8b",
+    "generated_at": "2026-10-02T06:55:07.168274+00:00"
+  },
+  "hf-my-000272": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000272-7e94c334.jpg",
+    "title": "Mushroom Carrot Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4d28f148c567692d1d78aee85eb2c03955385c17847d76ba0707886569f1a75b",
+    "request_id": "af3d4a31-6069-9565-a897-a0e80fc18a2a",
+    "generated_at": "2026-10-02T06:55:19.959875+00:00"
+  },
+  "hf-my-000230": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000230-1a9c215d.jpg",
+    "title": "Fish Carrot Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "95c7c6a3993dfdcb52657ba2e27cd36ca73349f7185693313c64602629b16563",
+    "request_id": "bf475543-1038-9bd9-90ec-8de0d3670b53",
+    "generated_at": "2026-10-02T08:12:09.091497+00:00"
+  },
+  "hf-my-000126": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000126-d155f0d4.jpg",
+    "title": "Tofu Bean Sprout Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "958b5b709a2afeb915ed70eadaab1c9481f9686224c7d119a608bb4682b929da",
+    "request_id": "ad998d4d-5c05-9d55-8abc-5d950e621ff0",
+    "generated_at": "2026-10-02T08:12:10.722887+00:00"
+  },
+  "hf-my-000086": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000086-a9c994a5.jpg",
+    "title": "Beef Choy Sum Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7b3bb17a57fb0a9f985395a77eb49ade9787b622109d0036e7fcff5a85794444",
+    "request_id": "e7c9db89-82bb-9016-94c6-25e0c2ee574b",
+    "generated_at": "2026-10-02T08:12:13.333690+00:00"
+  },
+  "hf-my-000218": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000218-6929bd40.jpg",
+    "title": "Chicken Carrot Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "1642ead0c3905b5e90907451f0756ae0862f184c8bc6bc0a869563396a641163",
+    "request_id": "8fa7aa65-5f5c-904f-b838-7e160500c6db",
+    "generated_at": "2026-10-02T08:12:13.883500+00:00"
+  },
+  "hf-my-000184": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000184-a71787d8.jpg",
+    "title": "Sardine Bean Sprout Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b7c7348dfb1f135723eb1476ec6ce2639c9b8fefeca96aaa6e70228d2cd06155",
+    "request_id": "71d8ecfe-4ba9-9b4a-8238-ddd9d6445f1f",
+    "generated_at": "2026-10-02T08:12:14.554301+00:00"
+  },
+  "hf-my-000210": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000210-82a3af93.jpg",
+    "title": "Chicken Carrot Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "51cd9a45842f70011cbb6d201792f165ad5e4d1b1104d2088fc7db1e16d2cf55",
+    "request_id": "72ad5d30-d5e7-9c57-8328-71e2cedd2175",
+    "generated_at": "2026-10-02T08:12:15.877033+00:00"
+  },
+  "hf-my-000200": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000200-41e3e774.jpg",
+    "title": "Mushroom Bean Sprout Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "bcd852b7fb971c0ff08d56197c7b6fee5e0eba2eb4e51cd5ca57e2ab6bfe505b",
+    "request_id": "16325b0d-033a-939e-ab53-7ae926ad3892",
+    "generated_at": "2026-10-02T08:12:16.281546+00:00"
+  },
+  "hf-my-000173": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000173-35f452b3.jpg",
+    "title": "Tempeh Bean Sprout Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e15a75cad48750d31869850db2ad35e0a86647d50a354f8ffa28b10015f64875",
+    "request_id": "7cd82bc3-ec56-9d21-80ae-c0e35a86ee4f",
+    "generated_at": "2026-10-02T08:12:16.951067+00:00"
+  },
+  "hf-my-000112": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000112-596eeb6a.jpg",
+    "title": "Tofu Bean Sprout Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "65b9dd9936573b7ecbd9887a48e5a372762406dd1dfe92ba0b1dbf7f8bf8d469",
+    "request_id": "9df4c036-61dc-9811-8b0b-0ad9cca6eb60",
+    "generated_at": "2026-10-02T08:12:17.100277+00:00"
+  },
+  "hf-my-000172": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000172-67bdff04.jpg",
+    "title": "Sardine Bean Sprout Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3dba6ad97edd8ec78f0e0a99a51c62f983fcbd91b7695b633fd2f7645267232a",
+    "request_id": "33580bb4-44b9-9ca6-b0fa-39de51e62fcd",
+    "generated_at": "2026-10-02T08:12:17.120579+00:00"
+  },
+  "hf-my-000241": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000241-e889f013.jpg",
+    "title": "Sardine Bean Sprout Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "17259455496a087d2f3ef5b78ce543401664eaf17893defc9546a1990bfd076a",
+    "request_id": "d7ba07b0-6b24-9917-a059-ddab558fd3c8",
+    "generated_at": "2026-10-02T08:12:17.356820+00:00"
+  },
+  "hf-my-000187": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000187-501cd0aa.jpg",
+    "title": "Mushroom Bean Sprout Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "af97d5a7e952fe5f5ea467c53f8bcafd3be5e5f5eab8d57f6aec3d3f4be8b288",
+    "request_id": "6f3285c8-6245-9317-a3ff-e6d91a3af283",
+    "generated_at": "2026-10-02T08:12:17.408566+00:00"
+  },
+  "hf-my-000244": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000244-ebdffe7d.jpg",
+    "title": "Fish Carrot Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4422368f24493630eb78e07afaa8a712bb06ed1b226b1a2610383f76feea67de",
+    "request_id": "4bb78d15-00a5-9b8e-95e4-d371a91de4f6",
+    "generated_at": "2026-10-02T08:12:21.154486+00:00"
+  },
+  "hf-my-000247": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000247-ac990c8b.jpg",
+    "title": "Sardine Bean Sprout Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "76805a91ea0804d2d60e2a0812425d9367572de0d14cccc4e2bea3b56ea3595d",
+    "request_id": "99e684fb-7ee4-9ac2-b12e-5ab7736cc374",
+    "generated_at": "2026-10-02T08:12:23.483136+00:00"
+  },
+  "hf-my-000255": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000255-af520d8b.jpg",
+    "title": "Mushroom Carrot Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "07922ce629dd66d18e52dd05dd52eed08e8786a1fde277467fb388cbfd25a6b5",
+    "request_id": "63778614-7b54-9877-8dde-979b9304273f",
+    "generated_at": "2026-10-02T08:12:26.810463+00:00"
+  },
+  "hf-my-000251": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000251-aba79623.jpg",
+    "title": "Egg Carrot Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "a909dcbe285a05bd10029e511f0c7d143b6f6e764a2e24a6f1171d930d91afda",
+    "request_id": "000df199-7ea4-987c-afec-f94c2266dee1",
+    "generated_at": "2026-10-02T08:12:27.983153+00:00"
+  },
+  "hf-my-000270": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000270-d55aa12a.jpg",
+    "title": "Egg Carrot Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0d70b0dfd75bfab12f45eb2d243d390655594f55e757ffcf8484e00f8f1a4717",
+    "request_id": "94284233-8ba5-99c0-84fe-68ed6700b9ab",
+    "generated_at": "2026-10-02T08:12:28.995703+00:00"
+  },
+  "hf-my-000279": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000279-0869b9db.jpg",
+    "title": "Sardine Bean Sprout Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8e0741c187589144155b11ace5095ca309a05e743da64456793aba0177fa259c",
+    "request_id": "77be870c-263d-953b-9061-47df35f101f3",
+    "generated_at": "2026-10-02T08:12:34.697542+00:00"
+  },
+  "hf-my-000276": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000276-d4274abf.jpg",
+    "title": "Fish Carrot Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "72e4f45190492c7c5cdb8900d4a64a35ad5dca8a6ac59fe12b923a823282e7cb",
+    "request_id": "d85c5bf8-cc4f-93f2-b9b9-af738ab9dd17",
+    "generated_at": "2026-10-02T08:12:35.734822+00:00"
+  },
+  "hf-my-000275": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000275-888a6235.jpg",
+    "title": "Egg Carrot Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "feae0be3d6b2c44c4d25f6dab61bbe894e8e78a17f647562cd37ac1e0b17a0be",
+    "request_id": "db802d34-72ae-908b-bdb4-a9cb0d7773fd",
+    "generated_at": "2026-10-02T08:12:35.889744+00:00"
+  },
+  "hf-my-000273": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000273-c6c20313.jpg",
+    "title": "Anchovy Bean Sprout Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "775f0ffc7185acc669427be8796685981441ca50543e07cba630022ed7c5b8dd",
+    "request_id": "789cf7ba-ae14-963a-9384-038a70a6f26d",
+    "generated_at": "2026-10-02T08:12:38.198753+00:00"
+  },
+  "hf-my-000280": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000280-0741804d.jpg",
+    "title": "Tempeh Carrot Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "cb890872eb965b070cff7b5de11648b01c1d73c073ce9c678f2d535592282da5",
+    "request_id": "629505e7-38a9-9a2f-8ee5-a81ac82bf9db",
+    "generated_at": "2026-10-02T08:12:39.088088+00:00"
+  },
+  "hf-my-000277": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000277-9a0d4d58.jpg",
+    "title": "Prawn Long Bean Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "33999fb2a042ccd5f5cda0411e1a5fa616849279effd85640af16c4a26142099",
+    "request_id": "e4470683-a03d-9efd-8b33-52e99a08d72f",
+    "generated_at": "2026-10-02T08:12:39.764272+00:00"
+  },
+  "hf-my-000274": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000274-182a6ee9.jpg",
+    "title": "Anchovy Carrot Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "cf8acb620660a578587b8c535884fd36318215e02267f87d4a755ea933f4814d",
+    "request_id": "f0fd9cdf-2ac7-9d1e-9ce2-ca9858f7ddba",
+    "generated_at": "2026-10-02T08:12:40.915155+00:00"
+  },
+  "hf-my-000278": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000278-a4286ae7.jpg",
+    "title": "Beef Carrot Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9c055a614e382c68183cc7ea164e87acf518a8aa4283df96a96f4f168e20470f",
+    "request_id": "72b5fd19-4633-92c6-b557-02c223112d3f",
+    "generated_at": "2026-10-02T08:12:41.765050+00:00"
+  },
+  "hf-my-000282": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000282-57c63a2b.jpg",
+    "title": "Beef Carrot Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e835804303ae0abb3a44d00d12aaefe7245b3d23b6416af13219860d25b93c9f",
+    "request_id": "bd89ab16-1dcd-96fb-b470-562ed09d8c96",
+    "generated_at": "2026-10-02T08:12:42.194767+00:00"
+  },
+  "hf-my-000281": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000281-f45bdb02.jpg",
+    "title": "Sambal Carrot Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "26a32bbbbd2664e4e341d8dcd3e10513f403b49c545bc8c21151b6a9d2fb81e8",
+    "request_id": "14861271-e46b-9480-8dbf-418fd7cc3428",
+    "generated_at": "2026-10-02T08:12:42.989661+00:00"
+  },
+  "hf-my-000283": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000283-af0ed66d.jpg",
+    "title": "Fish Carrot Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c7a39902e06d954b97c57b171a43c62e786e059fdfe2ac4b5677502a5fd606d1",
+    "request_id": "b047e6a0-e4a6-9084-9bb1-5a608dfbc552",
+    "generated_at": "2026-10-02T08:12:44.077359+00:00"
+  },
+  "hf-my-000284": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000284-c9fe23a2.jpg",
+    "title": "Chicken Carrot Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "26b49e85f395d551b672edc85acfb0c108b306209d3766a64b1e5f41352ad0a0",
+    "request_id": "eed2499d-1599-9e50-8516-b19e4f159e9f",
+    "generated_at": "2026-10-02T08:12:44.491257+00:00"
+  },
+  "hf-my-000285": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000285-5ff3a92c.jpg",
+    "title": "Sambal Carrot Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "26a32bbbbd2664e4e341d8dcd3e10513f403b49c545bc8c21151b6a9d2fb81e8",
+    "request_id": "7cd61061-8c9f-9ee4-8435-18377436ba25",
+    "generated_at": "2026-10-02T08:12:50.347886+00:00"
+  },
+  "hf-my-000287": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000287-9eec9ac1.jpg",
+    "title": "Mushroom Carrot Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "aeab3379212503b740101446fb3eee6d96c632d46cae0896dd280b6e361c9447",
+    "request_id": "2c9c6432-abc5-90a7-961b-9fcfddf6d20d",
+    "generated_at": "2026-10-02T08:12:50.685886+00:00"
+  },
+  "hf-my-000286": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000286-e8acfca3.jpg",
+    "title": "Mushroom Carrot Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f4fc4038b883fcc96c6ad3518e293e50dc7b1b122b8f0d4ae6c916620463a661",
+    "request_id": "c5514df2-3630-964e-8ee1-dc2f9f928e3b",
+    "generated_at": "2026-10-02T08:12:52.932802+00:00"
+  },
+  "hf-my-000291": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000291-98c05789.jpg",
+    "title": "Sambal Long Bean Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "03ea4647428c98ed59c47bdb9e11951ef485b7c37f34ca8e423d1f7844546ef3",
+    "request_id": "a75a7555-c793-92b7-9f29-1fdc26abe199",
+    "generated_at": "2026-10-02T08:12:56.541956+00:00"
+  },
+  "hf-my-000288": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000288-335279aa.jpg",
+    "title": "Sardine Carrot Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0a803eb2e73df709f8b52b03505ff971e02341c9b6dc0e352c5d2bb5e8a1e29f",
+    "request_id": "c270df9d-b01b-92f2-9c9e-069f609d736a",
+    "generated_at": "2026-10-02T08:12:59.648953+00:00"
+  },
+  "hf-my-000289": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000289-d5ef34f9.jpg",
+    "title": "Tofu Long Bean Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e5ca439624c738259d9f44be16ba671a399724884e13ee6686ace4923512385f",
+    "request_id": "f7afe6a4-7452-9090-a3f7-db6a07fa82dd",
+    "generated_at": "2026-10-02T08:12:59.970500+00:00"
+  },
+  "hf-my-000294": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000294-6e2abb05.jpg",
+    "title": "Tofu Carrot Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9a1f0d0404ca4f401773d01ceffa0b915e714a61fbeba08d2f9d80a453183fc2",
+    "request_id": "8707d831-5329-9bb6-b162-e1a30d82f248",
+    "generated_at": "2026-10-02T08:13:01.712791+00:00"
+  },
+  "hf-my-000290": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000290-09c47e22.jpg",
+    "title": "Prawn Carrot Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "806b627d352f703bca04e78f7f78c651402b4809333f194359ba522855b0073a",
+    "request_id": "508cd079-3e1f-944d-b04d-de310d9ade3e",
+    "generated_at": "2026-10-02T08:13:02.292777+00:00"
+  },
+  "hf-my-000295": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000295-8d818c9d.jpg",
+    "title": "Anchovy Carrot Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "96ab6738a86243491f6f4ef4427a52978fd971ae81b487f96a7a1ce05a442699",
+    "request_id": "24e71b8c-914a-9a00-a30d-30a66559158c",
+    "generated_at": "2026-10-02T08:13:02.407518+00:00"
+  },
+  "hf-my-000292": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000292-88dd3a55.jpg",
+    "title": "Sambal Long Bean Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "03ea4647428c98ed59c47bdb9e11951ef485b7c37f34ca8e423d1f7844546ef3",
+    "request_id": "2aef17fa-a210-9a0c-9fb0-4fea34520773",
+    "generated_at": "2026-10-02T08:13:02.897654+00:00"
+  },
+  "hf-my-000296": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000296-65edfc99.jpg",
+    "title": "Egg Long Bean Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9bcbd74ae9308126b48bd954035c2920989692249737ec4e67e96fae766ffea4",
+    "request_id": "1a79dcee-4db2-9fc1-bf9e-8f7979d144de",
+    "generated_at": "2026-10-02T08:13:05.294213+00:00"
+  },
+  "hf-my-000297": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000297-ca61e66f.jpg",
+    "title": "Anchovy Carrot Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "48a8255133f3a941842af10972de455171ad4bb61b8e7ca5f3d468809e30555d",
+    "request_id": "d872e505-0a78-9a74-a851-7e8aff860db3",
+    "generated_at": "2026-10-02T08:13:05.826965+00:00"
+  },
+  "hf-my-000293": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000293-6f7cf23e.jpg",
+    "title": "Chicken Long Bean Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "fc8b393599a8a5bbd64a4940cebded9f83ee23ca1f1ceb8a03d6c97fbb47deb5",
+    "request_id": "15f021fe-7730-952b-81e1-0af942829118",
+    "generated_at": "2026-10-02T08:13:05.998709+00:00"
+  },
+  "hf-my-000298": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000298-9c5b5005.jpg",
+    "title": "Sardine Carrot Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3b467f07922e119f766e6376913128023b1b576e181cc06b7c85ed6a6dd3a198",
+    "request_id": "c425b30b-43e8-91b2-bee9-6d096fab9fa1",
+    "generated_at": "2026-10-02T08:13:07.347726+00:00"
+  },
+  "hf-my-000299": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000299-8bb42aa9.jpg",
+    "title": "Tempeh Carrot Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0ec17afb2cf2ecd4eca4306b810aa682ffe2c3ca4354cce7bcedbc199108d651",
+    "request_id": "508aefb5-4ae9-98db-9c42-dcfb014c7b69",
+    "generated_at": "2026-10-02T08:13:07.789280+00:00"
+  },
+  "hf-my-000300": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000300-aed572a1.jpg",
+    "title": "Sambal Long Bean Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "03ea4647428c98ed59c47bdb9e11951ef485b7c37f34ca8e423d1f7844546ef3",
+    "request_id": "05af7bf2-1859-9cc1-a08f-af2b12c0f8ae",
+    "generated_at": "2026-10-02T08:13:08.964623+00:00"
+  },
+  "hf-my-000301": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000301-ccc4ec44.jpg",
+    "title": "Tempeh Carrot Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4c79e4e904988d7d7628a098d3ac40055f8d4abe46d0d26a321527b311601ed8",
+    "request_id": "8bb84f53-0271-9044-80ec-179c3ac7ac77",
+    "generated_at": "2026-10-02T08:13:20.337386+00:00"
+  },
+  "hf-my-000310": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000310-ad336a46.jpg",
+    "title": "Mushroom Carrot Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9633b3e2e4fac482fa2ce9bc183aa25f6b7a56d2d884344a498f499b5f3fa14e",
+    "request_id": "9c1ee8d0-62ff-963b-841a-f5775be21d70",
+    "generated_at": "2026-10-02T08:13:24.397397+00:00"
+  },
+  "hf-my-000303": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000303-fa13546e.jpg",
+    "title": "Chicken Long Bean Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "64ee4365d3062e18ee078f025224957262054c7878bd064cba6849ed6349d845",
+    "request_id": "8d76cca1-dd66-9d62-9b9f-c2aea41862d9",
+    "generated_at": "2026-10-02T08:13:26.778480+00:00"
+  },
+  "hf-my-000304": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000304-72d12db0.jpg",
+    "title": "Prawn Long Bean Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8cadd2c05f2ee5a6dcccf9c587b6c4fec45c9f32e16ac56329db51bf9a8293b6",
+    "request_id": "04775ba6-e5f3-99ce-930f-01588f911182",
+    "generated_at": "2026-10-02T08:13:27.714765+00:00"
+  },
+  "hf-my-000302": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000302-900a9760.jpg",
+    "title": "Sambal Long Bean Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "03ea4647428c98ed59c47bdb9e11951ef485b7c37f34ca8e423d1f7844546ef3",
+    "request_id": "bdbf94fc-b372-9d30-bb1d-1b08050cb852",
+    "generated_at": "2026-10-02T08:13:27.953902+00:00"
+  },
+  "hf-my-000309": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000309-ec379b1e.jpg",
+    "title": "Egg Carrot Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9a1bbb8baf38bc047f6c82c0393065fc48e942089c3710ccc7aae04a9a0c059e",
+    "request_id": "d0004844-8347-9047-aad0-95e338ea3435",
+    "generated_at": "2026-10-02T08:13:28.018527+00:00"
+  },
+  "hf-my-000308": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000308-17e203d5.jpg",
+    "title": "Beef Carrot Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "38558849f1a70bf1885c838ba7cacf23eeed326ff1f576cd92446404997701d2",
+    "request_id": "1b086627-038c-989b-809b-e207ed31236a",
+    "generated_at": "2026-10-02T08:13:28.875275+00:00"
+  },
+  "hf-my-000307": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000307-8509408d.jpg",
+    "title": "Tofu Long Bean Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5c3ca0849a141ea89a361adb358eb8612719bbf1de612aac634eca0e63c94788",
+    "request_id": "173a6221-1ced-93f9-830b-a6f51df62e8f",
+    "generated_at": "2026-10-02T08:13:28.908441+00:00"
+  },
+  "hf-my-000305": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000305-c2c106b8.jpg",
+    "title": "Fish Carrot Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "239f6b48a1a6c84abc3c93c2451bdabe64b0c82165644220c8bc9cfd7c83b527",
+    "request_id": "e1cd0d03-4d6f-9e2f-bb2f-0c26da62a641",
+    "generated_at": "2026-10-02T08:13:30.866617+00:00"
+  },
+  "hf-my-000306": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000306-f2f311eb.jpg",
+    "title": "Sardine Bean Sprout Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3e267e4c90d8819925ca331ae3af7a9d6a21f31cbda5d57520dc2429c91209f5",
+    "request_id": "002d162c-816e-9272-94b0-31c51f43c7da",
+    "generated_at": "2026-10-02T08:13:31.106316+00:00"
+  },
+  "hf-my-000312": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000312-e9e3ff8c.jpg",
+    "title": "Anchovy Carrot Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9f8c9f2562cccff40d71c1d4cc53e0986da93bbd39e56f3eb9ba055cbb2c9dc2",
+    "request_id": "3f5125a3-70be-9780-a469-188d73b28974",
+    "generated_at": "2026-10-02T08:13:31.619602+00:00"
+  },
+  "hf-my-000311": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000311-898ca7fe.jpg",
+    "title": "Sardine Carrot Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2314cad5315cd406bb0ad9008d2a74a246eeb0532bb20d9ba3d84e47535237b0",
+    "request_id": "f4007b77-c281-91e2-a5e1-469b9a5d2692",
+    "generated_at": "2026-10-02T08:13:31.724872+00:00"
+  },
+  "hf-my-000313": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000313-3f51eb08.jpg",
+    "title": "Chicken Carrot Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9ddedd76757ddb620b0f77bd0c758a5adaeab76a26ec71eaff3490c626b202bd",
+    "request_id": "39f6e30b-d961-93ec-bcae-b5e1c3beded7",
+    "generated_at": "2026-10-02T08:13:34.720394+00:00"
+  },
+  "hf-my-000314": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000314-25ed1e9f.jpg",
+    "title": "Tempeh Carrot Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "68e536fa952fde771cee516563e9e34afcb1b41903c30ee4f33e607457d9cea0",
+    "request_id": "671861ca-eb30-9e43-bddd-287b470105e7",
+    "generated_at": "2026-10-02T08:13:38.777573+00:00"
+  },
+  "hf-my-000315": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000315-6a331a9b.jpg",
+    "title": "Fish Long Bean Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "18b7c6b76ba0e8e1f44fb4fa7816b242a563736761589fb3f455a3f10ca16993",
+    "request_id": "abb0fab3-baa0-924b-83c5-6d656e277610",
+    "generated_at": "2026-10-02T08:13:40.861180+00:00"
+  },
+  "hf-my-000316": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000316-77515d8b.jpg",
+    "title": "Fish Carrot Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "df2525215fc2d38362faea58446295ea2b8b3b4ec1d05865fb0bd1c8fa7d607a",
+    "request_id": "59030116-75f1-936e-af4c-8c2aa3f14891",
+    "generated_at": "2026-10-02T08:13:42.573805+00:00"
+  },
+  "hf-my-000324": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000324-afb85221.jpg",
+    "title": "Sambal Long Bean Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "03ea4647428c98ed59c47bdb9e11951ef485b7c37f34ca8e423d1f7844546ef3",
+    "request_id": "3a0c82cf-783f-9f19-80b9-b333036a944a",
+    "generated_at": "2026-10-02T08:13:52.726276+00:00"
+  },
+  "hf-my-000321": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000321-4612a240.jpg",
+    "title": "Prawn Long Bean Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e7d71af0b8be6018d2135878d203a6448c55bf30966115a3c82a8cf7be82a2da",
+    "request_id": "cfe53f9e-f238-9a45-be7d-f359becdbeb3",
+    "generated_at": "2026-10-02T08:13:53.765573+00:00"
+  },
+  "hf-my-000322": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000322-557504cc.jpg",
+    "title": "Tempeh Long Bean Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dbbbef8a3b76a0c7e7de165c2e7ca66445c612b6dd66edc9477428b0424b1e52",
+    "request_id": "5d3df335-f325-9ef4-8c7e-1a931f54c407",
+    "generated_at": "2026-10-02T08:13:53.858272+00:00"
+  },
+  "hf-my-000317": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000317-31739516.jpg",
+    "title": "Tempeh Carrot Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3c41d5aea06c387ab23e28c8a875d69b9c1d9289aac04790fbbdd7f920fd183a",
+    "request_id": "1d61108c-f687-90a0-b893-5e5d36e38ebe",
+    "generated_at": "2026-10-02T08:13:54.741126+00:00"
+  },
+  "hf-my-000319": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000319-1687963a.jpg",
+    "title": "Beef Carrot Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "d09e2651ba507ba93fe240cb1a8546bb8e7717d4c2f106077676db65139a5ca8",
+    "request_id": "7e543905-b1b2-9379-a4f7-20ca496242fe",
+    "generated_at": "2026-10-02T08:13:56.165681+00:00"
+  },
+  "hf-my-000318": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000318-9a6fd7be.jpg",
+    "title": "Chicken Long Bean Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e2c7007765e20ff104b6ea2ed51cc284021d036541b96812438742658b670655",
+    "request_id": "cc0c5f7a-4baf-9477-9837-19cc63fe4f35",
+    "generated_at": "2026-10-02T08:13:56.206818+00:00"
+  },
+  "hf-my-000320": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000320-49720db6.jpg",
+    "title": "Sambal Long Bean Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "03ea4647428c98ed59c47bdb9e11951ef485b7c37f34ca8e423d1f7844546ef3",
+    "request_id": "b8e0bb65-83c4-91c0-b42e-fb511f5af114",
+    "generated_at": "2026-10-02T08:13:56.750648+00:00"
+  },
+  "hf-my-000327": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000327-0b1d065a.jpg",
+    "title": "Beef Long Bean Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4f8c98d66882677c92c8e4a199482f6f126c544bb3dbe8ae5e4924066d0922bb",
+    "request_id": "7c33e53f-e90c-9014-b9b9-85a033d43824",
+    "generated_at": "2026-10-02T08:13:57.356163+00:00"
+  },
+  "hf-my-000326": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000326-74e099a2.jpg",
+    "title": "Egg Long Bean Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b2c73697132fff2a0b755e3bdda329928c0ea51df22facb6fa24bce9ddef9fe4",
+    "request_id": "24da4915-cdf6-9efb-8cf2-1c53e45775e7",
+    "generated_at": "2026-10-02T08:13:57.643373+00:00"
+  },
+  "hf-my-000325": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000325-d6ec0bed.jpg",
+    "title": "Sambal Long Bean Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "03ea4647428c98ed59c47bdb9e11951ef485b7c37f34ca8e423d1f7844546ef3",
+    "request_id": "1891c62d-4776-9c48-835e-fc0bb8c7b1ad",
+    "generated_at": "2026-10-02T08:13:57.700794+00:00"
+  },
+  "hf-my-000323": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000323-76660362.jpg",
+    "title": "Prawn Long Bean Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "657b974ae3c31a208224c05dc1e283d679041205c14b025b352605251f3282ba",
+    "request_id": "12e949ea-11a1-9a16-88ee-da84767c14f9",
+    "generated_at": "2026-10-02T08:13:58.170684+00:00"
+  },
+  "hf-my-000328": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000328-1fb35153.jpg",
+    "title": "Beef Carrot Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "236a303aae54e2b878cf9e1e102ad6b5007c7b7b663da905daeac0e6083977d8",
+    "request_id": "cbf745e1-eca9-9ba7-887a-c9738a45ea0c",
+    "generated_at": "2026-10-02T08:13:59.022299+00:00"
+  },
+  "hf-my-000329": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000329-bffb64de.jpg",
+    "title": "Mushroom Carrot Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "59401cab2c245c746676358968f649737e12784b3e3a4ac52e0b304351c0a752",
+    "request_id": "4b6895ea-9530-94d2-aa13-53d50b7408e5",
+    "generated_at": "2026-10-02T08:14:06.014303+00:00"
+  },
+  "hf-my-000331": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000331-f1f0ca37.jpg",
+    "title": "Mushroom Long Bean Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f69f6e064fc05d070c2bf813d3948a5498e03dbbe8d0a1497f9423bf372b95fd",
+    "request_id": "37b70b2c-bd90-94df-a077-f76c7c5dc84b",
+    "generated_at": "2026-10-02T08:14:08.131081+00:00"
+  },
+  "hf-my-000330": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000330-91805412.jpg",
+    "title": "Prawn Carrot Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8eb9cccc51989c7bcb05709993804a5af4d57b6c9347beec25a18803fc37731a",
+    "request_id": "a22eb49f-a75a-9c7e-ab16-e25b6b830899",
+    "generated_at": "2026-10-02T08:14:11.706155+00:00"
+  },
+  "hf-my-000332": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000332-95f35121.jpg",
+    "title": "Sambal Long Bean Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "03ea4647428c98ed59c47bdb9e11951ef485b7c37f34ca8e423d1f7844546ef3",
+    "request_id": "0dad0a77-41aa-9ae7-bbf0-db47a3d47267",
+    "generated_at": "2026-10-02T08:14:13.200471+00:00"
+  },
+  "hf-my-000333": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000333-6722efae.jpg",
+    "title": "Anchovy Long Bean Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4d36e49bc9246e1bb3607546c4ef15915d4a52493978b67a49b2466e5ee2809f",
+    "request_id": "9131463e-314f-9910-91be-5e9ec9c39141",
+    "generated_at": "2026-10-02T08:14:16.321875+00:00"
+  },
+  "hf-my-000336": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000336-cd4e9315.jpg",
+    "title": "Anchovy Carrot Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "a1a418c17c977eeb950fc21ecf6534d6e6fb4e08f868f8f1b329d2db3ca91f79",
+    "request_id": "a21fca06-c236-92fc-be25-b1cd14edd9bc",
+    "generated_at": "2026-10-02T08:14:17.899910+00:00"
+  },
+  "hf-my-000334": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000334-aedd2ea3.jpg",
+    "title": "Tofu Carrot Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "a9aa8cfafa03bbddf5f9816c22c7cd185f47c4bcdb8d0d323e2f71f2de9af3c1",
+    "request_id": "8e66b392-7801-9426-a03f-70e217ed554f",
+    "generated_at": "2026-10-02T08:14:19.527772+00:00"
+  },
+  "hf-my-000335": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000335-3b601836.jpg",
+    "title": "Sardine Long Bean Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6001636e0371a92d7d6536433344e69cfc93b09bc3e0c59945002774ee360cb6",
+    "request_id": "2956a32f-dfd4-901e-bf3d-0f7541636c9b",
+    "generated_at": "2026-10-02T08:14:19.592188+00:00"
+  },
+  "hf-my-000340": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000340-b70c957a.jpg",
+    "title": "Anchovy Carrot Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "82ae828614a3379a71e8f82dc5c47197f5d2f15cc9bfa524093eab90ead0e945",
+    "request_id": "7699ceaf-12a0-9e9f-be41-621e443d5415",
+    "generated_at": "2026-10-02T08:14:22.936747+00:00"
+  },
+  "hf-my-000337": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000337-72e63adf.jpg",
+    "title": "Tofu Long Bean Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2e2903c8c3c7a8e0bc406b30ed3e97eb64a0069a49abd03a0161e0b277977273",
+    "request_id": "c20bafeb-9fb4-9c40-8e2d-d35173996bb1",
+    "generated_at": "2026-10-02T08:14:23.387527+00:00"
+  },
+  "hf-my-000338": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000338-79e02122.jpg",
+    "title": "Mushroom Carrot Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "60206a6e069de021b1f688f9aa2281919b7b8e0232963bc4c86920998f65341e",
+    "request_id": "bfab6271-d4cb-92e4-80ef-04f5750b3bfc",
+    "generated_at": "2026-10-02T08:14:24.633357+00:00"
+  },
+  "hf-my-000339": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000339-709f0d7a.jpg",
+    "title": "Tofu Long Bean Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f5605306d8d23cb39d5ce7f5818f58d75093b64dce8a32fe31066b94427a9d7b",
+    "request_id": "3be19a04-0569-9aed-ab0b-312ef9271fd1",
+    "generated_at": "2026-10-02T08:14:24.767376+00:00"
+  },
+  "hf-my-000342": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000342-5511fee8.jpg",
+    "title": "Fish Long Bean Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6077a026b2225b2c7fd842735ac551f3b09a2d40635d390ae1f74bcf20f68795",
+    "request_id": "404433e2-b10a-9959-8af0-1af7de4d310d",
+    "generated_at": "2026-10-02T08:14:25.357114+00:00"
+  },
+  "hf-my-000341": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000341-46804908.jpg",
+    "title": "Mushroom Carrot Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f16accdbf89b4bd44491526dab6479c025dad06de7640788061afe87fe7de1d7",
+    "request_id": "3a4c02a2-1116-91f6-998b-83f9e037ee91",
+    "generated_at": "2026-10-02T08:14:26.132130+00:00"
+  },
+  "hf-my-000344": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000344-59a18f04.jpg",
+    "title": "Egg Carrot Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "095ea3bf58c3739bd6a288bc91c392ff2f7088db7b4cc97260b392459c1aa64f",
+    "request_id": "81418ceb-f09f-9407-bd62-bd6c74cbde51",
+    "generated_at": "2026-10-02T08:14:27.824796+00:00"
+  },
+  "hf-my-000343": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000343-23a51e2e.jpg",
+    "title": "Sardine Carrot Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6d3d4693635b32cddb78329ef7505a84cb810bf3a7422ceca042d173096e149f",
+    "request_id": "1f999324-501b-9e1b-8f8d-d64a67d71729",
+    "generated_at": "2026-10-02T08:14:28.650150+00:00"
+  },
+  "hf-my-000345": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000345-83a78997.jpg",
+    "title": "Fish Carrot Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5bedbed0b3c3b350ada93631aaf25d51b57757731036c8764d5777a18bfa5b67",
+    "request_id": "e6276508-c8d4-9fa5-b8be-79446bc62434",
+    "generated_at": "2026-10-02T08:14:29.355810+00:00"
+  },
+  "hf-my-000347": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000347-fb6fbdbd.jpg",
+    "title": "Sardine Carrot Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "06800c630b39357b481541053e42924a89445f0ffa006606a6b411bcc6fea170",
+    "request_id": "a584b662-4fd1-926a-a260-1e38c3ab71b2",
+    "generated_at": "2026-10-02T08:14:32.626656+00:00"
+  },
+  "hf-my-000346": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000346-40452c41.jpg",
+    "title": "Sambal Long Bean Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "03ea4647428c98ed59c47bdb9e11951ef485b7c37f34ca8e423d1f7844546ef3",
+    "request_id": "577d6e4a-2bd9-92ff-a0a2-0d55d921275f",
+    "generated_at": "2026-10-02T08:14:33.226572+00:00"
+  },
+  "hf-my-000349": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000349-799f5b6f.jpg",
+    "title": "Tempeh Carrot Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b5e15ba2ccad4421c05e2cd92b6129e5f8cf5c9a4fb48d15720b33428ff3ca45",
+    "request_id": "adc2d1cc-6bfa-9112-877d-f671634bd9a7",
+    "generated_at": "2026-10-02T08:14:37.659879+00:00"
+  },
+  "hf-my-000348": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000348-da4a0e7a.jpg",
+    "title": "Tempeh Long Bean Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "94332bb39bdb9739e27c8b5cb24f0b47f15e8b74603b1498d3e1f20e1ecc1f1e",
+    "request_id": "2d199206-652a-95b3-b50c-522b34fb6280",
+    "generated_at": "2026-10-02T08:14:37.741843+00:00"
+  },
+  "hf-my-000350": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000350-310338f6.jpg",
+    "title": "Sardine Carrot Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "590d443822a900eda7c6d8aca11b38fd381012f6cb5d5b10893607c88122d921",
+    "request_id": "729b13dd-580a-9976-a426-31a7246f49c0",
+    "generated_at": "2026-10-02T08:14:39.706308+00:00"
+  },
+  "hf-my-000353": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000353-ae4e1623.jpg",
+    "title": "Fish Long Bean Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "92b4c41142045fb3cfc9615eb24ee44836d52fa6bdc6be3a56dd0a5286aaabd9",
+    "request_id": "2f4f6d7d-8cd9-9b32-be67-b0e563936f85",
+    "generated_at": "2026-10-02T08:14:42.544568+00:00"
+  },
+  "hf-my-000351": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000351-24b6f99d.jpg",
+    "title": "Chicken Long Bean Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "75371edd9e1c48c536849b04bd458618da1ca65376e122c781d8b3b4d06d8bf9",
+    "request_id": "26e7e622-4be3-92d3-b0dc-f96f470169a2",
+    "generated_at": "2026-10-02T08:14:42.895997+00:00"
+  },
+  "hf-my-000352": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000352-8ef8fbe9.jpg",
+    "title": "Egg Long Bean Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "a972a9068cec8e174a6814b47a8146d04701d92cd8a7de8a46ea768de43507a5",
+    "request_id": "10193c0c-93fc-95e4-a9a0-2aa76a8705bb",
+    "generated_at": "2026-10-02T08:14:45.579786+00:00"
+  },
+  "hf-my-000355": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000355-693d6a33.jpg",
+    "title": "Chicken Long Bean Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dc065941c2373c4fdcfde51e7da0e16403b3c8be2982e2b7bd17609b98cded7f",
+    "request_id": "1334d219-dec1-9ef1-8003-08b70a1e5752",
+    "generated_at": "2026-10-02T08:14:50.168136+00:00"
+  },
+  "hf-my-000354": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000354-7cacb1da.jpg",
+    "title": "Anchovy Carrot Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e41aa91f6b1fcdbcf614a7ad9c835a6915f26c0ec838df14d070dbc1efe09681",
+    "request_id": "608e4420-b6c7-96c1-a106-440f1dfb23e8",
+    "generated_at": "2026-10-02T08:14:51.087916+00:00"
+  },
+  "hf-my-000356": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000356-27f0ef66.jpg",
+    "title": "Tempeh Long Bean Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "bd214aa35e64c0a5b54af1256522923ad7c3c277f6a66f0aef2040e4fa73540e",
+    "request_id": "d92249ff-53af-9912-89ad-353583fec00c",
+    "generated_at": "2026-10-02T08:14:52.552061+00:00"
+  },
+  "hf-my-000357": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000357-1f33b1a4.jpg",
+    "title": "Beef Long Bean Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9353cb7acef5578d6aa2de096f235aa353699b21bd4f1d140f74ef1ce91c1881",
+    "request_id": "fd3e8b5e-91d6-99a8-861b-75a0c257f91e",
+    "generated_at": "2026-10-02T08:14:55.599280+00:00"
+  },
+  "hf-my-000359": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000359-e353756c.jpg",
+    "title": "Sambal Long Bean Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "03ea4647428c98ed59c47bdb9e11951ef485b7c37f34ca8e423d1f7844546ef3",
+    "request_id": "c5d73ec2-152f-99e5-a25b-6b1bd61e7062",
+    "generated_at": "2026-10-02T08:14:57.674315+00:00"
+  },
+  "hf-my-000358": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000358-f1548a53.jpg",
+    "title": "Mushroom Long Bean Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "82028a771341b3ed19380ecd134fea8c9e6d065f26f12353d58aa0bf1a3c32be",
+    "request_id": "0c86a530-4797-9a5b-ab9b-8a4646553d41",
+    "generated_at": "2026-10-02T08:14:57.871398+00:00"
+  },
+  "hf-my-000362": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000362-b94907ea.jpg",
+    "title": "Chicken Long Bean Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "630878fef9449d725f86598d3b84120764da4e0ea5cba1648afc2a51fe6a67fe",
+    "request_id": "adde48f4-95f4-9946-885f-12e1327d5dcf",
+    "generated_at": "2026-10-02T08:14:58.707765+00:00"
+  },
+  "hf-my-000363": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000363-36765beb.jpg",
+    "title": "Sambal Cabbage Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8e104ccac530672ac4ba624e80ab7d395da17e238af5480d9bf3ca1aec1b2a9f",
+    "request_id": "53471ee8-ae1c-9b15-9ed5-d8664ff9c305",
+    "generated_at": "2026-10-02T08:14:59.473302+00:00"
+  },
+  "hf-my-000364": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000364-ef24b58c.jpg",
+    "title": "Prawn Cabbage Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5556c90fbc8c5b2489400d8ea59d54981952bacca8078ae804ee527c54c230a1",
+    "request_id": "d081d57f-db6f-9700-bf4e-556ee78b79d7",
+    "generated_at": "2026-10-02T08:15:00.616123+00:00"
+  },
+  "hf-my-000360": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000360-f617b315.jpg",
+    "title": "Chicken Cabbage Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "580659c51f3737f1352eb6674fc026e7b04c788836300e29c6d78b6c780bf2ee",
+    "request_id": "0d6a5279-46f7-98e7-9163-25d9895c20a2",
+    "generated_at": "2026-10-02T08:15:00.846338+00:00"
+  },
+  "hf-my-000361": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000361-f3095021.jpg",
+    "title": "Beef Long Bean Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "39303d5599ebb211ad260bdb2790e46c11ce5fd511e1e65a1f84f8effd900e44",
+    "request_id": "9ae73058-501c-9c21-bf67-939f8447d235",
+    "generated_at": "2026-10-02T08:15:00.934713+00:00"
+  },
+  "hf-my-000365": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000365-e8fe99b7.jpg",
+    "title": "Prawn Long Bean Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "d0013e1574b19404f56df5c1348073587937c23be1b3e8c0e96fd392f5d1091d",
+    "request_id": "883bed98-5614-912c-96e5-22335513b922",
+    "generated_at": "2026-10-02T08:15:01.308830+00:00"
+  },
+  "hf-my-000366": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000366-da951d70.jpg",
+    "title": "Prawn Long Bean Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7b86fc7f058874abb2d1381bd189d5f1fa04631da4c34d340499605890022b7b",
+    "request_id": "556ae921-2887-9063-9ba9-934dc89d69c6",
+    "generated_at": "2026-10-02T08:15:05.596809+00:00"
+  },
+  "hf-my-000367": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000367-1694e9c4.jpg",
+    "title": "Tofu Long Bean Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "09227670d2efb69edb04a2f2a387165799882454adf677148cdbd9a71b8536a7",
+    "request_id": "ea57a08e-223e-9c22-8904-bdd92826a15d",
+    "generated_at": "2026-10-02T08:15:06.867985+00:00"
+  },
+  "hf-my-000368": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000368-6de0f209.jpg",
+    "title": "Egg Long Bean Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "63cb5411de4d5dc1b10deeb6eb638c0edc44ef6de1b9a67d549d167e0d23a826",
+    "request_id": "473d7f67-4e0d-928d-b373-e55c2a1430da",
+    "generated_at": "2026-10-02T08:15:07.346704+00:00"
+  },
+  "hf-my-000369": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000369-410fce01.jpg",
+    "title": "Sambal Cabbage Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8e104ccac530672ac4ba624e80ab7d395da17e238af5480d9bf3ca1aec1b2a9f",
+    "request_id": "5da8839a-cfc9-9e95-a6d8-a2a6cf458895",
+    "generated_at": "2026-10-02T08:15:13.198853+00:00"
+  },
+  "hf-my-000370": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000370-8942a563.jpg",
+    "title": "Tofu Cabbage Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5dc43107a9eea4af530ab7f6fd3b62f871900de2d12b6b0320936363c9aa873f",
+    "request_id": "6564edee-3256-996b-a26f-929b04a382ab",
+    "generated_at": "2026-10-02T08:15:13.928069+00:00"
+  },
+  "hf-my-000376": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000376-f4fa0ba3.jpg",
+    "title": "Mushroom Long Bean Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0a3f860a26823872c35e8e05664b95d50150aba926018927f0477e22f871692e",
+    "request_id": "2fc4e90b-f883-90ad-b778-d81c335be7e3",
+    "generated_at": "2026-10-02T08:15:21.996138+00:00"
+  },
+  "hf-my-000371": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000371-411daa84.jpg",
+    "title": "Egg Cabbage Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7df2b95241871cfb4fbf314b1c3ba669bb8ac308697e4a4d242032bec7f4aac0",
+    "request_id": "d605eccd-b244-9ef3-a984-de47738a9187",
+    "generated_at": "2026-10-02T08:15:24.900468+00:00"
+  },
+  "hf-my-000375": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000375-2c09c423.jpg",
+    "title": "Mushroom Carrot Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9800d497cf23d09ec0e05288c94e471d27ba887fc7c4eda808ca1002cd06bfc4",
+    "request_id": "5215d0dd-5bc6-9184-ba31-93b7ee22eeca",
+    "generated_at": "2026-10-02T08:15:25.040121+00:00"
+  },
+  "hf-my-000372": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000372-04b0b167.jpg",
+    "title": "Beef Carrot Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "30f3beeeb53084877322511dacb83b1db55eca6a43db1f8d4430875147f8a58b",
+    "request_id": "46254ca1-cadd-9356-bbdc-8777befab931",
+    "generated_at": "2026-10-02T08:15:25.265104+00:00"
+  },
+  "hf-my-000373": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000373-ff03002f.jpg",
+    "title": "Fish Cabbage Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "70209f7f44e7585391b49b36adb06f445f171504747f7a0b6e22fa669dac3b03",
+    "request_id": "71282c3e-d8d1-9247-ac9a-d8cd64f85d2b",
+    "generated_at": "2026-10-02T08:15:28.736835+00:00"
+  },
+  "hf-my-000374": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000374-5707716a.jpg",
+    "title": "Tofu Long Bean Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8bd11fae1db80ce0e9e34d556351140f4b27adcec51f308d1586bdf18e5544a3",
+    "request_id": "33d3282c-e7f8-9da0-b682-136d5b3c7b17",
+    "generated_at": "2026-10-02T08:15:31.514331+00:00"
+  },
+  "hf-my-000380": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000380-7b304425.jpg",
+    "title": "Anchovy Long Bean Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e82848720316348178f6d87d0455a8c66ee08495814d340950b062e68645fc7a",
+    "request_id": "f828fdbb-ea6a-9011-91e1-fe2b92b2440a",
+    "generated_at": "2026-10-02T08:15:33.982438+00:00"
+  },
+  "hf-my-000379": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000379-5c86f5d3.jpg",
+    "title": "Sardine Carrot Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "015c6d4f91c0e949bc2ac4eb8fa0e6b8380b66174e450a89b86fd37337842ab2",
+    "request_id": "3a21fe73-aea4-931c-9820-089c5b847cf0",
+    "generated_at": "2026-10-02T08:15:38.284112+00:00"
+  },
+  "hf-my-000382": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000382-ad29c2f3.jpg",
+    "title": "Anchovy Long Bean Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "696e0be182b79980db1e5cadd3a45e8130b0ce74a5b7d55e9c8041984ef36bac",
+    "request_id": "5de7713c-b811-9f84-9b4f-10b5f1352918",
+    "generated_at": "2026-10-02T08:15:39.265853+00:00"
+  },
+  "hf-my-000386": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000386-a549e770.jpg",
+    "title": "Egg Long Bean Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6a8736abef1d9813db18a81ce6778343082caf4cd0dee90d802ed12847ddfeba",
+    "request_id": "c00d8a91-0370-9b6d-9eb6-76e001e00c13",
+    "generated_at": "2026-10-02T08:15:39.867772+00:00"
+  },
+  "hf-my-000378": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000378-47124d89.jpg",
+    "title": "Anchovy Carrot Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e4bda1caeafc45321c1457fa51503ae8dc9f3ad7bfaac0873ccfba58a3cafad3",
+    "request_id": "1a69185a-ed50-98c8-bbdd-b5c254968d85",
+    "generated_at": "2026-10-02T08:15:40.730522+00:00"
+  },
+  "hf-my-000377": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000377-e1a11cec.jpg",
+    "title": "Beef Carrot Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "803fc70e15bed7adabe93d8b188072c26f37b3bad84f3f73b5c12e2fcd1b343c",
+    "request_id": "deeab3e0-24ff-9299-8e45-d38b92612028",
+    "generated_at": "2026-10-02T08:15:40.796531+00:00"
+  },
+  "hf-my-000383": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000383-f8ed2afc.jpg",
+    "title": "Sardine Long Bean Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "14823ac273c3db23fe991103ee1c65af182c0a4f6fb1793e6746972c7f38a90a",
+    "request_id": "5ec9ca78-445d-95c2-8a05-2e7f34d3561c",
+    "generated_at": "2026-10-02T08:15:41.994825+00:00"
+  },
+  "hf-my-000381": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000381-c2729d86.jpg",
+    "title": "Chicken Long Bean Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "49b78dd7135243f0acee3ee8f83c96afb128d58457d5160deddcb86f5f735aae",
+    "request_id": "44fcef95-8585-9d74-93a4-e499b0d9e128",
+    "generated_at": "2026-10-02T08:15:42.722265+00:00"
+  },
+  "hf-my-000384": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000384-59d0157b.jpg",
+    "title": "Prawn Long Bean Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0696e5b15e0b582851dadb766653e6f3922d26170fda0f5c977178bef7721258",
+    "request_id": "3d7eac07-178b-9b0d-b819-daf3e57acf90",
+    "generated_at": "2026-10-02T08:15:42.728988+00:00"
+  },
+  "hf-my-000385": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000385-3a6ec94b.jpg",
+    "title": "Sardine Long Bean Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f20f2fb70f4feb7930305eb82a96634cad37df304d513b89796aa6a990406f21",
+    "request_id": "1e5571dd-7a21-909b-8d76-9af1edaa46b5",
+    "generated_at": "2026-10-02T08:15:45.623785+00:00"
+  },
+  "hf-my-000387": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000387-04537d63.jpg",
+    "title": "Prawn Long Bean Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "ad09a14eb432ee0c1d0478ae270fd66630e6dca7e4734cb49a905e5116a411e7",
+    "request_id": "8cf29421-6871-98a9-b618-73112ac474d8",
+    "generated_at": "2026-10-02T08:15:46.648417+00:00"
+  },
+  "hf-my-000388": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000388-20c9cc1a.jpg",
+    "title": "Chicken Cabbage Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "07054b42aefeaa1f136e99a856cff675e16118064aa9f10b2ab83b6e0781c0fa",
+    "request_id": "ee507349-85a3-9b95-b63e-af93d76fbdab",
+    "generated_at": "2026-10-02T08:15:49.018118+00:00"
+  },
+  "hf-my-000389": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000389-1e0c86d1.jpg",
+    "title": "Tofu Long Bean Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c57fa70579222356ab248d215ad65049593b4500608a4180889cd78a236584b9",
+    "request_id": "480ac882-5b98-9f07-a0e4-6fe45b383f5e",
+    "generated_at": "2026-10-02T08:15:49.717156+00:00"
+  },
+  "hf-my-000390": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000390-72c3ca36.jpg",
+    "title": "Fish Long Bean Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c146260fa4eda3db86e45368cdb7a5f2026984567c328c5c7c0e79a295c45ba7",
+    "request_id": "40213591-c583-984e-b123-67419242704e",
+    "generated_at": "2026-10-02T08:15:50.965128+00:00"
+  },
+  "hf-my-000393": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000393-ef51b081.jpg",
+    "title": "Tempeh Cabbage Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6be1ae8be6b521b5b7f2da1146fb6ce7af983cf013efe14b6462d07426fbdc04",
+    "request_id": "9a7d1cd5-1104-9b53-8519-c1216f67aea8",
+    "generated_at": "2026-10-02T08:15:53.819759+00:00"
+  },
+  "hf-my-000391": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000391-3434d15d.jpg",
+    "title": "Tofu Long Bean Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f58f209766ee36b7a1c21adbef938fd82a317103f3d76aa3f29302151dcf0f40",
+    "request_id": "6dbc6c3c-cac9-9483-bd76-4b7bd35f0c13",
+    "generated_at": "2026-10-02T08:15:58.471672+00:00"
+  },
+  "hf-my-000394": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000394-ef9bf372.jpg",
+    "title": "Beef Cabbage Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "fb8fdad1d8215c47eb61be2b0bada54f84660ee9c8034e860f47d9fd0662fc56",
+    "request_id": "ef39b356-188e-9218-8e3f-479b276c2e11",
+    "generated_at": "2026-10-02T08:16:02.229636+00:00"
+  },
+  "hf-my-000396": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000396-1533ea63.jpg",
+    "title": "Chicken Long Bean Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3911882bec16c0fbfcabe168c319be6d80c90b1e36d196c53cc4afa7088d86dd",
+    "request_id": "108bfaa9-ea02-90e7-a2fa-97894eeed2d0",
+    "generated_at": "2026-10-02T08:16:02.791053+00:00"
+  },
+  "hf-my-000395": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000395-ad256bb5.jpg",
+    "title": "Sardine Carrot Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e4a92f97f7851f608e8c42808a5b2604005ec026eda75c002a45258859b24579",
+    "request_id": "8c55b7c9-4f73-940f-a48f-8a144b783f30",
+    "generated_at": "2026-10-02T08:16:03.234787+00:00"
+  },
+  "hf-my-000392": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000392-7acb6bb4.jpg",
+    "title": "Prawn Cabbage Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4dac82302c98889ecdbe203fd77611ffe3e82fd549ba29823316c97cae729c4e",
+    "request_id": "d6335ae8-9426-9cc1-afcd-1b5ce0816ba4",
+    "generated_at": "2026-10-02T08:16:03.427668+00:00"
+  },
+  "hf-my-000397": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000397-4a199825.jpg",
+    "title": "Tempeh Long Bean Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "677ddc6cc6d330ff5ef683d612448e31c64ce4f5e60ed062f0fc0aa8eb22597c",
+    "request_id": "fcaa21e0-e786-9b2c-a83c-7904c47126fd",
+    "generated_at": "2026-10-02T08:16:04.796821+00:00"
+  },
+  "hf-my-000399": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000399-b134e2c6.jpg",
+    "title": "Beef Long Bean Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4cb5de82bd17db3d878262beb84d374264eb26b2d6fb18a736333212329c8e99",
+    "request_id": "21459fe0-a9a9-9524-9d10-93f8f6ba90f1",
+    "generated_at": "2026-10-02T08:16:04.902739+00:00"
+  },
+  "hf-my-000400": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000400-60490061.jpg",
+    "title": "Egg Long Bean Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6c80f743e1f71d8a83b601054b49a40792a03b274f971111f649ef91c9ba41c9",
+    "request_id": "6945dcbc-c993-9bc5-b00f-076d1c747cb2",
+    "generated_at": "2026-10-02T08:16:07.364139+00:00"
+  },
+  "hf-my-000401": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000401-f87730c4.jpg",
+    "title": "Egg Long Bean Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "96c48bbbd9f3101177c6ecf933ef96d1376e9d2e396db1e859b62afe12f27b70",
+    "request_id": "a0eca3dc-a264-9d11-85fe-743919115dbe",
+    "generated_at": "2026-10-02T08:16:07.582178+00:00"
+  },
+  "hf-my-000398": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000398-1e29b0d2.jpg",
+    "title": "Chicken Cabbage Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "bfc6b6a4f980068594e571408c963559892f820ddf25f8d244d10080dbd0ee7b",
+    "request_id": "84f9df7f-2be1-90b5-8043-2ebe4a896db8",
+    "generated_at": "2026-10-02T08:16:08.260387+00:00"
+  },
+  "hf-my-000402": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000402-6066777f.jpg",
+    "title": "Egg Long Bean Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6176ebc85b11f7021e2e983d8aaf76c9ccdd93423f9c8029fa10228835ac98fb",
+    "request_id": "acb40cf8-a2e4-9264-b71c-45a7e5183cd2",
+    "generated_at": "2026-10-02T08:16:09.523221+00:00"
+  },
+  "hf-my-000403": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000403-dbf10d00.jpg",
+    "title": "Prawn Cabbage Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b980e42a888744c1124cbd3f8bf4f79d023616b79c77ac5de64d18627a187599",
+    "request_id": "a1f0b552-d031-9ed9-8a75-1a7355d3e7ed",
+    "generated_at": "2026-10-02T08:16:09.914149+00:00"
+  },
+  "hf-my-000404": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000404-19645ac4.jpg",
+    "title": "Mushroom Long Bean Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3a43ccfbc8a12c9a0e13fff7fc0824b6ba61ab32477e625c4adb6402566b95ba",
+    "request_id": "900c6d21-9e3d-929e-a745-7abe8dfc1552",
+    "generated_at": "2026-10-02T08:16:11.849227+00:00"
+  },
+  "hf-my-000405": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000405-e229db47.jpg",
+    "title": "Tofu Cabbage Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "99b84421e96b73ac3870a39be2ada1649a26bed1c4c3749fe13fb78e3b944f22",
+    "request_id": "7ab7d01c-93c5-9165-876e-ae6cbd210a23",
+    "generated_at": "2026-10-02T08:16:14.281509+00:00"
+  },
+  "hf-my-000409": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000409-cf367b66.jpg",
+    "title": "Fish Long Bean Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0f22c786fa7b42286dabd151f7f967484c5a24281dd6f7f7ce398b4b1c8927fe",
+    "request_id": "5cd2c3e9-326e-98f2-9d2e-6ccedb1159cd",
+    "generated_at": "2026-10-02T08:16:19.489567+00:00"
+  },
+  "hf-my-000408": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000408-e9c7773e.jpg",
+    "title": "Prawn Long Bean Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8fea9e2c71c7824cc463f5db63c903c78860f97e8188a13fb34e55fda8594f8c",
+    "request_id": "8a9c7ccd-e1df-9620-a47e-34146ed660bb",
+    "generated_at": "2026-10-02T08:16:19.961523+00:00"
+  },
+  "hf-my-000410": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000410-2cd15a4d.jpg",
+    "title": "Fish Cabbage Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "d872bb906d41fd6da5ff7ef8b3ef3943e1883cbfb735fdafcadc9ec88b349975",
+    "request_id": "4b5990d0-a0a5-9314-8468-8079d72e3c2c",
+    "generated_at": "2026-10-02T08:16:23.952073+00:00"
+  },
+  "hf-my-000406": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000406-75aa5169.jpg",
+    "title": "Egg Cabbage Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6361ca5dccd3f31fbc116ebb57c65fb0d971742d26f4c0c0b1fb930ae2f32c2c",
+    "request_id": "4ba07d6c-c22a-9cd9-a604-58a7e42c260f",
+    "generated_at": "2026-10-02T08:16:24.572926+00:00"
+  },
+  "hf-my-000407": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000407-3a07be88.jpg",
+    "title": "Tofu Cabbage Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "beacd0c721c025a5efe8c3c81c99b25efcf6eb9c5d1a8282e026e0708fb937cc",
+    "request_id": "80649789-646d-95ea-a35f-8ab205fb2f9d",
+    "generated_at": "2026-10-02T08:16:26.796593+00:00"
+  },
+  "hf-my-000412": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000412-95ca0466.jpg",
+    "title": "Fish Long Bean Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c741fa92534858022598ee7d4aeb86a7a2e4980227a1c2d89e6c3333b3eab6e0",
+    "request_id": "a891ce4c-d6b9-921a-a004-c4276426cbec",
+    "generated_at": "2026-10-02T08:16:26.810381+00:00"
+  },
+  "hf-my-000414": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000414-b817b810.jpg",
+    "title": "Anchovy Long Bean Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "06f2627ca1f802d96e3cd67d234dd87b42f3a4233560f0704be2152e948408c3",
+    "request_id": "f8e05c8e-a8d5-957b-b560-c0452471f350",
+    "generated_at": "2026-10-02T08:16:29.440541+00:00"
+  },
+  "hf-my-000411": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000411-ade3828b.jpg",
+    "title": "Tofu Long Bean Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "fa10602eefff0a044c340f18995a386ac32eaf8c49be74c06b0303d134d7b982",
+    "request_id": "18696c4a-12cd-92f7-94b4-210442129985",
+    "generated_at": "2026-10-02T08:16:30.682717+00:00"
+  },
+  "hf-my-000413": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000413-2cb14895.jpg",
+    "title": "Mushroom Carrot Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8ad0191767a39e1a4b9fa42879b95009bb968cfcbb475331aa9a55bf725a3db3",
+    "request_id": "8f40699d-a067-9629-a69a-2c9d2aed40c3",
+    "generated_at": "2026-10-02T08:16:31.003372+00:00"
+  },
+  "hf-my-000415": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000415-ddfcf0eb.jpg",
+    "title": "Anchovy Carrot Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "35a40f11750650062d2ad62b372367235515f3f2270a06dc28ff69d87da251f3",
+    "request_id": "e69dc90b-090d-9deb-8590-c393f4ae944b",
+    "generated_at": "2026-10-02T08:16:31.352209+00:00"
+  },
+  "hf-my-000417": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000417-6fa558a6.jpg",
+    "title": "Sambal Cabbage Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8e104ccac530672ac4ba624e80ab7d395da17e238af5480d9bf3ca1aec1b2a9f",
+    "request_id": "50c91621-8a58-9057-901b-f78519fbb28a",
+    "generated_at": "2026-10-02T08:16:31.961963+00:00"
+  },
+  "hf-my-000416": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000416-145e2e8c.jpg",
+    "title": "Sardine Carrot Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f50b038b4000a00e1866c1d99646096f2186a1ced006a15e242ce49123e813e9",
+    "request_id": "ba10d15a-fc56-9a73-aeaf-13b7b22cebda",
+    "generated_at": "2026-10-02T08:16:32.609074+00:00"
+  },
+  "hf-my-000419": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000419-2e7155bd.jpg",
+    "title": "Tempeh Cabbage Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5bc89534b36d022ca6d8a47322c140b935356d3c92cdfde6445b4cbf9c245083",
+    "request_id": "6a42186c-6fc8-9bd6-8b53-a92cb6a2da16",
+    "generated_at": "2026-10-02T08:16:34.075833+00:00"
+  },
+  "hf-my-000420": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000420-a5606b0e.jpg",
+    "title": "Tempeh Long Bean Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dd5d1ae9812a8d944599077e99fa23404432c6e96d709eea6c1495a5238fb171",
+    "request_id": "cadf7f46-4236-9f13-8c20-e50fd42a565a",
+    "generated_at": "2026-10-02T08:16:36.719304+00:00"
+  },
+  "hf-my-000418": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000418-2e0bf0c7.jpg",
+    "title": "Fish Long Bean Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0d62c1a1b1c04e0b0369680ac8ee1078288d0c1e81462ade434209e92ea63415",
+    "request_id": "4614017e-6df6-9a86-8ed2-874e000e916c",
+    "generated_at": "2026-10-02T08:16:36.991501+00:00"
+  },
+  "hf-my-000421": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000421-4fbf2e74.jpg",
+    "title": "Beef Cabbage Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3c6e460da0c204102ff580770b3dddc48ca4536de8c3cad2eaae3864aeb822f3",
+    "request_id": "2aa4c6b5-17dd-98a5-9e0c-a1f31ddb3a1a",
+    "generated_at": "2026-10-02T08:16:40.052457+00:00"
+  },
+  "hf-my-000423": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000423-4001f91f.jpg",
+    "title": "Mushroom Cabbage Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e0e21bc6916de5bed7098de4d6117c272cc4af342d0fba38f922451278ee8345",
+    "request_id": "e7b31807-afcc-92f1-8d01-91940d9a782a",
+    "generated_at": "2026-10-02T08:16:41.687217+00:00"
+  },
+  "hf-my-000422": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000422-ce4690a1.jpg",
+    "title": "Beef Long Bean Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2bf124f7da87a76571155cdc757c58ebea5625d1ad7a98723241f8c7827e4323",
+    "request_id": "fa8212d9-100b-9e11-b7a8-59abb4cc78c3",
+    "generated_at": "2026-10-02T08:16:42.474504+00:00"
+  },
+  "hf-my-000424": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000424-454a3305.jpg",
+    "title": "Egg Long Bean Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4461654cadd1af50749a2d4a33938541d8ae93a5446e81baf2a63eeb2524ab26",
+    "request_id": "7bd52dbf-913f-9fb7-b7d1-587e9bede425",
+    "generated_at": "2026-10-02T08:16:44.009864+00:00"
+  },
+  "hf-my-000427": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000427-4bde3f0e.jpg",
+    "title": "Mushroom Cabbage Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "da8a59621f2e1f4711fafbd5115235dcb7d228414c0244ebb7313a5978c06fcf",
+    "request_id": "5f8543b2-a01f-9d5d-9d46-0da587761893",
+    "generated_at": "2026-10-02T08:16:49.259592+00:00"
+  },
+  "hf-my-000425": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000425-9d12871e.jpg",
+    "title": "Egg Cabbage Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "ac70c0fd6689d9b1fe77ce899b369ec72b318bf47991d32dd84bf84f5edfdf0f",
+    "request_id": "ce6d5356-c478-9017-8e6c-20d88a4339ec",
+    "generated_at": "2026-10-02T08:16:51.134672+00:00"
+  },
+  "hf-my-000429": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000429-e0340efa.jpg",
+    "title": "Fish Long Bean Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "1e218dc1a5e412312e600b3301be35c3257fd7911044ba9d7a36c5fc3a6a7b21",
+    "request_id": "6c0672ac-d342-93c7-a613-a894ddb3c192",
+    "generated_at": "2026-10-02T08:16:51.548439+00:00"
+  },
+  "hf-my-000428": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000428-03686047.jpg",
+    "title": "Chicken Long Bean Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "045bd723f98a02d15077f77b75a0ab932799a954596aac82fbe430cb98a44e11",
+    "request_id": "38064227-a73f-9729-8a7f-f7bc0f1ccd60",
+    "generated_at": "2026-10-02T08:16:51.619047+00:00"
+  },
+  "hf-my-000426": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000426-b6d89cc3.jpg",
+    "title": "Fish Cabbage Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c509bea6efcae016cb6eec719ac8dc8bcc2e32a5246d7305c272295a8f59b4f3",
+    "request_id": "2c50d654-d343-9989-8063-c5cc360c2516",
+    "generated_at": "2026-10-02T08:16:52.496411+00:00"
+  },
+  "hf-my-000431": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000431-28bea3e9.jpg",
+    "title": "Mushroom Long Bean Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "bd27db5b668b152c5c0104a0dde54b034be43518cd6bd9ee8c7f7461761096e1",
+    "request_id": "efb229a9-7871-90e9-a950-5e2bdb54f929",
+    "generated_at": "2026-10-02T08:16:54.511629+00:00"
+  },
+  "hf-my-000430": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000430-3cf53853.jpg",
+    "title": "Anchovy Cabbage Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "eb896c938b5505a15d77ae4a04e88ac97458c56ea01a893f39d9a8bc8f99d1be",
+    "request_id": "f4157136-7376-9883-ad51-b898070436f6",
+    "generated_at": "2026-10-02T08:16:54.585146+00:00"
+  },
+  "hf-my-000432": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000432-dd132c0c.jpg",
+    "title": "Sardine Long Bean Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "3ef04bf9e4864c6f0d575a377e6f61796adf19d3be4066dc0a60426d141ed5c2",
+    "request_id": "58eb4b74-e445-906f-8ad0-867c28e146c8",
+    "generated_at": "2026-10-02T08:16:54.878073+00:00"
+  },
+  "hf-my-000433": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000433-2d75c9d4.jpg",
+    "title": "Tempeh Long Bean Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9c9eb57bb563203f7597851740f708f0741aa5dd3822f65c163ce67c8a09eec6",
+    "request_id": "17745698-148f-9b94-8ef5-5ffa35d35892",
+    "generated_at": "2026-10-02T08:16:58.333499+00:00"
+  },
+  "hf-my-000434": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000434-c547ddb8.jpg",
+    "title": "Prawn Long Bean Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "ffde423f0019131f9fb25f0dab5ddaaaaa62193992bc8d3f614a8b4f236bc12e",
+    "request_id": "32b64c91-36fe-9577-bc84-a1319c333874",
+    "generated_at": "2026-10-02T08:16:58.882680+00:00"
+  },
+  "hf-my-000435": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000435-62b8a511.jpg",
+    "title": "Sambal Cabbage Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8e104ccac530672ac4ba624e80ab7d395da17e238af5480d9bf3ca1aec1b2a9f",
+    "request_id": "c5cd50ec-3f4e-9b13-a69b-e5895767c911",
+    "generated_at": "2026-10-02T08:16:58.890755+00:00"
+  },
+  "hf-my-000436": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000436-f3ccd4bf.jpg",
+    "title": "Chicken Cabbage Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "d90cbd01296ea5410be8165ed69862a368d0b950d52fab411ce1faa900f64245",
+    "request_id": "e548ad66-4f1f-92b1-a9b1-0a2f87a1356c",
+    "generated_at": "2026-10-02T08:17:00.439172+00:00"
+  },
+  "hf-my-000437": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000437-87dc2cab.jpg",
+    "title": "Sardine Cabbage Sambal Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "fea82b4c557bd638cf98ae3b5d8de74a32686c04b0c30bf171df68e3e7120612",
+    "request_id": "98b04925-532a-9535-9d29-3217da13a777",
+    "generated_at": "2026-10-02T08:17:09.247664+00:00"
+  },
+  "hf-my-000438": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000438-0da0a67e.jpg",
+    "title": "Beef Long Bean Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2bf882383928c07479c60acdcd66ecf350416dec946b77334faa424c42383401",
+    "request_id": "6c1105db-1caf-99c6-a80f-f4059537b60a",
+    "generated_at": "2026-10-02T08:17:09.480450+00:00"
+  },
+  "hf-my-000441": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000441-c47b1b7e.jpg",
+    "title": "Anchovy Cabbage Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "40bba5fb5c3bd7bf8b8e696bfa1f66dd6d776216ded3e674f1df4f63097e8332",
+    "request_id": "5e85ac56-0994-907e-864b-3c8a36cbed11",
+    "generated_at": "2026-10-02T08:17:09.921913+00:00"
+  },
+  "hf-my-000442": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000442-0a71ca11.jpg",
+    "title": "Anchovy Long Bean Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f56fdb7991b582e5382989823c34253ae9b4439e93451f752aa723d8fde13aa2",
+    "request_id": "ff51643d-8818-9b3a-87fb-b48eaffaf207",
+    "generated_at": "2026-10-02T08:17:10.872219+00:00"
+  },
+  "hf-my-000439": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000439-8e0d8793.jpg",
+    "title": "Mushroom Long Bean Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "48f3990093baa2e25fd029d1c63b8cffa0a4b71e7a7f6f180eada04b4371fd07",
+    "request_id": "1e4b0222-711a-9373-be4d-f0d1d3ab5332",
+    "generated_at": "2026-10-02T08:17:12.939137+00:00"
+  },
+  "hf-my-000444": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000444-c840df00.jpg",
+    "title": "Chicken Choy Sum Garlic Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "475094375a6448c74b0fedfbbb6a1e561512d7aee57bdcc044bd63254c7b89da",
+    "request_id": "86cd2e08-2574-97a7-87b7-cbe073a92a03",
+    "generated_at": "2026-10-02T08:17:16.609293+00:00"
+  },
+  "hf-my-000440": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000440-119fd882.jpg",
+    "title": "Tempeh Long Bean Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "49e76a95f8f65855bf88bc12301989e03f8efac94ba5bafec18bc5e2346fe259",
+    "request_id": "792ca9a8-b90d-924b-aef9-b42c0b80a831",
+    "generated_at": "2026-10-02T08:17:16.897090+00:00"
+  },
+  "hf-my-000443": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000443-24e83d15.jpg",
+    "title": "Tofu Long Bean Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "6c1180ac51be09cb3a7bacb5e451278a78b51deb7f6c81369a0671788c47dd6f",
+    "request_id": "fef50f3d-dd33-9554-8af8-a577dcec8841",
+    "generated_at": "2026-10-02T08:17:16.905097+00:00"
+  },
+  "hf-my-000445": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000445-75154511.jpg",
+    "title": "Fish Long Bean Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f5fef605ea4647a8e48249c02f4b8da06baec4e587908bf54c81b34682360f70",
+    "request_id": "9187bf5b-7d33-92d3-95b5-941f4b960a44",
+    "generated_at": "2026-10-02T08:17:17.507655+00:00"
+  },
+  "hf-my-000447": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000447-b86073a3.jpg",
+    "title": "Fish Long Bean Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7539a39cf0e224944ef9b2b54329763a943e3ec84d20862570af0d150eeca5b7",
+    "request_id": "d6c5a839-efbb-9831-b987-7e4116a83a4b",
+    "generated_at": "2026-10-02T08:17:18.762582+00:00"
+  },
+  "hf-my-000446": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000446-6ae95827.jpg",
+    "title": "Egg Long Bean Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8223b2d7cad51df2a9f705220ce22b69965f05258c9049a87be7ab6892bd667c",
+    "request_id": "dcf12859-8116-9307-8f41-6242f8dd5e74",
+    "generated_at": "2026-10-02T08:17:18.801998+00:00"
+  },
+  "hf-my-000448": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000448-e8a66f01.jpg",
+    "title": "Beef Long Bean Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8e762f01f4fddfcafa60f07f9b685cbf5a79b594bb9446cbb0ba7e69dadafc36",
+    "request_id": "ace2ef13-813d-9cfc-a4e7-dc5340ffb06d",
+    "generated_at": "2026-10-02T08:17:18.862005+00:00"
+  },
+  "hf-my-000449": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000449-73155cb9.jpg",
+    "title": "Anchovy Long Bean Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f2e6203226ecf844573ceea8cbb4b8b2ed17717b2bf43734bdc2fd979cb19a44",
+    "request_id": "5502f9fa-8f7c-9d8f-8d8d-f54ac04b0c2f",
+    "generated_at": "2026-10-02T08:17:22.434274+00:00"
+  },
+  "hf-my-000450": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000450-c67467a7.jpg",
+    "title": "Prawn Cabbage Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b21b04327d45ed49a778d1c88e778865439100862807f9826ed6cc5fd7490781",
+    "request_id": "5c87d9ba-31d9-9f04-9885-7dadff74c3d4",
+    "generated_at": "2026-10-02T08:17:26.164107+00:00"
+  },
+  "hf-my-000451": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000451-0aec7877.jpg",
+    "title": "Tempeh Long Bean Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2378607737e3f828bc72564072efa392996239c1f9276b70970d4fce42df2dea",
+    "request_id": "93a4cc4d-9971-9b2c-adc8-08878fda8927",
+    "generated_at": "2026-10-02T08:17:28.298141+00:00"
+  },
+  "hf-my-000452": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000452-38c82fd0.jpg",
+    "title": "Tempeh Long Bean Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2c9bcf9064f7d5b5594a21992e29eaa09455842b90bc467818e723e011b6402f",
+    "request_id": "7819d569-7fff-9df0-81a3-21b557ce7e2a",
+    "generated_at": "2026-10-02T08:17:29.816138+00:00"
+  },
+  "hf-my-000453": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000453-6b3af4c3.jpg",
+    "title": "Sambal Cabbage Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8e104ccac530672ac4ba624e80ab7d395da17e238af5480d9bf3ca1aec1b2a9f",
+    "request_id": "55f73e95-8b5a-9094-8864-3c977ac109e2",
+    "generated_at": "2026-10-02T08:17:33.549152+00:00"
+  },
+  "hf-my-000456": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000456-dfb089ba.jpg",
+    "title": "Beef Long Bean Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "50994f69aa3f71460750ad3fe65f476a806a39b3fc73b1766a58afae1c23e54e",
+    "request_id": "ed6c646d-46ac-9ccc-bfcb-ed568a34fce3",
+    "generated_at": "2026-10-02T08:17:35.611603+00:00"
+  },
+  "hf-my-000454": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000454-879c71ff.jpg",
+    "title": "Beef Long Bean Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4f6e70bb24af9882a96e3056adc12c1700aeda2dbafdd05e3fbee3efbff92a78",
+    "request_id": "7bb64cfa-fed0-97e1-9412-b656d4056783",
+    "generated_at": "2026-10-02T08:17:36.967749+00:00"
+  },
+  "hf-my-000457": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000457-6a11a017.jpg",
+    "title": "Sambal Cabbage Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8e104ccac530672ac4ba624e80ab7d395da17e238af5480d9bf3ca1aec1b2a9f",
+    "request_id": "2fae368f-7231-9498-be02-2b9947646c64",
+    "generated_at": "2026-10-02T08:17:39.178165+00:00"
+  },
+  "hf-my-000459": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000459-ff55a740.jpg",
+    "title": "Beef Cabbage Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "52a6f04e217daa8f976f1da3c76566871f2fec602244f15da7825f9352020478",
+    "request_id": "fd76ec0a-0f91-9e7b-85fa-db8bbc91daf8",
+    "generated_at": "2026-10-02T08:17:39.182185+00:00"
+  },
+  "hf-my-000455": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000455-966183e2.jpg",
+    "title": "Sardine Long Bean Sambal Ramly-Style Burger",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "71c818a54add962d012b030aaea4c82e2499d2bc44d4ffed89e69d0da7d830cf",
+    "request_id": "49d8b58d-1083-9abf-b66d-f9ec11390476",
+    "generated_at": "2026-10-02T08:17:40.528162+00:00"
+  },
+  "hf-my-000460": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000460-a09887ab.jpg",
+    "title": "Mushroom Long Bean Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b562db4c9eb956b314675a604d8810dbb04b8d682d22c34ec23fe251a6838afc",
+    "request_id": "593f4ea5-3c0e-9d8e-a66a-65a481788e49",
+    "generated_at": "2026-10-02T08:17:40.675659+00:00"
+  },
+  "hf-my-000458": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000458-acd16c83.jpg",
+    "title": "Tempeh Cabbage Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f25927df22dca5ea8d5b3e4578e1d631815c944f6d4eb2c6964d6d9740092381",
+    "request_id": "5b9edfc1-c49e-9da9-9c98-993a50c2fd17",
+    "generated_at": "2026-10-02T08:17:42.034335+00:00"
+  },
+  "hf-my-000461": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000461-fb0d5b46.jpg",
+    "title": "Anchovy Long Bean Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8fa420585b925e2ed453831ad836432d3e3ffab209df054e20f69a19f21f5f11",
+    "request_id": "e0741e47-0fad-952b-b0de-6c0849500214",
+    "generated_at": "2026-10-02T08:17:43.729976+00:00"
+  },
+  "hf-my-000463": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000463-6a937727.jpg",
+    "title": "Tofu Cabbage Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "876a39163713b0f54f620fac6bc6fb45a0c625f2b0bd04e497ba701b70989726",
+    "request_id": "ade7a5a9-afdd-9683-b0a6-3abc9ae00d12",
+    "generated_at": "2026-10-02T08:17:44.430178+00:00"
+  },
+  "hf-my-000462": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000462-c5b53b95.jpg",
+    "title": "Sambal Cabbage Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8e104ccac530672ac4ba624e80ab7d395da17e238af5480d9bf3ca1aec1b2a9f",
+    "request_id": "23505bdf-189f-9f6c-b219-dff51404055f",
+    "generated_at": "2026-10-02T08:17:45.374057+00:00"
+  },
+  "hf-my-000464": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000464-02543c5f.jpg",
+    "title": "Prawn Choy Sum Garlic Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c2631a85d16a7058b615e6e424cd06c98317ce74847035050161f336eaac2ead",
+    "request_id": "2c753c9f-060f-9049-b05f-efc389fb86cb",
+    "generated_at": "2026-10-02T08:17:46.572840+00:00"
+  },
+  "hf-my-000465": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000465-d07e7d6f.jpg",
+    "title": "Mushroom Long Bean Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "a1dcd7c0dd1dbb0cbef38b38211f0179373b7f6b753a8a22e2c9532965d138e2",
+    "request_id": "ab337cdb-9fa4-9d45-b59d-f8efe377b3e0",
+    "generated_at": "2026-10-02T08:17:48.842325+00:00"
+  },
+  "hf-my-000467": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000467-c57d34e6.jpg",
+    "title": "Sardine Long Bean Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "320c9546b637eae40196c73ac0ee2e8c7779d49aff32cda8834c4ab5061ccaef",
+    "request_id": "05c07702-64c1-9fc9-89c0-c108f1c3f355",
+    "generated_at": "2026-10-02T08:17:49.853587+00:00"
+  },
+  "hf-my-000466": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000466-84b3df4e.jpg",
+    "title": "Mushroom Cabbage Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "7a832759b480dc4503336969a51b561d4108ef675d67c44bc01e9c1e8f45f9d9",
+    "request_id": "155fa867-f0c8-99a5-99c5-cbb475f6aca2",
+    "generated_at": "2026-10-02T08:17:50.815515+00:00"
+  },
+  "hf-my-000469": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000469-beb04bc1.jpg",
+    "title": "Anchovy Long Bean Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "c6d761079dcc783654dc44b0b73805868b41ccb2ef8bf1fdd73279b8292ed0cd",
+    "request_id": "8ddc2c45-a06c-9a6e-92b5-0d4f8ebabef0",
+    "generated_at": "2026-10-02T08:17:55.775893+00:00"
+  },
+  "hf-my-000470": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000470-0b9ccb5b.jpg",
+    "title": "Chicken Cabbage Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "669c5507435d39d47cbdda11ab6b4cb0935578e3b4b9d9a05c5042027e8d8c58",
+    "request_id": "ec8b9ace-772c-982f-a06d-5ecdf7984dc0",
+    "generated_at": "2026-10-02T08:17:57.201429+00:00"
+  },
+  "hf-my-000471": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000471-01ba7bb5.jpg",
+    "title": "Sardine Long Bean Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "392dc953b2df2328828563e361f63a2644824f2e110d05c82de445bcb084f7f6",
+    "request_id": "3734f17f-16ab-9974-9716-3ff42b2d6b52",
+    "generated_at": "2026-10-02T08:17:57.824176+00:00"
+  },
+  "hf-my-000472": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000472-198ee6e4.jpg",
+    "title": "Egg Cabbage Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "ebea4010489df7600a14a78504d52c8ce2fea810a6962043a6c8e810673834ef",
+    "request_id": "6f9b91dc-a4f1-92bc-b3d5-fe7c364f17f6",
+    "generated_at": "2026-10-02T08:18:01.604030+00:00"
+  },
+  "hf-my-000473": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000473-d8e0152a.jpg",
+    "title": "Sardine Long Bean Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "027ca0ee5747be4a22fcdf7d35c30b9dcf4920b17d67ec70b6b73f3610cc2798",
+    "request_id": "4f2abb12-27c6-91aa-9c36-db30cba43983",
+    "generated_at": "2026-10-02T08:18:02.644705+00:00"
+  },
+  "hf-my-000468": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000468-975984bb.jpg",
+    "title": "Sambal Cabbage Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8e104ccac530672ac4ba624e80ab7d395da17e238af5480d9bf3ca1aec1b2a9f",
+    "request_id": "265ab66f-afa4-9ef7-86af-caa38e8b0a1f",
+    "generated_at": "2026-10-02T08:18:02.664224+00:00"
+  },
+  "hf-my-000474": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000474-1695977d.jpg",
+    "title": "Tofu Choy Sum Garlic Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "0a22c64ae795d6e025210888b5787f88732263a0518c81ae05d5b56dfb295962",
+    "request_id": "37b6745d-6d82-9339-bb94-2125eb0f7eca",
+    "generated_at": "2026-10-02T08:18:08.060028+00:00"
+  },
+  "hf-my-000476": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000476-1ed12bdb.jpg",
+    "title": "Sambal Cabbage Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8e104ccac530672ac4ba624e80ab7d395da17e238af5480d9bf3ca1aec1b2a9f",
+    "request_id": "8f441e1d-fbe0-98c4-9fc7-e3aaa09e440e",
+    "generated_at": "2026-10-02T08:18:08.307146+00:00"
+  },
+  "hf-my-000477": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000477-8a51776c.jpg",
+    "title": "Beef Long Bean Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "08fcdf3d0087967804eb863c41c569758eb2931ecfb2fe774925b2fc66821491",
+    "request_id": "627c6696-9b06-9d99-991d-1501550553c2",
+    "generated_at": "2026-10-02T08:18:08.669250+00:00"
+  },
+  "hf-my-000478": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000478-1c6ba604.jpg",
+    "title": "Chicken Cabbage Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "799a23cb53ec92f8f83745b195bbe01b9732e5d7e3eaffac66a8f4993aa76b97",
+    "request_id": "9a00a167-0fe9-9788-88c6-1d2e0b2af602",
+    "generated_at": "2026-10-02T08:18:09.482664+00:00"
+  },
+  "hf-my-000475": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000475-1952ef3b.jpg",
+    "title": "Tempeh Long Bean Sambal Nasi Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "67d72cee65d625d9ca2f24d5ae321f074a7dd15a1bd7505aadb410692365c48f",
+    "request_id": "7e17fdb8-2858-9e11-97c7-4a27d1ee0eb6",
+    "generated_at": "2026-10-02T08:18:09.737111+00:00"
+  },
+  "hf-my-000479": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000479-7dcc09a1.jpg",
+    "title": "Sambal Cabbage Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "8e104ccac530672ac4ba624e80ab7d395da17e238af5480d9bf3ca1aec1b2a9f",
+    "request_id": "b67047d0-eff1-90b3-968f-f8055df5c2e1",
+    "generated_at": "2026-10-02T08:18:11.069200+00:00"
+  },
+  "hf-my-000480": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000480-016075fc.jpg",
+    "title": "Mushroom Long Bean Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5599f4e2ecf7025abe551117f891e6e3c8543f65afc005d05e190e9f07093c4d",
+    "request_id": "cae1846b-3bae-9b8a-841b-68e296f1a327",
+    "generated_at": "2026-10-02T08:18:11.816354+00:00"
+  },
+  "hf-my-000482": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000482-43d2d1e0.jpg",
+    "title": "Chicken Cabbage Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4982bfe0dfbedcd3a36d4681c0705ae6c86c6df333c34656578bb66583d98c48",
+    "request_id": "c1f7f8c7-7016-9466-b770-0b96fcc29969",
+    "generated_at": "2026-10-02T08:18:11.955143+00:00"
+  },
+  "hf-my-000481": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000481-99deb38e.jpg",
+    "title": "Fish Cabbage Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "1d39fa100725ba6315301b22080acac7f3fc9a41f5dfa05e34f1d5558f298c6f",
+    "request_id": "95713c17-a803-9876-a713-18681edad118",
+    "generated_at": "2026-10-02T08:18:13.821915+00:00"
+  },
+  "hf-my-000483": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000483-b435a5e2.jpg",
+    "title": "Tempeh Cabbage Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "86d92ee12fc2a202efd54757c9eeaa28a57693047cf3c74445187f7606c0ca94",
+    "request_id": "4c255e7a-8876-9627-86ad-888d80d0614d",
+    "generated_at": "2026-10-02T08:18:14.528209+00:00"
+  },
+  "hf-my-000484": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000484-562ca950.jpg",
+    "title": "Prawn Cabbage Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "dc43a7621e740e6b2e4391dd88efb45a95c472cf942ee8e058b48cfd25bbe75c",
+    "request_id": "daff370e-7cf2-96e2-9805-f7df36db68c2",
+    "generated_at": "2026-10-02T08:18:16.183627+00:00"
+  },
+  "hf-my-000485": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000485-22f3e201.jpg",
+    "title": "Prawn Cabbage Sambal Malaysian Laksa",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "42358a9ca9662b55baf109cd14bbb5de4a5a51320799fb101feca878ac29daa0",
+    "request_id": "aedb8b7b-c693-9b0b-99dd-f8ab586776f3",
+    "generated_at": "2026-10-02T08:18:17.112936+00:00"
+  },
+  "hf-my-000487": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000487-b812e358.jpg",
+    "title": "Prawn Cabbage Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5ec4b36b8fc1968318b613c4f0b64511cdc475c583e17393a32b4a08f7c72537",
+    "request_id": "17993dff-0e30-9f55-98e2-211a1ff7ebdb",
+    "generated_at": "2026-10-02T08:18:20.593637+00:00"
+  },
+  "hf-my-000489": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000489-9b2e8c58.jpg",
+    "title": "Sardine Long Bean Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "bfb02838510203cc345964c8125049694c31ff9ce3a4c89ffe27ac5823a58e65",
+    "request_id": "3b00a257-d344-9841-89c5-72e385be11e0",
+    "generated_at": "2026-10-02T08:18:22.843551+00:00"
+  },
+  "hf-my-000495": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000495-edc520d2.jpg",
+    "title": "Prawn Choy Sum Garlic Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "2fe23be1de2ff64efb2e32a0344e240980bfba24816b8c0e3950c04eae41e115",
+    "request_id": "84446429-e18a-9e1a-bc5b-c8693d27cfeb",
+    "generated_at": "2026-10-02T08:18:31.868792+00:00"
+  },
+  "hf-my-000486": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000486-bae6d9c0.jpg",
+    "title": "Anchovy Long Bean Sambal Nasi Lemak Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "72c25de14280e9332980d11f45423c522245690eef3f8136fdcf671bc20f4cd7",
+    "request_id": "bba1274c-9bac-9af8-b860-a093035c0495",
+    "generated_at": "2026-10-02T08:18:34.450126+00:00"
+  },
+  "hf-my-000488": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000488-8781109f.jpg",
+    "title": "Beef Cabbage Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "900c6599dd8f1dd442cb4badfa0a8ff2d65ed5789dd9cc2e945af1069714cfa5",
+    "request_id": "c408d68f-d051-951f-883d-5de914bb36d9",
+    "generated_at": "2026-10-02T08:18:35.125485+00:00"
+  },
+  "hf-my-000492": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000492-1cc039b6.jpg",
+    "title": "Sardine Cabbage Sambal Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "4aa32ba67c8237400528b8ee610ce395606ba1f082f36d252a7f2886c2279e0c",
+    "request_id": "1a83d261-4761-9782-9103-04fe40640dd5",
+    "generated_at": "2026-10-02T08:18:35.807608+00:00"
+  },
+  "hf-my-000491": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000491-a2ac73f4.jpg",
+    "title": "Tofu Cabbage Sambal Mee Goreng",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "525578b0a29c14479d8396ffc66de9beb931948595010caf9c15b80947706177",
+    "request_id": "a563ba18-e570-92a2-9f75-60da8849a363",
+    "generated_at": "2026-10-02T08:18:35.888490+00:00"
+  },
+  "hf-my-000493": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000493-9ccf4516.jpg",
+    "title": "Chicken Choy Sum Garlic Fresh Popiah",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "e4a210e3dacfd2ad71a519fe55430be4fcfc9154140608365f47e22004162cc0",
+    "request_id": "c748d620-95d4-98a4-ab77-cf9570274e0e",
+    "generated_at": "2026-10-02T08:18:36.061790+00:00"
+  },
+  "hf-my-000494": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000494-808cf964.jpg",
+    "title": "Anchovy Cabbage Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "b0eb8968f8da5bae11bce8a7a63e5d878ddbe247483c742329e3a56907e6aa4c",
+    "request_id": "55f7ea52-abb1-9d5d-90ba-a6d296b5fd68",
+    "generated_at": "2026-10-02T08:18:36.183873+00:00"
+  },
+  "hf-my-000496": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000496-52bd8b81.jpg",
+    "title": "Tofu Cabbage Sambal Stuffed Roti Canai",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "5d50d6633f1eb411f73d9eb39cc7e36703412df713a42ba36bddc85e28555679",
+    "request_id": "7c60ae2a-91ef-9093-9bc2-f0444c787d59",
+    "generated_at": "2026-10-02T08:18:36.685795+00:00"
+  },
+  "hf-my-000490": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000490-8b19a555.jpg",
+    "title": "Egg Choy Sum Garlic Malaysian Crispy Fish Plate",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "aa8d947aa52c6c06bef8c339afd3eff35cd5d2eaf6fa297b5c40be1d1905a3ec",
+    "request_id": "b90bcb03-6384-9bf3-b23f-4e1301db48b9",
+    "generated_at": "2026-10-02T08:18:37.133215+00:00"
+  },
+  "hf-my-000497": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000497-a436f6d9.jpg",
+    "title": "Sardine Cabbage Sambal Satay",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "9d579583c7e4d552f39816c1dcab9eb097cf5aca20b78e4938950cbe5638e24a",
+    "request_id": "57867301-7bf3-9943-b0ea-26d070771bc7",
+    "generated_at": "2026-10-02T08:18:37.625679+00:00"
+  },
+  "hf-my-000499": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000499-88769487.jpg",
+    "title": "Garlic Choy Sum Kaya Toast Set",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "1f49450060c6fed4afb940b02221b420bb27f6ca217db29fb5d649134459a100",
+    "request_id": "e00b2119-f8bc-9508-894d-1479d7363306",
+    "generated_at": "2026-10-02T08:18:38.405408+00:00"
+  },
+  "hf-my-000498": {
+    "path": "/static/recipe-images/ai-generated/hf-my-000498-844e4f2c.jpg",
+    "title": "Mushroom Cabbage Sambal Nasi Campur",
+    "model": "qwen-image-2.0-2026-03-03",
+    "prompt_sha256": "f90ff101cab223b47b5fc03f2dc2961d56c68b5d4f0996871c54ae79b15c7f67",
+    "request_id": "1331d452-ff6c-9f92-90f2-b1dede906363",
+    "generated_at": "2026-10-02T08:18:38.747374+00:00"
   }
 }

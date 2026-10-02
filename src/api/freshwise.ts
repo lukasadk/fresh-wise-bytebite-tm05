@@ -5,6 +5,7 @@ import { request } from './client';
 import { API_BASE_URL, API_KEY, API_KEY_HEADER } from './config';
 import { getDeviceId } from './device';
 import { selectMalaysianRecipeHints } from '../data/malaysianRecipeRag';
+import type { PurchaseRecommendation } from '../data/purchaseStates';
 import type {
   ConsumptionWasteLog,
   DashboardSummary,
@@ -525,6 +526,11 @@ export const getWeeklyWaste = (weeks = 12) =>
  *  repeatedly-wasted item, computed over the household's entire waste history
  *  (no time-window query params -- unlike summary/weekly-waste above). */
 export const getWastePatterns = () => request<WastePatternsOut>('/v1/dashboard/waste-patterns');
+
+/** Epic 7 item-level insight. The name is URL-encoded because the shared
+ * Epic 8 navigation contract passes a display name rather than a database id. */
+export const getPurchaseInsight = (name: string) =>
+  request<PurchaseRecommendation>(`/v1/purchase-insights/${encodeURIComponent(name)}`);
 
 /** Alternatives view (ActivityScreen → Patterns → "View better alternatives").
  *

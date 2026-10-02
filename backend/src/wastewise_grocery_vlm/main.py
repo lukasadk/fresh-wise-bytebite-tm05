@@ -196,24 +196,26 @@ def _expiry_estimation_identity(item) -> str:
     return " ".join(str(part) for part in parts if part)
 
 
-def _save_analysis_result(
-    image: Image.Image,
-    model_id: str,
-    items: list,
-    warnings: list[str],
-    generation_attempts: int,
-    started: float,
-    input_type: str = "grocery_photo",
-) -> AnalysisResponse:
-    latency_ms = round((perf_counter() - started) * 1000, 2)
-    analysis_id = uuid4()
+def _with_expiry_fallbacks(items: list) -> list:
+    """Prefer a printed expiry and estimate only when no exact date survived parsing."""
+
     enriched_items = []
     for item in items:
         display_item = item.model_copy(
             update={"food_name": _capitalize_first_letter(item.food_name)}
         )
         if display_item.expiry_date_candidate is not None:
-            enriched_items.append(display_item)
+            # Defensive clearing matters if a future model/API returns both an
+            # exact printed date and stale estimate fields in the same object.
+            enriched_items.append(
+                display_item.model_copy(
+                    update={
+                        "estimated_expiry_date": None,
+                        "expiry_estimate_days": None,
+                        "expiry_estimate_basis": None,
+                    }
+                )
+            )
             continue
         estimate = estimate_expiry(
             _expiry_estimation_identity(display_item),
@@ -228,6 +230,21 @@ def _save_analysis_result(
                 }
             )
         )
+    return enriched_items
+
+
+def _save_analysis_result(
+    image: Image.Image,
+    model_id: str,
+    items: list,
+    warnings: list[str],
+    generation_attempts: int,
+    started: float,
+    input_type: str = "grocery_photo",
+) -> AnalysisResponse:
+    latency_ms = round((perf_counter() - started) * 1000, 2)
+    analysis_id = uuid4()
+    enriched_items = _with_expiry_fallbacks(items)
     response = AnalysisResponse(
         analysis_id=analysis_id,
         input_type=input_type,

@@ -41,6 +41,7 @@ import ScanningGroceriesScreen from './src/screens/ScanningGroceriesScreen';
 import DetectionCompleteScreen from './src/screens/DetectionCompleteScreen';
 import ReviewDetectedItemsScreen from './src/screens/ReviewDetectedItemsScreen';
 import EditDetectedItemScreen from './src/screens/EditDetectedItemScreen';
+import PurchaseInsightScreen from './src/screens/PurchaseInsightScreen';
 import BottomNav from './src/components/BottomNav';
 import LandingScreen from './src/components/LandingScreen';
 import ConfirmDialog from './src/components/ConfirmDialog';
@@ -48,6 +49,7 @@ import { colors, fonts, radii, spacing } from './src/theme/theme';
 import { registerDevice } from './src/api/freshwise';
 import { isFreshInstall, checkClipboardForDeviceId, adoptDeviceId, copyDeviceIdToClipboard } from './src/api/device';
 import { registerPushNotificationsAsync } from './src/notifications/pushRegistration';
+import { PURCHASE_INSIGHT_ROUTE } from './src/data/purchaseStates';
 import {
   canEnterApp,
   STARTUP_FONT_FAIL_OPEN_MS,
@@ -302,6 +304,7 @@ export default function App() {
                     <Stack.Screen name="MarkConsumed" component={MarkConsumedScreen} />
                     <Stack.Screen name="MarkWasted" component={MarkWastedScreen} />
                     <Stack.Screen name="WasteRecorded" component={WasteRecordedScreen} />
+                    <Stack.Screen name={PURCHASE_INSIGHT_ROUTE} component={PurchaseInsightScreen} />
                   </Stack.Group>
                 </Stack.Navigator>
               </NavigationContainer>

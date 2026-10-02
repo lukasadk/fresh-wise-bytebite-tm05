@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
@@ -33,6 +34,34 @@ class APIRecognitionNotConfiguredError(APIRecognitionError):
 
 class APIRecognitionTimeoutError(APIRecognitionError):
     pass
+
+
+def _safe_provider_error(response: httpx.Response) -> str:
+    """Return a short upstream error without leaking credentials or payload data."""
+
+    code = ""
+    message = ""
+    try:
+        body = response.json()
+    except (json.JSONDecodeError, ValueError):
+        body = None
+    if isinstance(body, dict):
+        error = body.get("error", body)
+        if isinstance(error, dict):
+            code = str(error.get("code") or "").strip()
+            message = str(error.get("message") or "").strip()
+    detail = ": ".join(part for part in (code, message) if part)
+    if not detail:
+        return ""
+    # Provider messages should not contain credentials, but redact common key
+    # formats defensively before they can reach logs or the client.
+    detail = re.sub(r"sk-[A-Za-z0-9._-]+", "[redacted-api-key]", detail)
+    detail = re.sub(
+        r"(?i)(authorization|api[-_ ]?key)\s*[:=]\s*\S+",
+        r"\1=[redacted]",
+        detail,
+    )
+    return detail[:600]
 
 
 def _chat_completions_url(base_url: str) -> str:
@@ -210,9 +239,11 @@ class OpenAICompatibleVisionBackend:
             ) from exc
 
         if response.status_code >= 400:
+            provider_error = _safe_provider_error(response)
+            provider_suffix = f" Provider: {provider_error}" if provider_error else ""
             raise APIRecognitionError(
                 f"Recognition API returned HTTP {response.status_code}. Check its URL, model, "
-                "credentials, and JSON-mode support."
+                f"credentials, and JSON-mode support.{provider_suffix}"
             )
         try:
             response_payload = response.json()
