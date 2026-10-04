@@ -12,7 +12,7 @@ from app.auto_waste import run_daily_auto_waste_expired
 from app.config import get_settings
 from app.db import AsyncSessionLocal, engine
 from app.notifications import run_daily_expiry_check
-from app.routers import dashboard, diet, logs, pantry, recipes, reference, users
+from app.routers import dashboard, diet, logs, pantry, recipes, reference, shopping, users
 from app.purchase_insights import router as purchase_insights_router
 from app.security import ApiKeyMiddleware, RateLimitMiddleware
 from wastewise_grocery_vlm.main import app as grocery_ai_app
@@ -69,6 +69,7 @@ app.include_router(diet.router)
 app.include_router(recipes.router)
 app.include_router(reference.router)
 app.include_router(purchase_insights_router)
+app.include_router(shopping.router)
 
 AI_GATEWAY_ROUTE_PREFIXES = (
     "/v1/api-recognition/",

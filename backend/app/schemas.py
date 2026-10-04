@@ -117,6 +117,10 @@ class FoodItemOut(BaseModel):
     created_at: datetime
     # Derived, not stored -- the pantry router fills this in from expiry_date.
     days_to_expiry: int | None = None
+    # Epic 8 (AC 8.3.1-8.3.4): only set on the POST /v1/pantry response.
+    # True when saving this item fully ticked off a "To Buy" row on the
+    # shopping list; the client adds these up for the "N items ticked off" toast.
+    shopping_ticked: bool = False
 
 
 # --- Consumption / waste log ---------------------------------------------
@@ -437,3 +441,83 @@ class OpenFoodFactsProductOut(BaseModel):
     image_url: str | None
     # ODbL requires attribution wherever this data is displayed.
     license: str | None
+
+
+# --- Smart Shopping List (Epic 8) ------------------------------------------
+# The recommendation shape itself (PurchaseRecommendation) lives in
+# app/purchase_recommendations.py -- that file is the Epic 7 <-> Epic 8 contract.
+
+ShoppingItemSource = Literal["suggested", "manual"]
+ShoppingItemStatus = Literal["to_buy", "bought"]
+
+
+class ShoppingItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    list_item_id: UUID
+    name: str
+    category: str | None
+    unit: str | None
+    quantity: float
+    remaining_qty: float
+    source: ShoppingItemSource
+    rec_state: str | None
+    have_at_home_qty: float | None
+    status: ShoppingItemStatus
+    bought_at: datetime | None
+    created_at: datetime
+
+
+class SkippedItemOut(BaseModel):
+    """A DO_NOT_BUY_YET recommendation -- shown in "Skip This Time" (AC 8.1.3)."""
+
+    name: str
+    category: str | None
+    reason: str | None
+
+
+class ShoppingListOut(BaseModel):
+    to_buy: list[ShoppingItemOut]
+    bought: list[ShoppingItemOut]
+    skipped: list[SkippedItemOut]
+    # False until Epic 7's recommendation code exists -- lets the app tell
+    # "no suggestions yet" apart from "Epic 7 says buy nothing".
+    recommendations_available: bool
+
+
+class ShoppingItemCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    category: str | None = Field(default=None, max_length=50)
+    unit: str | None = Field(default=None, max_length=20)
+    quantity: float = Field(default=1, gt=0)
+    # False = run the duplicate-stock check first (AC 8.2.1).
+    # True  = the user tapped "Add anyway" on the warning card (AC 8.2.2).
+    force: bool = False
+
+    @field_validator("name")
+    @classmethod
+    def _strip_name(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Enter an item name")
+        return v
+
+
+class NameSuggestionOut(BaseModel):
+    name: str
+    category: str | None
+
+
+class ShoppingItemUpdate(BaseModel):
+    status: ShoppingItemStatus
+
+
+class DuplicateStockOut(BaseModel):
+    """Body of the 409 returned by POST /v1/shopping-list/items (AC 8.2.1)."""
+
+    code: Literal["duplicate_stock"] = "duplicate_stock"
+    pantry_item_id: UUID  # the earliest-expiring match -- "View in Pantry" opens this one (AC 8.2.3)
+    pantry_name: str
+    qty_at_home: float
+    unit: str | None
+    earliest_expiry: date | None

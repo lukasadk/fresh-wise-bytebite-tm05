@@ -4,12 +4,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.deps import get_current_user
 from app.models import FoodItem, UserProfile
 from app.schemas import FoodItemCreate, FoodItemOut, FoodItemStatus, FoodItemUpdate
+from app.shopping import clear_dismissals_for, tick_shopping_list
 
 router = APIRouter(prefix="/v1/pantry", tags=["pantry"])
 
@@ -70,6 +72,24 @@ async def _get_owned_item(item_id: UUID, user: UserProfile, db: AsyncSession) ->
     return item
 
 
+async def _shopping_list_hooks(db: AsyncSession, item: FoodItem) -> bool:
+    """Epic 8 side effects of saving a pantry item. Never allowed to break the save.
+
+    Runs inside a SAVEPOINT: if the shopping tables don't exist yet (backend
+    deployed before db/003_shopping_list.sql was run) or anything else in
+    Epic 8 fails, only the savepoint is rolled back -- the pantry item itself
+    is still saved, exactly as it was before Epic 8 existed.
+    """
+    try:
+        async with db.begin_nested():
+            ticked = await tick_shopping_list(db, item)
+            await clear_dismissals_for(db, item)
+        return ticked
+    except SQLAlchemyError as exc:
+        print(f"[pantry] shopping-list hooks skipped: {exc.__class__.__name__}: {str(exc).splitlines()[0]}")
+        return False
+
+
 @router.get("", response_model=list[FoodItemOut])
 async def list_pantry_items(
     status_filter: FoodItemStatus | None = Query(default=None, alias="status"),
@@ -110,9 +130,16 @@ async def create_pantry_item(
         fields["canonical_food_name"] = _canonical(fields.get("name"))
     item = FoodItem(user_id=user.user_id, **fields)
     db.add(item)
+    await db.flush()
+    # Epic 8: every save path (Add Food, Photo Review, old photo screen) comes
+    # through here, so auto-tick (AC 8.3.1-8.3.3) and "suggest it again after a
+    # new pantry entry" (AC 8.1.6) happen in the same transaction as the insert.
+    ticked = await _shopping_list_hooks(db, item)
     await db.commit()
     await db.refresh(item)
-    return _to_out(item)
+    out = _to_out(item)
+    out.shopping_ticked = ticked
+    return out
 
 
 @router.get("/{item_id}", response_model=FoodItemOut)

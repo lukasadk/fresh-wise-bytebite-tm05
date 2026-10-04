@@ -361,3 +361,44 @@ class RefRecipeDetail(Base):
     serving_size: Mapped[str | None] = mapped_column(Text)
 
     index_row: Mapped["RefRecipeIndex"] = relationship(back_populates="detail")
+
+
+# ---------------------------------------------------------------------------
+# SECTION 5 -- Smart Shopping List (Epic 8)  -- see db/003_shopping_list.sql
+# ---------------------------------------------------------------------------
+
+
+class ShoppingListItem(Base):
+    __tablename__ = "shopping_list_item"
+
+    list_item_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("user_profile.user_id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    category: Mapped[str | None] = mapped_column(String(50))
+    unit: Mapped[str | None] = mapped_column(String(20))
+    quantity: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False, server_default="1")
+    remaining_qty: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False, server_default="1")
+    source: Mapped[str] = mapped_column(String(10), nullable=False, server_default="manual")
+    rec_state: Mapped[str | None] = mapped_column(String(20))
+    have_at_home_qty: Mapped[float | None] = mapped_column(Numeric(10, 2))
+    status: Mapped[str] = mapped_column(String(10), nullable=False, server_default="to_buy")
+    bought_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint("source IN ('suggested', 'manual')", name="shopping_list_item_source_check"),
+        CheckConstraint("status IN ('to_buy', 'bought')", name="shopping_list_item_status_check"),
+        CheckConstraint("quantity > 0 AND remaining_qty >= 0", name="shopping_list_item_quantity_check"),
+    )
+
+
+class DismissedSuggestion(Base):
+    __tablename__ = "dismissed_suggestion"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("user_profile.user_id", ondelete="CASCADE"), primary_key=True
+    )
+    name_key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    dismissed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
