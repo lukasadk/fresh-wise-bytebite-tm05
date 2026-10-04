@@ -1,21 +1,35 @@
 // Domain calls, grouped by the screen that uses them.
 // Every function here returns typed data or throws ApiError.
 
-import { request } from './client';
+import { ApiError, request } from './client';
 import { API_BASE_URL, API_KEY, API_KEY_HEADER } from './config';
 import { getDeviceId } from './device';
+import {
+  USE_SHOPPING_MOCK,
+  mockAddShoppingItem,
+  mockClearBoughtItems,
+  mockGetShoppingList,
+  mockNameSuggestions,
+  mockRemoveShoppingItem,
+  mockSetShoppingItemStatus,
+  mockTickAfterPantrySave,
+} from '../data/shoppingMock';
 import { selectMalaysianRecipeHints } from '../data/malaysianRecipeRag';
 import type { PurchaseRecommendation } from '../data/purchaseStates';
 import type {
   ConsumptionWasteLog,
   DashboardSummary,
+  DuplicateStock,
   FoodItem,
   FoodItemStorage,
   FoodkeeperStorage,
+  NameSuggestion,
   OpenFoodFactsProduct,
   PriceReference,
   PriceReferenceState,
   RecipeRecommendation,
+  ShoppingItem,
+  ShoppingList,
   UserProfile,
   WasteReason,
   WastePatternsOut,
@@ -427,8 +441,22 @@ export function toStorage(label?: string | null): FoodItemStorage | undefined {
   return STORAGE_BY_LABEL[label];
 }
 
-export const addPantryItem = (item: NewFoodItem) =>
-  request<FoodItem>('/v1/pantry', { method: 'POST', body: item });
+export async function addPantryItem(item: NewFoodItem): Promise<FoodItem> {
+  const saved = await request<FoodItem>('/v1/pantry', { method: 'POST', body: item });
+  // Dummy-data mode (src/data/shoppingMock.ts): the real server has no shopping
+  // list yet, so auto-tick (AC 8.3) is simulated against the in-memory list.
+  if (USE_SHOPPING_MOCK) {
+    return {
+      ...saved,
+      shopping_ticked: mockTickAfterPantrySave({
+        name: saved.name,
+        category: saved.category,
+        quantity: Number(saved.quantity),
+      }),
+    };
+  }
+  return saved;
+}
 
 /** NOTE: status here accepts only 'active' | 'partially_used'. Marking an item
  *  consumed or wasted MUST go through recordOutcome() below, because that also
@@ -876,3 +904,61 @@ export const searchProducts = (q: string, maxNovaGroup?: number) => {
   if (maxNovaGroup) params.set('max_nova_group', String(maxNovaGroup));
   return request<OpenFoodFactsProduct[]>(`/v1/reference/product?${params}`, { anonymous: true });
 };
+
+// --- Smart Shopping List (ShoppingListScreen, AddShoppingItemScreen) -- Epic 8
+
+/** Suggested rows come from Epic 7 on the server -- this screen never builds
+ *  them itself, so it starts showing them as soon as Epic 7 is deployed. */
+export const getShoppingList = () =>
+  USE_SHOPPING_MOCK ? mockGetShoppingList() : request<ShoppingList>('/v1/shopping-list');
+
+export type NewShoppingItem = {
+  name: string;
+  category?: string;
+  unit?: string;
+  quantity?: number;
+};
+
+export type AddShoppingItemResult =
+  | { kind: 'added'; item: ShoppingItem }
+  | { kind: 'duplicate'; warning: DuplicateStock };
+
+/** AC 8.2.1: with force=false the server may answer 409 because matching,
+ *  unexpired stock is already at home. That's an expected outcome, not an
+ *  error, so it comes back as { kind: 'duplicate' } instead of throwing.
+ *  force=true is "Add anyway" (AC 8.2.2). */
+export async function addShoppingItem(item: NewShoppingItem, force = false): Promise<AddShoppingItemResult> {
+  if (USE_SHOPPING_MOCK) return mockAddShoppingItem(item, force, () => listPantry());
+  try {
+    const added = await request<ShoppingItem>('/v1/shopping-list/items', {
+      method: 'POST',
+      body: { ...item, force },
+    });
+    return { kind: 'added', item: added };
+  } catch (err) {
+    const detail = err instanceof ApiError ? (err.detail as DuplicateStock | undefined) : undefined;
+    if (err instanceof ApiError && err.status === 409 && detail?.code === 'duplicate_stock') {
+      return { kind: 'duplicate', warning: detail };
+    }
+    throw err;
+  }
+}
+
+export const setShoppingItemStatus = (listItemId: string, status: ShoppingItem['status']) =>
+  USE_SHOPPING_MOCK
+    ? mockSetShoppingItemStatus(listItemId, status)
+    : request<ShoppingItem>(`/v1/shopping-list/items/${listItemId}`, { method: 'PATCH', body: { status } });
+
+/** Only called once the 5-second Undo window has passed (AC 8.1.6). */
+export const removeShoppingItem = (listItemId: string) =>
+  USE_SHOPPING_MOCK
+    ? mockRemoveShoppingItem(listItemId)
+    : request<void>(`/v1/shopping-list/items/${listItemId}`, { method: 'DELETE' });
+
+export const clearBoughtItems = () =>
+  USE_SHOPPING_MOCK ? mockClearBoughtItems() : request<void>('/v1/shopping-list/bought', { method: 'DELETE' });
+
+export const getItemNameSuggestions = (query: string, signal?: AbortSignal) =>
+  USE_SHOPPING_MOCK
+    ? mockNameSuggestions(query, () => listPantry())
+    : request<NameSuggestion[]>(`/v1/shopping-list/name-suggestions?q=${encodeURIComponent(query)}`, { signal });

@@ -45,6 +45,9 @@ export type FoodItem = {
   /** Server-computed, counts down from TODAY (unlike the old mock data, which
    *  measured from purchase_date). Null when the item has no expiry date. */
   days_to_expiry: number | null;
+  /** Epic 8: only on the POST /v1/pantry response. True when saving this item
+   *  fully ticked off a "To Buy" row on the shopping list (AC 8.3.2). */
+  shopping_ticked?: boolean;
 };
 
 export type ConsumptionWasteLog = {
@@ -236,4 +239,59 @@ export type RecipeRecommendation = {
   coverage_score: number;
   expiry_weight_score: number;
   total_score: number;
+};
+
+// --- Smart Shopping List (Epic 8) ------------------------------------------
+// Mirrors backend/app/schemas.py. The recommendation states come from Epic 7
+// through backend/app/purchase_recommendations.py -- see that file.
+
+export type PurchaseState = 'BUY_MORE' | 'KEEP_SAME' | 'BUY_LESS' | 'DO_NOT_BUY_YET';
+
+export type ShoppingItem = {
+  list_item_id: string;
+  name: string;
+  category: string | null;
+  unit: string | null;
+  quantity: number;
+  /** Still to buy -- less than `quantity` after a partial auto-tick (AC 8.3.3). */
+  remaining_qty: number;
+  source: 'suggested' | 'manual';
+  /** Epic 7 state, suggested rows only. Typed as string so an unknown future
+   *  state can't crash the list -- it just gets no badge. */
+  rec_state: string | null;
+  /** Set when added via "Add anyway" on the duplicate warning (AC 8.2.2). */
+  have_at_home_qty: number | null;
+  status: 'to_buy' | 'bought';
+  bought_at: string | null;
+  created_at: string;
+};
+
+export type SkippedItem = {
+  name: string;
+  category: string | null;
+  /** The AC 7.3.1 reason text from Epic 7. */
+  reason: string | null;
+};
+
+export type ShoppingList = {
+  to_buy: ShoppingItem[];
+  bought: ShoppingItem[];
+  skipped: SkippedItem[];
+  /** False until Epic 7's backend code exists. */
+  recommendations_available: boolean;
+};
+
+export type DuplicateStock = {
+  code: 'duplicate_stock';
+  /** Earliest-expiring matching pantry item -- "View in Pantry" opens this. */
+  pantry_item_id: string;
+  pantry_name: string;
+  qty_at_home: number;
+  unit: string | null;
+  earliest_expiry: string | null;
+};
+
+export type NameSuggestion = {
+  name: string;
+  category: string | null;
 };

@@ -113,7 +113,7 @@ export default function ReviewDetectedItemsScreen({ navigation, route }: any) {
     setSaveError(null);
     setSaving(true);
     try {
-      const createdIds = await Promise.all(items.map(async (item) => {
+      const saved = await Promise.all(items.map(async (item) => {
         const name = item.foodName.trim();
         const created = await addPantryItem({
           name,
@@ -136,8 +136,11 @@ export default function ReviewDetectedItemsScreen({ navigation, route }: any) {
             await savePantryPhotoCrop(displayImageUri, item.boundingBox, createdId);
           } catch {}
         }
-        return createdId;
+        return { id: createdId, shoppingTicked: !!created.shopping_ticked };
       }));
+      const createdIds = saved.map((c) => c.id);
+      // Epic 8 (AC 8.3.4): how many shopping-list rows these saves ticked off.
+      const shoppingTicked = saved.filter((c) => c.shoppingTicked).length;
       // popTo, not navigate: in React Navigation 7 navigate() pushes a SECOND
       // My Pantry on top of the scan screens (the iOS screen pile-up).
       navigation.popTo('Main', {
@@ -149,6 +152,7 @@ export default function ReviewDetectedItemsScreen({ navigation, route }: any) {
           photoAddedNames: items.map((item) => item.foodName.trim()),
           // Pins these rows to the top of Pantry for a few seconds.
           newIds: createdIds,
+          shoppingTicked,
         },
       });
     } catch (error) {

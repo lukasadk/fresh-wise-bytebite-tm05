@@ -62,12 +62,19 @@ export default function AddFoodScreen({ navigation, route }: any) {
   const isEditing = !!editId;
   const { item: existingItem, loading: loadingExisting, error: loadError } = usePantryItem(editId);
 
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState('');
+  // Epic 8 (AC 8.3.5): opened from the Shopping List's "Add to pantry?"
+  // snackbar with the ticked item's details. Create mode only.
+  const prefill = !isEditing ? route?.params?.prefill : undefined;
+
+  const [name, setName] = useState<string>(prefill?.name ?? '');
+  const [category, setCategory] = useState<string>(
+    prefill?.category && CATEGORIES.includes(prefill.category) ? prefill.category : ''
+  );
   // Starts empty (placeholder shows an example) so the user types their own
-  // amount rather than accidentally saving a pre-filled 1.
-  const [quantity, setQuantity] = useState('');
-  const [unit, setUnit] = useState('');
+  // amount rather than accidentally saving a pre-filled 1 -- unless it came
+  // from the shopping list, where the amount is already known.
+  const [quantity, setQuantity] = useState<string>(prefill?.quantity != null ? String(prefill.quantity) : '');
+  const [unit, setUnit] = useState<string>(prefill?.unit ?? '');
   const [purchaseDate, setPurchaseDate] = useState<Date | null>(null);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
 
@@ -175,7 +182,12 @@ export default function AddFoodScreen({ navigation, route }: any) {
         // stack (you came from it), so popTo() pops back to it and updates its
         // params. (In React Navigation 7 plain navigate() no longer pops back --
         // it pushes a second copy, which is how screens were piling up on iOS.)
-        navigation.replace('FoodDetail', { id: newItem.item_id, justAdded: true });
+        navigation.replace('FoodDetail', {
+          id: newItem.item_id,
+          justAdded: true,
+          // Epic 8 (AC 8.3.4): Food Detail shows the "ticked off" toast.
+          shoppingTicked: newItem.shopping_ticked ? 1 : 0,
+        });
       }
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.message : "Couldn't save this item — check your connection and try again.");

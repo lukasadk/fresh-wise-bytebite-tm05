@@ -2,9 +2,10 @@ import { colors } from '../theme/theme';
 
 /** Shared Epic 7/Epic 8 route and recommendation contract.
  *
- * Epic 8's shopping-list branch was not present in the group repository when
- * this integration landed, so this file contains only the documented shared
- * names and badge styles. Shopping-list behaviour remains owned by Epic 8.
+ * Epic 7 owns the recommendation states, badge styles and the PurchaseInsight
+ * screen. Epic 8's shopping list reads the same names and styles from here and
+ * adds hasRoute() below, so a suggested row is only tappable once the
+ * PurchaseInsight screen is registered in App.tsx.
  */
 export const PURCHASE_INSIGHT_ROUTE = 'PurchaseInsight' as const;
 
@@ -26,10 +27,9 @@ export type PurchaseRecommendation = PurchaseInsightParams & {
   reason: string;
 };
 
-export const PURCHASE_STATE_STYLE: Record<
-  PurchaseState,
-  { label: string; backgroundColor: string; textColor: string }
-> = {
+export type PurchaseStateStyle = { label: string; backgroundColor: string; textColor: string };
+
+export const PURCHASE_STATE_STYLE: Record<PurchaseState, PurchaseStateStyle> = {
   BUY_MORE: {
     label: 'Buy more',
     backgroundColor: colors.expirySafeBg,
@@ -52,6 +52,26 @@ export const PURCHASE_STATE_STYLE: Record<
   },
 };
 
-export function purchaseStateStyle(state: PurchaseState) {
-  return PURCHASE_STATE_STYLE[state];
+/** Badge style for a state. Epic 7 passes a known PurchaseState and always gets
+ *  a style back. Epic 8's shopping list passes the raw string from the API
+ *  (rec_state), which may be missing, lower-case or a state added later -- that
+ *  gets null, so the row shows no badge instead of crashing. */
+export function purchaseStateStyle(state: PurchaseState): PurchaseStateStyle;
+export function purchaseStateStyle(state: string | null | undefined): PurchaseStateStyle | null;
+export function purchaseStateStyle(state: string | null | undefined): PurchaseStateStyle | null {
+  if (!state) return null;
+  return PURCHASE_STATE_STYLE[state.toUpperCase() as PurchaseState] ?? null;
+}
+
+/** Epic 8: true when `routeName` is registered on this navigator or any parent.
+ *  The shopping list only makes suggested rows tappable once Epic 7's
+ *  PurchaseInsight screen exists in App.tsx. */
+export function hasRoute(navigation: any, routeName: string): boolean {
+  let nav = navigation;
+  while (nav) {
+    const state = nav.getState?.();
+    if (state?.routeNames?.includes(routeName)) return true;
+    nav = nav.getParent?.();
+  }
+  return false;
 }

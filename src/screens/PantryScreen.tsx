@@ -14,6 +14,7 @@ import Button from '../components/Button';
 import ConfirmDialog from '../components/ConfirmDialog';
 import WasteReasonPicker from '../components/WasteReasonPicker';
 import SwipeToManage from '../components/SwipeToManage';
+import ShoppingTickedToast from '../components/ShoppingTickedToast';
 import { Plus, ChevronDown, ChevronUp, List, LayoutGrid, PackageOpen, X, Check } from '../icons/NavIcons';
 import { formatQuantity, getExpiryInfo, formatDisplayDate, usePantry, PantryItem } from '../data/pantryItems';
 import { recordOutcome, deletePantryItem, WASTE_REASON_BY_LABEL } from '../api/freshwise';
@@ -49,6 +50,9 @@ export default function PantryScreen({ navigation, route }: any) {
   // action it confirms) -- 'added' and 'consumed' share the same success look.
   const [toastType, setToastType] = useState<'success' | 'removed'>('success');
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
+  // Epic 8 (AC 8.3.4): shopping-list rows ticked off by the save that led here.
+  const [shoppingTicked, setShoppingTicked] = useState(0);
+  const hideShoppingTicked = useCallback(() => setShoppingTicked(0), []);
   // Just-added items (from Scan Groceries or Add Food), pinned to the top with a
   // "New" tag for NEW_ITEM_PIN_MS before the list re-sorts normally.
   const [newIds, setNewIds] = useState<string[]>([]);
@@ -79,6 +83,11 @@ export default function PantryScreen({ navigation, route }: any) {
       const removedName = route?.params?.removed;
       const highlightId = route?.params?.highlightId;
       const incomingNewIds = route?.params?.newIds;
+      const incomingTicked = Number(route?.params?.shoppingTicked) || 0;
+      if (incomingTicked > 0) {
+        setShoppingTicked(incomingTicked);
+        navigation.setParams({ shoppingTicked: undefined });
+      }
       if (addedName) {
         // Falls back to the generic label if addedName isn't a real name string
         // (e.g. some earlier caller passing just `true`) -- never shows "true
@@ -140,6 +149,7 @@ export default function PantryScreen({ navigation, route }: any) {
       route?.params?.removed,
       route?.params?.highlightId,
       route?.params?.newIds,
+      route?.params?.shoppingTicked,
     ])
   );
 
@@ -334,6 +344,13 @@ export default function PantryScreen({ navigation, route }: any) {
           </View>
         </View>
       ) : null}
+      <ShoppingTickedToast
+        count={shoppingTicked}
+        onHide={hideShoppingTicked}
+        onViewList={() => navigation.navigate('Shop')}
+        // Sits above the regular toast when both show at once.
+        bottom={toastMessage ? 160 : 110}
+      />
       <FlatList
         ref={listRef}
         // Forces a remount when switching view modes -- FlatList doesn't support

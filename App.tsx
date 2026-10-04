@@ -42,6 +42,8 @@ import DetectionCompleteScreen from './src/screens/DetectionCompleteScreen';
 import ReviewDetectedItemsScreen from './src/screens/ReviewDetectedItemsScreen';
 import EditDetectedItemScreen from './src/screens/EditDetectedItemScreen';
 import PurchaseInsightScreen from './src/screens/PurchaseInsightScreen';
+import ShoppingListScreen from './src/screens/ShoppingListScreen';
+import AddShoppingItemScreen from './src/screens/AddShoppingItemScreen';
 import BottomNav from './src/components/BottomNav';
 import LandingScreen from './src/components/LandingScreen';
 import ConfirmDialog from './src/components/ConfirmDialog';
@@ -83,6 +85,7 @@ function MainTabs() {
       <Tab.Screen name="UseFirst" component={UseFirstScreen} />
       <Tab.Screen name="Recipes" component={RecipesScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} />
+      <Tab.Screen name="Shop" component={ShoppingListScreen} />
     </Tab.Navigator>
   );
 }
@@ -305,6 +308,14 @@ export default function App() {
                     <Stack.Screen name="MarkWasted" component={MarkWastedScreen} />
                     <Stack.Screen name="WasteRecorded" component={WasteRecordedScreen} />
                     <Stack.Screen name={PURCHASE_INSIGHT_ROUTE} component={PurchaseInsightScreen} />
+                    {/* Epic 8 "+ Add Item" bottom sheet. transparentModal (not RN's
+                        <Modal>) so Food Detail can open on top of it and "back"
+                        returns here with the form still filled in (AC 8.2.3). */}
+                    <Stack.Screen
+                      name="AddShoppingItem"
+                      component={AddShoppingItemScreen}
+                      options={{ presentation: 'transparentModal', animation: 'fade' }}
+                    />
                   </Stack.Group>
                 </Stack.Navigator>
               </NavigationContainer>

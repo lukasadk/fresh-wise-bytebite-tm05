@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Image } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import BackButton from '../components/BackButton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { foodIconFor } from '../icons/FoodIcons';
-import { Refrigerator, Snowflake, Sun, Sparkles, ArrowRight } from '../icons/NavIcons';
+import { Refrigerator, Snowflake, Sun, Sparkles, ArrowRight, AlertTriangle, Calendar } from '../icons/NavIcons';
+import { urgencyPalette } from '../components/UrgencyOutline';
 import { usePantryItem, formatQuantity, getExpiryInfo, formatDisplayDate } from '../data/pantryItems';
 import { deletePantryItem, lookupStorage, updatePantryItem } from '../api/freshwise';
 import { ApiError } from '../api/client';
@@ -13,6 +14,7 @@ import { buildGuidance } from '../data/storageGuidance';
 import type { Guidance, StorageMethodKey } from '../data/storageGuidance';
 import { LoadingState, ErrorState } from '../components/ScreenState';
 import FoodMatchPicker from '../components/FoodMatchPicker';
+import ShoppingTickedToast from '../components/ShoppingTickedToast';
 import { usePantryPhoto, deletePantryPhoto } from '../vlm/pantryPhotos';
 
 type IconComponent = typeof Refrigerator;
@@ -35,11 +37,43 @@ const METHOD_STYLE: Record<StorageMethodKey, { Icon: IconComponent; color: strin
   pantry: { Icon: Sun, color: colors.statusSoon },
 };
 
+// Expiry banner copy. The badge on the right carries the countdown and the
+// text on the left says what to do, so the two never repeat each other
+// (the old banner read "Expires in 2 days ... 2 days left").
+function bannerCopy(daysLeft: number | null) {
+  if (daysLeft === null || daysLeft === undefined) {
+    return { eyebrow: 'NO EXPIRY DATE', title: 'Tap Edit to add one', badge: null, badgeLabel: '' };
+  }
+  if (daysLeft < 0) {
+    const ago = -daysLeft;
+    return { eyebrow: 'EXPIRED', title: 'Check it before eating', badge: String(ago), badgeLabel: ago === 1 ? 'day ago' : 'days ago' };
+  }
+  if (daysLeft === 0) return { eyebrow: 'USE TODAY', title: 'Use it before tonight', badge: null, badgeLabel: 'today' };
+  if (daysLeft === 1) return { eyebrow: 'USE FIRST', title: 'Use it by tomorrow', badge: '1', badgeLabel: 'day left' };
+  if (daysLeft <= 3) return { eyebrow: 'USE FIRST', title: 'Use it soon', badge: String(daysLeft), badgeLabel: 'days left' };
+  return { eyebrow: 'FRESH', title: 'Plenty of time', badge: String(daysLeft), badgeLabel: 'days left' };
+}
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "2026-10-06" -> "Tue, 6 Oct" (parsed as a local date, no timezone shift). */
+function shortDate(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const date = new Date(y, m - 1, d);
+  return `${WEEKDAYS[date.getDay()]}, ${d} ${MONTHS[m - 1]}`;
+}
+
 export default function FoodDetailScreen({ navigation, route }: any) {
   const { item, loading, error } = usePantryItem(route?.params?.id);
   const insets = useSafeAreaInsets();
   const justAdded = !!route?.params?.justAdded;
   const justEdited = !!route?.params?.justEdited;
+  // Epic 8 (AC 8.3.4): Add Food lands here, so the "ticked off" toast does too.
+  const [shoppingTicked, setShoppingTicked] = useState<number>(Number(route?.params?.shoppingTicked) || 0);
+  const hideShoppingTicked = useCallback(() => setShoppingTicked(0), []);
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [confirmRemoveVisible, setConfirmRemoveVisible] = useState(false);
@@ -142,6 +176,12 @@ export default function FoodDetailScreen({ navigation, route }: any) {
 
   const Icon = foodIconFor(item.name, item.category);
   const expiry = getExpiryInfo(item);
+  const banner = bannerCopy(expiry.daysLeft);
+  const bannerPalette = urgencyPalette(expiry.expiryLevel);
+  const bannerAccent =
+    expiry.expiryLevel === 'urgent' ? colors.expiryUrgentText : expiry.expiryLevel === 'warn' ? colors.expiryWarnText : colors.primary;
+  const expiryShort = shortDate(item.expiryDate);
+  const BannerIcon = expiry.daysLeft === null ? Calendar : AlertTriangle;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -195,11 +235,25 @@ export default function FoodDetailScreen({ navigation, route }: any) {
           </View>
         ) : null}
 
-        <View style={styles.useFirstBanner}>
-          <Text style={styles.bannerEyebrow}>USE FIRST</Text>
-          <View style={styles.bannerBottomRow}>
-            <Text style={styles.bannerTitle}>{expiry.detailExpiryTitle}</Text>
-            <Text style={styles.bannerDays}>{expiry.detailDaysLeftLabel}</Text>
+        <View style={[styles.useFirstBanner, { backgroundColor: bannerPalette.background }]}>
+          <View style={styles.bannerText}>
+            <Text style={[styles.bannerEyebrow, { color: bannerPalette.muted }]}>{banner.eyebrow}</Text>
+            <Text style={[styles.bannerTitle, { color: bannerPalette.text }]}>{banner.title}</Text>
+            {expiryShort ? (
+              <Text style={[styles.bannerSub, { color: bannerPalette.text }]}>
+                {expiry.daysLeft !== null && expiry.daysLeft < 0 ? 'Expired' : 'Expires'} {expiryShort}
+              </Text>
+            ) : null}
+          </View>
+          <View style={styles.bannerBadge}>
+            {banner.badge ? (
+              <Text style={[styles.bannerBadgeNumber, { color: bannerAccent }]}>{banner.badge}</Text>
+            ) : (
+              <BannerIcon size={26} color={bannerAccent} strokeWidth={2.2} />
+            )}
+            {banner.badgeLabel ? (
+              <Text style={[styles.bannerBadgeLabel, { color: bannerAccent }]}>{banner.badgeLabel}</Text>
+            ) : null}
           </View>
         </View>
 
@@ -345,6 +399,12 @@ export default function FoodDetailScreen({ navigation, route }: any) {
         onConfirm={confirmRemove}
         onCancel={() => setConfirmRemoveVisible(false)}
       />
+      <ShoppingTickedToast
+        count={shoppingTicked}
+        onHide={hideShoppingTicked}
+        onViewList={() => navigation.popTo('Main', { screen: 'Shop' })}
+        bottom={Math.max(insets.bottom, spacing.md) + spacing.lg}
+      />
     </SafeAreaView>
   );
 }
@@ -440,7 +500,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderRadius: radii.lg,
     padding: spacing.lg,
-    gap: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  bannerText: {
+    flex: 1,
+    gap: 4,
   },
   bannerEyebrow: {
     fontFamily: fonts.bold,
@@ -448,20 +514,34 @@ const styles = StyleSheet.create({
     color: colors.primaryPale,
     letterSpacing: 1,
   },
-  bannerBottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   bannerTitle: {
     fontFamily: fonts.bold,
     fontSize: 20,
     color: colors.white,
   },
-  bannerDays: {
-    fontFamily: fonts.semibold,
-    fontSize: 14,
+  bannerSub: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
     color: colors.white,
+    opacity: 0.85,
+  },
+  bannerBadge: {
+    width: 76,
+    height: 76,
+    borderRadius: radii.lg,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bannerBadgeNumber: {
+    fontFamily: fonts.bold,
+    fontSize: 28,
+    lineHeight: 32,
+  },
+  bannerBadgeLabel: {
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    marginTop: 2,
   },
   sectionTitle: {
     fontFamily: fonts.bold,
