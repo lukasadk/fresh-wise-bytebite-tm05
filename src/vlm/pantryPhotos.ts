@@ -18,9 +18,43 @@ function getImageSize(uri: string): Promise<{ width: number; height: number }> {
   );
 }
 
+/** The scan screens hand over the photo as a data: URI (base64 of the JPEG sent
+ *  to the AI server) or as an http(s) link to the server's review image. The
+ *  image manipulator can't reliably open either, so copy it to a local file
+ *  first. Plain file:// / content:// URIs are used as they are. */
+async function toLocalFile(sourceUri: string): Promise<{ uri: string; temp: boolean }> {
+  const tempPath = `${FileSystem.cacheDirectory}pantry-photo-src-${Date.now()}.jpg`;
+  const dataMatch = /^data:[^;,]*;base64,(.*)$/s.exec(sourceUri);
+  if (dataMatch) {
+    await FileSystem.writeAsStringAsync(tempPath, dataMatch[1], {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return { uri: tempPath, temp: true };
+  }
+  if (/^https?:\/\//i.test(sourceUri)) {
+    const downloaded = await FileSystem.downloadAsync(sourceUri, tempPath);
+    return { uri: downloaded.uri, temp: true };
+  }
+  return { uri: sourceUri, temp: false };
+}
+
 /** Crops one detected item's bounding box (0-1000 scale) out of the scan photo
  *  and saves it as that pantry item's photo. */
 export async function savePantryPhotoCrop(sourceUri: string, box: number[], itemId: string) {
+  const local = await toLocalFile(sourceUri);
+  try {
+    await cropAndSave(local.uri, box, itemId);
+  } catch (error) {
+    // The caller ignores failures so the pantry save still goes through;
+    // log here so a missing photo can be traced in the Metro console.
+    console.warn('[pantryPhotos] could not save scan photo for item', itemId, error);
+    throw error;
+  } finally {
+    if (local.temp) await FileSystem.deleteAsync(local.uri, { idempotent: true }).catch(() => {});
+  }
+}
+
+async function cropAndSave(sourceUri: string, box: number[], itemId: string) {
   const { width, height } = await getImageSize(sourceUri);
   const [x1, y1, x2, y2] = box;
   const left = Math.floor(Math.max(0, x1 / 1000 - CROP_PADDING) * width);
