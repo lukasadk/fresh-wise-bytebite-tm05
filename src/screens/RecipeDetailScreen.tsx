@@ -1,10 +1,13 @@
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, CheckCircle2, Clock3, ShoppingBasket, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, ChefHat, CheckCircle2, Clock3, Pencil, ShoppingBasket, Sparkles, Trash2 } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
-import type { RecipeRecommendation } from '../api/types';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { deleteMyRecipe, getMyRecipe, homemadeRecipeId } from '../api/freshwise';
+import { ApiError } from '../api/client';
+import type { RecipeRecommendation, UserRecipe } from '../api/types';
 
 function asRecipe(value: unknown): RecipeRecommendation {
   if (value && typeof value === 'object') return value as RecipeRecommendation;
@@ -42,12 +45,67 @@ export default function RecipeDetailScreen() {
   const quantities = list(recipe.ingredient_quantities);
   const steps = list(recipe.steps);
 
+  // Homemade recipe ("My recipes"): can be edited or deleted from here.
+  const myRecipeId = homemadeRecipeId(recipe);
+  const passedUserRecipe: UserRecipe | undefined = route.params?.userRecipe;
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+  const [actionError, setActionError] = React.useState<string | null>(null);
+
+  const handleEdit = async () => {
+    if (!myRecipeId || busy) return;
+    setActionError(null);
+    try {
+      const userRecipe = passedUserRecipe ?? (await getMyRecipe(myRecipeId));
+      navigation.navigate('AddRecipe', { userRecipe });
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't open this recipe for editing.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!myRecipeId) return;
+    setConfirmDelete(false);
+    setBusy(true);
+    setActionError(null);
+    try {
+      await deleteMyRecipe(myRecipeId);
+      navigation.popTo('Main', { screen: 'Recipes', params: { tab: 'mine', deletedTitle: titleOf(recipe) } });
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't delete this recipe — try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeft size={20} color={colors.textPrimary} strokeWidth={2.4} />
-        </Pressable>
+        <View style={styles.topRow}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <ArrowLeft size={20} color={colors.textPrimary} strokeWidth={2.4} />
+          </Pressable>
+          {myRecipeId ? (
+            <View style={styles.topActions}>
+              <Pressable
+                style={({ pressed }) => [styles.editButton, pressed && { opacity: 0.85 }]}
+                onPress={handleEdit}
+                accessibilityLabel="Edit recipe"
+              >
+                <Pencil size={15} color={colors.primary} strokeWidth={2.4} />
+                <Text style={styles.editText}>Edit</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.deleteButton, pressed && { opacity: 0.85 }]}
+                onPress={() => setConfirmDelete(true)}
+                accessibilityLabel="Delete recipe"
+              >
+                <Trash2 size={16} color={colors.errorText} strokeWidth={2.4} />
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+        {actionError ? <Text style={styles.actionError}>{actionError}</Text> : null}
 
         {recipe.image_url ? (
           <Image
@@ -60,7 +118,11 @@ export default function RecipeDetailScreen() {
 
         <View style={styles.header}>
           <View style={styles.iconCircle}>
-            <Sparkles size={25} color={colors.primary} strokeWidth={2.3} />
+            {myRecipeId ? (
+              <ChefHat size={25} color={colors.primary} strokeWidth={2.3} />
+            ) : (
+              <Sparkles size={25} color={colors.primary} strokeWidth={2.3} />
+            )}
           </View>
           <Text style={styles.title}>{titleOf(recipe)}</Text>
           <Text style={styles.reason}>
@@ -75,7 +137,9 @@ export default function RecipeDetailScreen() {
             ) : null}
             <View style={styles.metaPill}>
               <Clock3 size={14} color={colors.primary} />
-              <Text style={styles.metaText}>{recipe.ai_enhanced ? 'AI refined' : 'RAG matched'}</Text>
+              <Text style={styles.metaText}>
+                {myRecipeId ? 'Your recipe' : recipe.ai_enhanced ? 'AI refined' : 'RAG matched'}
+              </Text>
             </View>
             {recipe.prep_minutes !== null && recipe.prep_minutes !== undefined ? (
               <View style={styles.metaPill}>
@@ -152,6 +216,15 @@ export default function RecipeDetailScreen() {
           </View>
         </View>
 
+        {myRecipeId && passedUserRecipe?.notes ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Notes</Text>
+            <View style={styles.stepsCard}>
+              <Text style={styles.stepText}>{passedUserRecipe.notes}</Text>
+            </View>
+          </View>
+        ) : null}
+
         {available.length > 0 ? (
           <Pressable
             style={({ pressed }) => [styles.cookedButton, pressed && { opacity: 0.9 }]}
@@ -166,6 +239,14 @@ export default function RecipeDetailScreen() {
           </Pressable>
         ) : null}
       </ScrollView>
+      <ConfirmDialog
+        visible={confirmDelete}
+        title={`Delete ${titleOf(recipe)}?`}
+        message="This removes it from My recipes. It can't be undone."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -179,6 +260,45 @@ const styles = StyleSheet.create({
     padding: spacing.xxl,
     paddingBottom: 80,
     gap: spacing.lg,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 40,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primaryTint,
+    borderWidth: 1,
+    borderColor: colors.primaryPale,
+  },
+  editText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.primary,
+  },
+  deleteButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.expiryUrgentBg,
+  },
+  actionError: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.errorText,
   },
   backButton: {
     width: 46,

@@ -45,6 +45,7 @@ import PurchaseInsightScreen from './src/screens/PurchaseInsightScreen';
 import ShoppingListScreen from './src/screens/ShoppingListScreen';
 import AddShoppingItemScreen from './src/screens/AddShoppingItemScreen';
 import FoodValueWastedScreen from './src/screens/FoodValueWastedScreen';
+import AddRecipeScreen from './src/screens/AddRecipeScreen';
 import BottomNav from './src/components/BottomNav';
 import LandingScreen from './src/components/LandingScreen';
 import ConfirmDialog from './src/components/ConfirmDialog';
@@ -304,6 +305,8 @@ export default function App() {
                     <Stack.Screen name="FoodDetail" component={FoodDetailScreen} />
                     <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} />
                     <Stack.Screen name="RecipeConsume" component={RecipeConsumeScreen} />
+                    {/* Homemade recipes: add (from Recipes) or edit (from Recipe Detail). */}
+                    <Stack.Screen name="AddRecipe" component={AddRecipeScreen} />
                     <Stack.Screen name="RecordOutcome" component={RecordOutcomeScreen} />
                     <Stack.Screen name="MarkConsumed" component={MarkConsumedScreen} />
                     <Stack.Screen name="MarkWasted" component={MarkWastedScreen} />

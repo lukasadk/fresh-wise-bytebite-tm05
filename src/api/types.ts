@@ -345,3 +345,25 @@ export type NameSuggestion = {
   name: string;
   category: string | null;
 };
+
+// --- Homemade recipes ("My recipes") ---------------------------------------
+// Mirrors UserRecipeOut in backend/app/schemas.py (/v1/my-recipes).
+
+export type UserRecipeIngredient = {
+  name: string;
+  /** Free text: "2 tbsp", "500 g", "a handful". */
+  amount: string | null;
+};
+
+export type UserRecipe = {
+  recipe_id: string;
+  title: string;
+  servings: number | null;
+  prep_minutes: number | null;
+  cook_minutes: number | null;
+  ingredients: UserRecipeIngredient[];
+  steps: string[];
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};

@@ -577,3 +577,99 @@ class FoodValueWastedOut(BaseModel):
     headline: str | None                # AC 9.3.5 monthly-report headline
     by_category: list[FoodValueCategory]
     top_items: list[FoodValueTopItem]
+
+
+# --- Homemade recipes ("My recipes") -----------------------------------------
+
+
+def _clean_text(v: str, message: str) -> str:
+    v = v.strip()
+    if not v:
+        raise ValueError(message)
+    return v
+
+
+class UserRecipeIngredient(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    # Free text on purpose: "2 tbsp", "a handful", "500 g".
+    amount: str | None = Field(default=None, max_length=50)
+
+    @field_validator("name")
+    @classmethod
+    def _strip_name(cls, v: str) -> str:
+        return _clean_text(v, "Enter an ingredient name")
+
+    @field_validator("amount")
+    @classmethod
+    def _strip_amount(cls, v: str | None) -> str | None:
+        v = (v or "").strip()
+        return v or None
+
+
+class _UserRecipeFields(BaseModel):
+    servings: int | None = Field(default=None, ge=1, le=50)
+    prep_minutes: int | None = Field(default=None, ge=0, le=1440)
+    cook_minutes: int | None = Field(default=None, ge=0, le=1440)
+    notes: str | None = Field(default=None, max_length=500)
+
+    @field_validator("notes")
+    @classmethod
+    def _strip_notes(cls, v: str | None) -> str | None:
+        v = (v or "").strip()
+        return v or None
+
+
+def _clean_steps(steps: list[str]) -> list[str]:
+    cleaned = [s.strip() for s in steps if s and s.strip()]
+    if any(len(s) > 500 for s in cleaned):
+        raise ValueError("Each step must be 500 characters or fewer")
+    return cleaned
+
+
+class UserRecipeCreate(_UserRecipeFields):
+    title: str = Field(min_length=1, max_length=120)
+    ingredients: list[UserRecipeIngredient] = Field(min_length=1, max_length=50)
+    steps: list[str] = Field(default_factory=list, max_length=50)
+
+    @field_validator("title")
+    @classmethod
+    def _strip_title(cls, v: str) -> str:
+        return _clean_text(v, "Enter a recipe name")
+
+    @field_validator("steps")
+    @classmethod
+    def _steps(cls, v: list[str]) -> list[str]:
+        return _clean_steps(v)
+
+
+class UserRecipeUpdate(_UserRecipeFields):
+    """PATCH: only the fields sent are changed."""
+
+    title: str | None = Field(default=None, min_length=1, max_length=120)
+    ingredients: list[UserRecipeIngredient] | None = Field(default=None, min_length=1, max_length=50)
+    steps: list[str] | None = Field(default=None, max_length=50)
+
+    @field_validator("title")
+    @classmethod
+    def _strip_title(cls, v: str | None) -> str | None:
+        return None if v is None else _clean_text(v, "Enter a recipe name")
+
+    @field_validator("steps")
+    @classmethod
+    def _steps(cls, v: list[str] | None) -> list[str] | None:
+        return None if v is None else _clean_steps(v)
+
+
+class UserRecipeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    recipe_id: UUID
+    title: str
+    servings: int | None
+    prep_minutes: int | None
+    cook_minutes: int | None
+    ingredients: list[UserRecipeIngredient]
+    steps: list[str]
+    notes: str | None
+    created_at: datetime
+    updated_at: datetime

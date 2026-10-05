@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Animated,
   Image,
   Platform,
   Pressable,
@@ -11,11 +12,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChefHat, CheckCircle2, ChevronRight, Clock3, Leaf, RefreshCcw, Sparkles } from 'lucide-react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { ChefHat, CheckCircle2, ChevronRight, Clock3, Leaf, Plus, RefreshCcw, Sparkles } from 'lucide-react-native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
-import { getRagRecipeRecommendations, listPantry } from '../api/freshwise';
-import type { FoodItem, RecipeRecommendation } from '../api/types';
+import {
+  getRagRecipeRecommendations,
+  homemadeRecipeId,
+  listMyRecipes,
+  listPantry,
+  rankMyRecipes,
+} from '../api/freshwise';
+import type { FoodItem, RecipeRecommendation, UserRecipe } from '../api/types';
 import EstimatedProgressBar, { useEstimatedProgress } from '../components/EstimatedProgressBar';
 
 function recipeTitle(recipe: RecipeRecommendation): string {
@@ -62,6 +69,44 @@ function IngredientChecklist({
   );
 }
 
+type RecipesTab = 'recommended' | 'mine';
+
+// "Recommended | My recipes" switch -- the green pill slides between the two.
+function TabSwitch({ tab, onChange }: { tab: RecipesTab; onChange: (next: RecipesTab) => void }) {
+  const [width, setWidth] = React.useState(0);
+  const slide = React.useRef(new Animated.Value(tab === 'mine' ? 1 : 0)).current;
+  React.useEffect(() => {
+    Animated.spring(slide, { toValue: tab === 'mine' ? 1 : 0, useNativeDriver: true, speed: 14, bounciness: 6 }).start();
+  }, [tab, slide]);
+  const pillWidth = width > 0 ? (width - 8) / 2 : 0;
+  const translateX = slide.interpolate({ inputRange: [0, 1], outputRange: [0, pillWidth] });
+  return (
+    <View style={styles.tabSwitch} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      {pillWidth > 0 ? (
+        <Animated.View pointerEvents="none" style={[styles.tabPill, { width: pillWidth, transform: [{ translateX }] }]} />
+      ) : null}
+      {(['recommended', 'mine'] as const).map((key) => {
+        const active = tab === key;
+        const Icon = key === 'recommended' ? Sparkles : ChefHat;
+        return (
+          <Pressable
+            key={key}
+            style={styles.tabOption}
+            onPress={() => onChange(key)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+          >
+            <Icon size={15} color={active ? colors.white : colors.textSecondary} strokeWidth={2.3} />
+            <Text style={[styles.tabText, active && styles.tabTextActive]}>
+              {key === 'recommended' ? 'Recommended' : 'My recipes'}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function RecipesScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -80,6 +125,63 @@ export default function RecipesScreen() {
   // Every recipe title shown since the last full reload, so "Show other
   // recipes" keeps moving on to new ones instead of repeating.
   const shownTitles = React.useRef<string[]>([]);
+
+  // Homemade recipes ("My recipes"), saved on the server (/v1/my-recipes).
+  const [tab, setTab] = React.useState<RecipesTab>(route.params?.tab === 'mine' ? 'mine' : 'recommended');
+  const [myRecipes, setMyRecipes] = React.useState<UserRecipe[]>([]);
+  const [myLoading, setMyLoading] = React.useState(true);
+  const [myError, setMyError] = React.useState<string | null>(null);
+  const [toast, setToast] = React.useState<string | null>(null);
+  const myRecipesRef = React.useRef<UserRecipe[]>([]);
+
+  const loadMine = React.useCallback(async () => {
+    try {
+      const mine = await listMyRecipes();
+      myRecipesRef.current = mine;
+      setMyRecipes(mine);
+      setMyError(null);
+      return mine;
+    } catch (e: any) {
+      setMyError(e?.message || 'Could not load your recipes.');
+      return myRecipesRef.current;
+    } finally {
+      setMyLoading(false);
+    }
+  }, []);
+
+  // Back from saving or deleting a recipe: switch to My recipes, say what
+  // happened, and clear the params so it only happens once.
+  React.useEffect(() => {
+    const params = route.params ?? {};
+    if (params.tab === 'mine') setTab('mine');
+    if (params.savedTitle) setToast(`${params.savedTitle} saved`);
+    if (params.deletedTitle) setToast(`${params.deletedTitle} deleted`);
+    if (params.tab || params.savedTitle || params.deletedTitle) {
+      navigation.setParams({ tab: undefined, savedTitle: undefined, deletedTitle: undefined });
+    }
+  }, [route.params?.tab, route.params?.savedTitle, route.params?.deletedTitle, navigation]);
+
+  React.useEffect(() => {
+    if (!toast) return;
+    const timeout = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(timeout);
+  }, [toast]);
+
+  // Refetch the saved recipes every time this tab comes back into view.
+  useFocusEffect(
+    React.useCallback(() => {
+      loadMine();
+    }, [loadMine]),
+  );
+
+  // Soon-to-expire pantry food first, same ranking as Recommended.
+  const rankedMine = React.useMemo(() => rankMyRecipes(myRecipes, inventory), [myRecipes, inventory]);
+  const openRecipe = (recipe: RecipeRecommendation) => {
+    const id = homemadeRecipeId(recipe);
+    const userRecipe = id ? myRecipes.find((r) => r.recipe_id === id) : undefined;
+    navigation.navigate('RecipeDetail', { recipe, ...(userRecipe ? { userRecipe } : {}) });
+  };
+  const openAddRecipe = () => navigation.navigate('AddRecipe');
 
   const load = React.useCallback(async (isRefresh = false, different = false) => {
     if (isRefresh) setRefreshing(true);
@@ -104,6 +206,7 @@ export default function RecipesScreen() {
         focusFoodName: focusFoodName ?? undefined,
       };
       const exclude = different ? shownTitles.current : [];
+      // Recommended is AI recipes only -- homemade recipes stay in My recipes.
       let recommended = await getRagRecipeRecommendations(usablePantry, { ...options, excludeTitles: exclude });
       let seenBefore = exclude;
       if (different && recommended.length === 0) {
@@ -163,7 +266,90 @@ export default function RecipesScreen() {
           </View>
         </View>
 
-        {loading ? (
+        <TabSwitch tab={tab} onChange={setTab} />
+
+        {tab === 'mine' ? (
+          <View style={styles.recipeSection}>
+            <View style={styles.mineHeader}>
+              <Text style={styles.sectionTitle}>
+                {rankedMine.length ? `Your recipes (${rankedMine.length})` : 'Your recipes'}
+              </Text>
+              <Pressable
+                style={({ pressed }) => [styles.addRecipeButton, pressed && { opacity: 0.85 }]}
+                onPress={openAddRecipe}
+              >
+                <Plus size={15} color={colors.white} strokeWidth={2.6} />
+                <Text style={styles.addRecipeText}>Add recipe</Text>
+              </Pressable>
+            </View>
+            {myLoading && !rankedMine.length ? (
+              <View style={styles.stateCard}>
+                <Text style={styles.stateText}>Loading your recipes…</Text>
+              </View>
+            ) : myError && !rankedMine.length ? (
+              <View style={[styles.stateCard, styles.errorCard]}>
+                <Text style={styles.errorTitle}>Your recipes could not load</Text>
+                <Text style={styles.errorText}>{myError}</Text>
+                <Pressable style={styles.retryButton} onPress={() => loadMine()}>
+                  <RefreshCcw size={16} color={colors.white} />
+                  <Text style={styles.retryText}>Try again</Text>
+                </Pressable>
+              </View>
+            ) : rankedMine.length === 0 ? (
+              <View style={styles.stateCard}>
+                <ChefHat size={24} color={colors.primary} />
+                <Text style={styles.stateTitle}>No recipes saved yet</Text>
+                <Text style={styles.stateText}>
+                  Save the dishes you cook at home. The ones that use food about to expire are listed first.
+                </Text>
+                <Pressable style={styles.retryButton} onPress={openAddRecipe}>
+                  <Plus size={16} color={colors.white} />
+                  <Text style={styles.retryText}>Add your first recipe</Text>
+                </Pressable>
+              </View>
+            ) : (
+              rankedMine.map((recipe) => {
+                const used = list(recipe.available_ingredients ?? recipe.matched_ingredients);
+                const urgent = list(recipe.expiring_ingredients_matched);
+                const total = list(recipe.ingredient_tokens).length;
+                const totalMinutes = Number(recipe.prep_minutes ?? 0) + Number(recipe.cook_minutes ?? 0);
+                return (
+                  <Pressable
+                    key={recipe.recipe_id}
+                    style={({ pressed }) => [styles.mineCard, pressed && styles.recipeCardPressed]}
+                    onPress={() => openRecipe(recipe)}
+                  >
+                    <View style={styles.mineIcon}>
+                      <ChefHat size={20} color={colors.primary} strokeWidth={2.3} />
+                    </View>
+                    <View style={styles.mineBody}>
+                      <Text style={styles.recipeName} numberOfLines={2}>{recipeTitle(recipe)}</Text>
+                      <View style={styles.chipRow}>
+                        <View style={styles.chip}>
+                          <CheckCircle2 size={13} color={colors.primary} />
+                          <Text style={styles.chipText}>Have {used.length} of {total}</Text>
+                        </View>
+                        {urgent.length ? (
+                          <View style={[styles.chip, styles.warnChip]}>
+                            <Leaf size={13} color={colors.expiryWarnText} />
+                            <Text style={styles.warnChipText}>Uses {shortIngredients(urgent, '')}</Text>
+                          </View>
+                        ) : null}
+                        {totalMinutes > 0 ? (
+                          <View style={styles.chip}>
+                            <Clock3 size={13} color={colors.primary} />
+                            <Text style={styles.chipText}>{totalMinutes} min</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    </View>
+                    <ChevronRight size={19} color={colors.primary} strokeWidth={2.4} />
+                  </Pressable>
+                );
+              })
+            )}
+          </View>
+        ) : loading ? (
           <View style={styles.stateCard}>
             <ChefHat size={24} color={colors.primary} strokeWidth={2.2} />
             <Text style={styles.stateTitle}>Building recommendations...</Text>
@@ -215,7 +401,7 @@ export default function RecipesScreen() {
                       isWebLayout ? styles.recipeCardWeb : { width: mobileCardWidth },
                       pressed && styles.recipeCardPressed,
                     ]}
-                    onPress={() => navigation.navigate('RecipeDetail', { recipe })}
+                    onPress={() => openRecipe(recipe)}
                   >
                     {recipe.image_url ? (
                       <Image
@@ -278,6 +464,13 @@ export default function RecipesScreen() {
           </View>
         )}
       </ScrollView>
+      {toast ? (
+        <View style={styles.toast} pointerEvents="none">
+          <View style={styles.toastPill}>
+            <Text style={styles.toastText}>{toast}</Text>
+          </View>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -592,6 +785,99 @@ const styles = StyleSheet.create({
   retryText: {
     fontFamily: fonts.bold,
     fontSize: 13,
+    color: colors.white,
+  },
+  tabSwitch: {
+    flexDirection: 'row',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    padding: 4,
+  },
+  tabPill: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    left: 4,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+  },
+  tabOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm + 2,
+  },
+  tabText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  tabTextActive: {
+    color: colors.white,
+  },
+  mineHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  addRecipeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  addRecipeText: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.white,
+  },
+  mineCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+  },
+  mineIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mineBody: {
+    flex: 1,
+    gap: spacing.sm,
+  },
+  toast: {
+    position: 'absolute',
+    bottom: 110,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    alignItems: 'center',
+  },
+  toastPill: {
+    backgroundColor: colors.toastSuccessBg,
+    borderRadius: radii.pill,
+    paddingVertical: spacing.md - 2,
+    paddingHorizontal: spacing.xl,
+    elevation: 4,
+  },
+  toastText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
     color: colors.white,
   },
   otherButton: {

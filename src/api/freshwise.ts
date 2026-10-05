@@ -34,6 +34,8 @@ import type {
   ShoppingItem,
   ShoppingList,
   UserProfile,
+  UserRecipe,
+  UserRecipeIngredient,
   WasteReason,
   WastePatternsOut,
   WeeklyWasteRow,
@@ -237,17 +239,19 @@ function withPantryPriority(recipe: RecipeRecommendation, rank: ExpiryRank): Rec
   const priorityItems = rank.urgent.length ? rank.urgent : dated.slice(0, 1);
   const priority = priorityItems.slice(0, 3).map((item) => item.name);
   const available = unique(rank.used.map((item) => item.name));
+  const listsOwnIngredients = recipe.source === 'local_malaysian_rag' || recipe.source === HOMEMADE_SOURCE;
   const missing = unique([
     ...(recipe.missing_ingredients ?? []),
-    ...(recipe.source === 'local_malaysian_rag' ? recipe.ingredient_tokens ?? [] : []),
+    ...(listsOwnIngredients ? recipe.ingredient_tokens ?? [] : []),
   ]).filter((ingredient) => !rank.covers(ingredient));
 
   let reason = recipe.reason;
-  if (recipe.source === 'local_malaysian_rag') {
+  if (listsOwnIngredients) {
     const first = rank.urgent[0];
     reason = first
       ? `Uses ${first.name} before it expires ${expiresIn(first.days_to_expiry as number)}.`
       : `Uses ${available.slice(0, 3).join(', ')} from your pantry.`;
+    if (recipe.source === HOMEMADE_SOURCE) reason = `Your recipe · ${reason}`;
   }
 
   return {
@@ -978,3 +982,127 @@ export const getItemNameSuggestions = (query: string, signal?: AbortSignal) =>
   USE_SHOPPING_MOCK
     ? mockNameSuggestions(query, () => listPantry())
     : request<NameSuggestion[]>(`/v1/shopping-list/name-suggestions?q=${encodeURIComponent(query)}`, { signal });
+
+// --- Homemade recipes ("My recipes") -- /v1/my-recipes ----------------------
+// Saved on the server. On the phone they are turned into the same
+// RecipeRecommendation shape as every other recipe, so the Recipes cards,
+// Recipe Detail and "Cook this" work for them unchanged.
+
+export const HOMEMADE_SOURCE = 'homemade';
+const HOMEMADE_ID_PREFIX = 'homemade-';
+
+export type NewUserRecipe = {
+  title: string;
+  servings?: number | null;
+  prep_minutes?: number | null;
+  cook_minutes?: number | null;
+  ingredients: UserRecipeIngredient[];
+  steps?: string[];
+  notes?: string | null;
+};
+
+// DUMMY DATA MODE for homemade recipes: set to true to try My recipes in
+// Expo Go before the backend is deployed. Recipes then live in memory on the
+// phone (gone when the app reloads). Set back to false before pushing.
+export const USE_MY_RECIPES_MOCK = false;
+
+let mockRecipes: UserRecipe[] = [];
+const mockDelay = <T,>(value: T): Promise<T> => new Promise((resolve) => setTimeout(() => resolve(value), 300));
+const mockNow = () => new Date().toISOString();
+function mockFind(recipeId: string): UserRecipe {
+  const found = mockRecipes.find((r) => r.recipe_id === recipeId);
+  if (!found) throw new ApiError(404, 'Recipe not found');
+  return found;
+}
+
+export const listMyRecipes = () =>
+  USE_MY_RECIPES_MOCK
+    ? mockDelay(mockRecipes.map((r) => ({ ...r })))
+    : request<UserRecipe[]>('/v1/my-recipes');
+
+export const getMyRecipe = async (recipeId: string) =>
+  USE_MY_RECIPES_MOCK ? mockDelay({ ...mockFind(recipeId) }) : request<UserRecipe>(`/v1/my-recipes/${recipeId}`);
+
+export const createMyRecipe = (recipe: NewUserRecipe) => {
+  if (USE_MY_RECIPES_MOCK) {
+    const created: UserRecipe = {
+      recipe_id: `mock-${Date.now()}`,
+      title: recipe.title,
+      servings: recipe.servings ?? null,
+      prep_minutes: recipe.prep_minutes ?? null,
+      cook_minutes: recipe.cook_minutes ?? null,
+      ingredients: recipe.ingredients,
+      steps: recipe.steps ?? [],
+      notes: recipe.notes ?? null,
+      created_at: mockNow(),
+      updated_at: mockNow(),
+    };
+    mockRecipes = [created, ...mockRecipes];
+    return mockDelay({ ...created });
+  }
+  return request<UserRecipe>('/v1/my-recipes', { method: 'POST', body: recipe });
+};
+
+export const updateMyRecipe = async (recipeId: string, patch: Partial<NewUserRecipe>) => {
+  if (USE_MY_RECIPES_MOCK) {
+    const updated = { ...mockFind(recipeId), ...patch, updated_at: mockNow() } as UserRecipe;
+    mockRecipes = [updated, ...mockRecipes.filter((r) => r.recipe_id !== recipeId)];
+    return mockDelay({ ...updated });
+  }
+  return request<UserRecipe>(`/v1/my-recipes/${recipeId}`, { method: 'PATCH', body: patch });
+};
+
+export const deleteMyRecipe = (recipeId: string) => {
+  if (USE_MY_RECIPES_MOCK) {
+    mockRecipes = mockRecipes.filter((r) => r.recipe_id !== recipeId);
+    return mockDelay(undefined);
+  }
+  return request<void>(`/v1/my-recipes/${recipeId}`, { method: 'DELETE' });
+};
+
+export const isHomemadeRecipe = (recipe: Pick<RecipeRecommendation, 'source'> | null | undefined) =>
+  recipe?.source === HOMEMADE_SOURCE;
+
+/** The /v1/my-recipes id behind a homemade card, or null for any other recipe. */
+export function homemadeRecipeId(recipe: Pick<RecipeRecommendation, 'recipe_id' | 'source'>): string | null {
+  return isHomemadeRecipe(recipe) && recipe.recipe_id.startsWith(HOMEMADE_ID_PREFIX)
+    ? recipe.recipe_id.slice(HOMEMADE_ID_PREFIX.length)
+    : null;
+}
+
+export function userRecipeToRecommendation(recipe: UserRecipe): RecipeRecommendation {
+  const names = recipe.ingredients.map((i) => i.name).filter(Boolean);
+  return {
+    recipe_id: `${HOMEMADE_ID_PREFIX}${recipe.recipe_id}`,
+    recipe_name: recipe.title,
+    title: recipe.title,
+    reason: 'Your own recipe.',
+    available_ingredients: [],
+    priority_ingredients: [],
+    ingredient_quantities: recipe.ingredients.map((i) => (i.amount ? `${i.amount} ${i.name}` : i.name)),
+    steps: recipe.steps,
+    image_url: null,
+    image_alt: `Serving suggestion for ${recipe.title}`,
+    prep_minutes: recipe.prep_minutes,
+    cook_minutes: recipe.cook_minutes,
+    source: HOMEMADE_SOURCE,
+    ai_enhanced: false,
+    score: 0,
+    ingredient_tokens: names,
+    tags: ['Homemade'],
+    servings: recipe.servings,
+    serving_size: null,
+    matched_ingredients: [],
+    missing_ingredients: names,
+    expiring_ingredients_matched: [],
+    coverage_score: 0,
+    expiry_weight_score: 0,
+    total_score: 0,
+  };
+}
+
+/** "My recipes" tab: every homemade recipe, the ones using soon-to-expire
+ *  pantry food first (same expiry-first ranking as Recommended). */
+export function rankMyRecipes(recipes: UserRecipe[], inventory: FoodItem[]): RecipeRecommendation[] {
+  return rankRecipeRecommendations(recipes.map(userRecipeToRecommendation), inventory);
+}

@@ -408,3 +408,27 @@ class DismissedSuggestion(Base):
     )
     name_key: Mapped[str] = mapped_column(String(100), primary_key=True)
     dismissed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class UserRecipe(Base):
+    """A recipe the household wrote themselves ("My recipes"). See db/005_user_recipe.sql."""
+
+    __tablename__ = "user_recipe"
+
+    recipe_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("user_profile.user_id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    servings: Mapped[int | None] = mapped_column(SmallInteger)
+    prep_minutes: Mapped[int | None] = mapped_column(SmallInteger)
+    cook_minutes: Mapped[int | None] = mapped_column(SmallInteger)
+    # [{"name": "Chicken", "amount": "500 g"}, ...]
+    ingredients: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
+    # ["Marinate the chicken", "Fry until golden", ...]
+    steps: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
+    notes: Mapped[str | None] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
