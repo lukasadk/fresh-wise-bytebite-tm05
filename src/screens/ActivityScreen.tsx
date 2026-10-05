@@ -69,11 +69,19 @@ import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
 import FoodValueWastedCard from '../components/FoodValueWastedCard';
 import { ChevronRight, Refrigerator, Snowflake, Sun } from '../icons/NavIcons';
-import { getDashboardSummary, getWeeklyWaste, getWastePatterns, getAlternativesFromFoodkeeper } from '../api/freshwise';
+import {
+  getDashboardSummary,
+  getWeeklyWaste,
+  getWastePatterns,
+  getAlternativesFromFoodkeeper,
+  listPurchaseInsights,
+} from '../api/freshwise';
 import type { FoodkeeperAlternative } from '../api/freshwise';
 import { ApiError } from '../api/client';
 import { categoryIconFor, foodIconFor } from '../icons/FoodIcons';
 import type { DashboardSummary, WeeklyWasteRow, WasteReason, WastePatternsOut } from '../api/types';
+import type { PurchaseRecommendation } from '../data/purchaseStates';
+import { BUYING_HABITS_ROUTE } from '../data/purchaseStates';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -2027,6 +2035,76 @@ function useWeekSummary() {
   return { state, retry: load };
 }
 
+type BuyingHabitsSummaryState =
+  | { status: 'loading' }
+  | { status: 'error' }
+  | { status: 'ready'; items: PurchaseRecommendation[] };
+
+function useBuyingHabitsSummary() {
+  const [state, setState] = useState<BuyingHabitsSummaryState>({ status: 'loading' });
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      setState({ status: 'loading' });
+      listPurchaseInsights()
+        .then((items) => {
+          if (active) setState({ status: 'ready', items });
+        })
+        .catch(() => {
+          if (active) setState({ status: 'error' });
+        });
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+
+  return state;
+}
+
+function BuyingHabitsSummaryCard({
+  state,
+  onViewAll,
+}: {
+  state: BuyingHabitsSummaryState;
+  onViewAll: () => void;
+}) {
+  const topItem = state.status === 'ready'
+    ? state.items
+        .filter((item) => item.has_outcomes && item.purchase_count >= 3)
+        .sort((a, b) => (b.average_waste_rate ?? -1) - (a.average_waste_rate ?? -1))[0]
+    : undefined;
+
+  return (
+    <View style={styles.buyingHabitsCard}>
+      <View style={styles.buyingHabitsHeading}>
+        <View style={styles.buyingHabitsCopy}>
+          <Text style={styles.buyingHabitsTitle}>Buying Habits</Text>
+          <Text style={styles.buyingHabitsBody}>
+            {state.status === 'loading'
+              ? 'Calculating from your last 8 weeks…'
+              : state.status === 'error'
+                ? 'Buying habits are temporarily unavailable.'
+                : topItem
+                  ? `${topItem.name}: ${Math.round((topItem.average_waste_rate ?? 0) * 100)}% waste rate · ${topItem.status_label}`
+                  : 'Log what you eat and waste to see your buying habits.'}
+          </Text>
+        </View>
+        {state.status === 'loading' ? <ActivityIndicator color={colors.primary} /> : null}
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onViewAll}
+        style={({ pressed }) => [styles.viewAllButton, pressed && { opacity: 0.82 }]}
+      >
+        <Text style={styles.viewAllText}>View All</Text>
+        <ChevronRight size={18} color={colors.primary} />
+      </Pressable>
+    </View>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Screen
 // ---------------------------------------------------------------------------
@@ -2044,6 +2122,7 @@ export default function ActivityScreen() {
   const { state: overviewState, retry: retryOverview } = useWeekSummary();
   const { state: patternsState, retry: retryPatterns } = usePatterns();
   const { state: trendsState, retry: retryTrends } = useTrends();
+  const buyingHabitsState = useBuyingHabitsSummary();
 
   const switchTab = (tab: InsightsTab) => {
     setShowAlternatives(false);
@@ -2128,6 +2207,13 @@ export default function ActivityScreen() {
                     <EmptyThisWeek />
                   </>
                 )}
+
+                {overviewState.status !== 'loading' ? (
+                  <BuyingHabitsSummaryCard
+                    state={buyingHabitsState}
+                    onViewAll={() => navigation.navigate(BUYING_HABITS_ROUTE)}
+                  />
+                ) : null}
               </>
             )}
 
@@ -2353,6 +2439,40 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     paddingVertical: spacing.md,
   },
+  buyingHabitsCard: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.xl,
+    backgroundColor: colors.card,
+    padding: spacing.xl,
+  },
+  buyingHabitsHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  buyingHabitsCopy: { flex: 1 },
+  buyingHabitsTitle: {
+    color: colors.textPrimary,
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.title,
+  },
+  buyingHabitsBody: {
+    marginTop: spacing.sm,
+    color: colors.textSecondary,
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    lineHeight: 21,
+  },
+  viewAllButton: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  viewAllText: { color: colors.primary, fontFamily: fonts.bold, fontSize: fontSize.md },
   chartCard: {
     backgroundColor: colors.card,
     borderWidth: 1,

@@ -200,6 +200,16 @@ export function mockSetShoppingItemStatus(listItemId: string, status: ShoppingIt
   return wait({ ...updated });
 }
 
+export function mockUpdateShoppingItemQuantity(listItemId: string, quantity: number): Promise<ShoppingItem> {
+  const all = [...toBuy, ...bought];
+  const found = all.find((r) => r.list_item_id === listItemId);
+  if (!found) return Promise.reject(new Error('Shopping list item not found'));
+  const updated: ShoppingItem = { ...found, quantity, remaining_qty: quantity, source: 'manual' };
+  toBuy = toBuy.map((r) => (r.list_item_id === listItemId ? updated : r));
+  bought = bought.map((r) => (r.list_item_id === listItemId ? updated : r));
+  return wait({ ...updated });
+}
+
 export function mockRemoveShoppingItem(listItemId: string): Promise<void> {
   toBuy = toBuy.filter((r) => r.list_item_id !== listItemId);
   return wait(undefined);

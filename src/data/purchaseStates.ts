@@ -8,6 +8,8 @@ import { colors } from '../theme/theme';
  * PurchaseInsight screen is registered in App.tsx.
  */
 export const PURCHASE_INSIGHT_ROUTE = 'PurchaseInsight' as const;
+export const BUYING_HABITS_ROUTE = 'BuyingHabits' as const;
+export const NEXT_SHOP_ROUTE = 'NextShop' as const;
 
 export type PurchaseState =
   | 'BUY_MORE'
@@ -20,19 +22,45 @@ export type PurchaseInsightParams = {
   category: string | null;
 };
 
+export type NextShopParams = PurchaseInsightParams;
+
 export type PurchaseRecommendation = PurchaseInsightParams & {
+  food_name: string;
   unit: string | null;
   state: PurchaseState;
+  /** Technical-document alias of state; both are intentionally identical. */
+  recommendation: PurchaseState;
   recommended_qty: number;
   reason: string;
-  /** Purchases of this item in the last 8 weeks. Below 3 the Item Purchase
-   *  Insight page shows "Not enough history" (AC 7.1.4, reached from AC 9.4.3).
-   *  Optional so an older backend without it keeps working. */
+  /** Distinct purchase dates observed in the latest eight-week window. */
   purchase_count_8w?: number;
+  usual_purchase: number;
+  predicted_demand: number;
+  current_inventory: number;
+  average_consumption: number | null;
+  average_wasted: number;
+  average_weekly_consumption: number;
+  /** wasted / (consumed + wasted), per Epic 7 AC 7.1.1. */
+  average_waste_rate: number | null;
+  /** Secondary technical-document measure; the board UI uses average_waste_rate. */
+  purchase_waste_rate: number | null;
+  waste_risk: 'unknown' | 'low' | 'medium' | 'high';
+  over_purchase_detected: boolean;
+  habit_status: 'possible_over_purchase' | 'on_track' | 'still_learning';
+  status_label: 'Possible Over-Purchase' | 'On Track' | 'Early Estimate';
+  recommendation_available: boolean;
+  has_outcomes: boolean;
+  purchase_count: number;
+  completed_cycles: number;
+  average_purchase_interval_days: number | null;
+  days_until_next_shop: number;
+  days_since_last_purchase: number | null;
+  is_cold_start: boolean;
+  evidence_window_days: 56;
+  method: 'rule_baseline_v1' | 'rule_baseline_v2_early_estimate';
+  data_quality: 'no_outcomes' | 'limited' | 'sufficient';
+  warnings: string[];
 };
-
-/** AC 7.1.4: purchases needed in the last 8 weeks before showing insights. */
-export const MIN_PURCHASES_FOR_INSIGHT = 3;
 
 export type PurchaseStateStyle = { label: string; backgroundColor: string; textColor: string };
 
@@ -40,7 +68,7 @@ export const PURCHASE_STATE_STYLE: Record<PurchaseState, PurchaseStateStyle> = {
   BUY_MORE: {
     label: 'Buy more',
     backgroundColor: colors.expirySafeBg,
-    textColor: colors.expirySafeText,
+    textColor: colors.statusFresh,
   },
   KEEP_SAME: {
     label: 'Keep same',
@@ -50,12 +78,12 @@ export const PURCHASE_STATE_STYLE: Record<PurchaseState, PurchaseStateStyle> = {
   BUY_LESS: {
     label: 'Buy less',
     backgroundColor: colors.expiryWarnBg,
-    textColor: colors.expiryWarnText,
+    textColor: colors.statusSoon,
   },
   DO_NOT_BUY_YET: {
-    label: 'Skip for now',
+    label: 'Do not buy yet',
     backgroundColor: colors.expiryUrgentBg,
-    textColor: colors.expiryUrgentText,
+    textColor: colors.statusToday,
   },
 };
 

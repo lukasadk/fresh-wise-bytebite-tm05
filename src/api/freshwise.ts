@@ -13,6 +13,7 @@ import {
   mockRemoveShoppingItem,
   mockSetShoppingItemStatus,
   mockTickAfterPantrySave,
+  mockUpdateShoppingItemQuantity,
 } from '../data/shoppingMock';
 import { selectMalaysianRecipeHints } from '../data/malaysianRecipeRag';
 import { getDeviceTimeZone } from '../data/timezone';
@@ -49,7 +50,6 @@ const groceryAiBaseUrl = (
 const groceryAiServiceKey = (process.env.EXPO_PUBLIC_GROCERY_AI_SERVICE_KEY ?? '').trim();
 const groceryAiTimeoutMs = 60_000;
 const groceryAiSharesMainApi = groceryAiBaseUrl === API_BASE_URL.replace(/\/+$/, '');
-
 type RecipeRagOptions = {
   limit?: number;
   language?: 'en' | 'zh';
@@ -580,6 +580,17 @@ export const getFoodValueWasted = (month?: string) => {
 export const getPurchaseInsight = (name: string) =>
   request<PurchaseRecommendation>(`/v1/purchase-insights/${encodeURIComponent(name)}`);
 
+export const listPurchaseInsights = () =>
+  request<PurchaseRecommendation[]>('/v1/purchase-insights');
+
+/** Auditable next-purchase recommendation using the authenticated household's
+ * real purchase/consumption/waste history. GET above remains for older builds. */
+export const requestPurchaseRecommendation = (foodName: string) =>
+  request<PurchaseRecommendation>('/v1/purchase-insights/recommend', {
+    method: 'POST',
+    body: { food_name: foodName },
+  });
+
 /** Alternatives view (ActivityScreen → Patterns → "View better alternatives").
  *
  *  There is no dedicated "alternatives" endpoint -- instead this function
@@ -924,7 +935,6 @@ export const searchProducts = (q: string, maxNovaGroup?: number) => {
   if (maxNovaGroup) params.set('max_nova_group', String(maxNovaGroup));
   return request<OpenFoodFactsProduct[]>(`/v1/reference/product?${params}`, { anonymous: true });
 };
-
 // --- Smart Shopping List (ShoppingListScreen, AddShoppingItemScreen) -- Epic 8
 
 /** Suggested rows come from Epic 7 on the server -- this screen never builds
@@ -968,6 +978,14 @@ export const setShoppingItemStatus = (listItemId: string, status: ShoppingItem['
   USE_SHOPPING_MOCK
     ? mockSetShoppingItemStatus(listItemId, status)
     : request<ShoppingItem>(`/v1/shopping-list/items/${listItemId}`, { method: 'PATCH', body: { status } });
+
+export const updateShoppingItemQuantity = (listItemId: string, quantity: number) =>
+  USE_SHOPPING_MOCK
+    ? mockUpdateShoppingItemQuantity(listItemId, quantity)
+    : request<ShoppingItem>(`/v1/shopping-list/items/${listItemId}`, {
+        method: 'PATCH',
+        body: { quantity },
+      });
 
 /** Only called once the 5-second Undo window has passed (AC 8.1.6). */
 export const removeShoppingItem = (listItemId: string) =>

@@ -13,11 +13,9 @@
 // Both devices must be on the same Wi-Fi, and Windows Firewall must allow
 // inbound :8000 (it prompts the first time; if you missed it, allow python.exe).
 //
-// Here this is actually a Tailscale IP, not a plain LAN IP -- backend and phone
-// are reached over Tailscale, not local Wi-Fi. Confirm this is still correct
-// with `tailscale ip -4` on the machine running uvicorn before assuming it's stale.
-
-const LAN_IP = '100.108.18.20'; // only used if no EXPO_PUBLIC_API_BASE_URL is set
+// Current development machine LAN address. Production APKs use the Railway URL
+// below; this value is only a same-Wi-Fi reference for local development.
+const LAN_IP = '192.168.68.105'; // only used if no EXPO_PUBLIC_API_BASE_URL is set
 
 // Read from a gitignored .env at the repo ROOT (see .env.example), so each
 // developer points at their own backend without editing this shared file.

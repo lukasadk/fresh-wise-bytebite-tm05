@@ -13,6 +13,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app/ ./app/
+# Keep the public APK copy explicit: a missing release file now fails the
+# Railway image build instead of producing a healthy API with a dead link.
+COPY app/static/downloads/FreshWise-v1.4.5-early-estimate-20261005.apk ./app/static/downloads/FreshWise-v1.4.5-early-estimate-20261005.apk
 COPY src/ ./src/
 COPY models/ ./models/
 COPY data/ ./data/

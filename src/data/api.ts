@@ -1,7 +1,7 @@
 // Thin fetch wrapper for the FreshWise FastAPI + Postgres backend.
-// Reached over Tailscale -- see backend/README.md for how to point this at your
-// teammate's actual machine (http vs https, which IP). "localhost" only works if
-// the API is running on the same physical device as the app, which it usually isn't.
+// Production requests go to the Railway backend configured in src/api/config.ts.
+// "localhost" only works if the API is running on the same physical device as
+// the app, which it usually is not.
 import { getDeviceId } from './device';
 
 // URL and key come from src/api/config.ts -- imported, not redeclared. Two

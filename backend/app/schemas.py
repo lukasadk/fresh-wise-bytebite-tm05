@@ -186,6 +186,71 @@ class ConsumptionWasteLogOut(BaseModel):
     item_unit: str | None = None
 
 
+# --- Purchase recommendation / over-purchase insight -----------------------
+
+PurchaseState = Literal["BUY_MORE", "KEEP_SAME", "BUY_LESS", "DO_NOT_BUY_YET"]
+PurchaseWasteRisk = Literal["unknown", "low", "medium", "high"]
+PurchaseDataQuality = Literal["no_outcomes", "limited", "sufficient"]
+PurchaseHabitStatus = Literal["possible_over_purchase", "on_track", "still_learning"]
+
+
+class PurchaseRecommendationRequest(BaseModel):
+    """Request one recommendation from the authenticated household history."""
+
+    food_name: str = Field(min_length=1, max_length=100)
+
+    @field_validator("food_name")
+    @classmethod
+    def _strip_food_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("food_name must not be blank")
+        return value
+
+
+class PurchaseRecommendationOut(BaseModel):
+    """Auditable recommendation built only from recorded household events.
+
+    The first six fields retain the original Epic 7/Epic 8 contract.  The
+    remaining fields expose the quantities used by the rule baseline so the
+    app can explain a recommendation without asking an LLM to invent facts.
+    """
+
+    name: str
+    food_name: str
+    category: str
+    unit: str | None
+    state: PurchaseState
+    recommendation: PurchaseState
+    recommended_qty: float
+    reason: str
+    usual_purchase: float
+    predicted_demand: float
+    current_inventory: float
+    average_consumption: float | None
+    average_wasted: float
+    average_weekly_consumption: float
+    average_waste_rate: float | None
+    purchase_waste_rate: float | None
+    waste_risk: PurchaseWasteRisk
+    over_purchase_detected: bool
+    habit_status: PurchaseHabitStatus
+    status_label: str
+    recommendation_available: bool
+    has_outcomes: bool
+    purchase_count: int = Field(ge=0)
+    purchase_count_8w: int | None = Field(default=None, ge=0)
+    completed_cycles: int = Field(ge=0)
+    average_purchase_interval_days: float | None
+    days_until_next_shop: float
+    days_since_last_purchase: int | None
+    is_cold_start: bool
+    evidence_window_days: Literal[56]
+    method: Literal["rule_baseline_v1", "rule_baseline_v2_early_estimate"]
+    data_quality: PurchaseDataQuality
+    warnings: list[str] = Field(default_factory=list)
+
+
 # --- Dashboard -------------------------------------------------------------
 
 
@@ -515,7 +580,14 @@ class NameSuggestionOut(BaseModel):
 
 
 class ShoppingItemUpdate(BaseModel):
-    status: ShoppingItemStatus
+    status: ShoppingItemStatus | None = None
+    quantity: float | None = Field(default=None, gt=0, le=99)
+
+    @model_validator(mode="after")
+    def _at_least_one_change(self):
+        if self.status is None and self.quantity is None:
+            raise ValueError("Provide status or quantity")
+        return self
 
 
 class DuplicateStockOut(BaseModel):

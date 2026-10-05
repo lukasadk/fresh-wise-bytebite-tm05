@@ -156,6 +156,14 @@ care about**. The `ref_*` reference tables are left alone.
 | `GET /v1/reference/foodkeeper` | Storage guidance by `canonical_food_name` |
 | `GET /v1/reference/price` | Malaysia market price reference |
 | `GET /v1/reference/product/{barcode}` | Open Food Facts product lookup |
+| `GET /v1/purchase-insights` | All auditable next-purchase recommendations for the household |
+| `GET /v1/purchase-insights/{item_name}` | Backward-compatible item-level purchase insight |
+| `POST /v1/purchase-insights/recommend` | Recommend one item from `{\"food_name\": \"...\"}` |
+| `POST /api/shopping/recommend` | Alias matching the purchase-recommendation technical design |
+| `GET /v1/shopping-list` | Current Smart Shopping List rows |
+| `POST /v1/shopping-list/items` | Add a manual shopping-list item, with duplicate-stock warning |
+| `PATCH /v1/shopping-list/items/{list_item_id}` | Update status or user-confirmed quantity |
+| `DELETE /v1/shopping-list/items/{list_item_id}` | Remove one shopping-list item |
 
 Full request/response schemas: `/docs` (Swagger) once the server is running.
 

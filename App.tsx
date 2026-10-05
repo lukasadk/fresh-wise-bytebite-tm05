@@ -46,6 +46,8 @@ import ShoppingListScreen from './src/screens/ShoppingListScreen';
 import AddShoppingItemScreen from './src/screens/AddShoppingItemScreen';
 import FoodValueWastedScreen from './src/screens/FoodValueWastedScreen';
 import AddRecipeScreen from './src/screens/AddRecipeScreen';
+import BuyingHabitsScreen from './src/screens/BuyingHabitsScreen';
+import NextShopScreen from './src/screens/NextShopScreen';
 import BottomNav from './src/components/BottomNav';
 import LandingScreen from './src/components/LandingScreen';
 import ConfirmDialog from './src/components/ConfirmDialog';
@@ -53,7 +55,11 @@ import { colors, fonts, radii, spacing } from './src/theme/theme';
 import { registerDevice } from './src/api/freshwise';
 import { isFreshInstall, checkClipboardForDeviceId, adoptDeviceId, copyDeviceIdToClipboard } from './src/api/device';
 import { registerPushNotificationsAsync } from './src/notifications/pushRegistration';
-import { PURCHASE_INSIGHT_ROUTE } from './src/data/purchaseStates';
+import {
+  BUYING_HABITS_ROUTE,
+  NEXT_SHOP_ROUTE,
+  PURCHASE_INSIGHT_ROUTE,
+} from './src/data/purchaseStates';
 import {
   canEnterApp,
   STARTUP_FONT_FAIL_OPEN_MS,
@@ -311,8 +317,10 @@ export default function App() {
                     <Stack.Screen name="MarkConsumed" component={MarkConsumedScreen} />
                     <Stack.Screen name="MarkWasted" component={MarkWastedScreen} />
                     <Stack.Screen name="WasteRecorded" component={WasteRecordedScreen} />
+                    <Stack.Screen name={BUYING_HABITS_ROUTE} component={BuyingHabitsScreen} />
                     <Stack.Screen name={PURCHASE_INSIGHT_ROUTE} component={PurchaseInsightScreen} />
                     <Stack.Screen name="FoodValueWasted" component={FoodValueWastedScreen} />
+                    <Stack.Screen name={NEXT_SHOP_ROUTE} component={NextShopScreen} />
                     {/* Epic 8 "+ Add Item" bottom sheet. transparentModal (not RN's
                         <Modal>) so Food Detail can open on top of it and "back"
                         returns here with the form still filled in (AC 8.2.3). */}

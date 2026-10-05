@@ -14,6 +14,7 @@ from app.db import AsyncSessionLocal, engine
 from app.notifications import run_daily_expiry_check
 from app.routers import dashboard, diet, food_value, logs, pantry, recipes, reference, shopping, user_recipes, users
 from app.purchase_insights import router as purchase_insights_router
+from app.purchase_insights import shopping_router as purchase_shopping_router
 from app.security import ApiKeyMiddleware, RateLimitMiddleware
 from wastewise_grocery_vlm.main import app as grocery_ai_app
 
@@ -68,10 +69,11 @@ app.include_router(dashboard.router)
 app.include_router(diet.router)
 app.include_router(recipes.router)
 app.include_router(reference.router)
-app.include_router(purchase_insights_router)
 app.include_router(shopping.router)
 app.include_router(food_value.router)
 app.include_router(user_recipes.router)
+app.include_router(purchase_insights_router)
+app.include_router(purchase_shopping_router)
 
 AI_GATEWAY_ROUTE_PREFIXES = (
     "/v1/api-recognition/",
@@ -125,12 +127,22 @@ async def _apply_initial_schema_if_needed() -> None:
 
     async with engine.begin() as conn:
         exists = await conn.scalar(text("SELECT to_regclass('public.user_profile') IS NOT NULL"))
-        if exists:
-            return
-
         raw = await conn.get_raw_connection()
-        await raw.driver_connection.execute(schema_path.read_text(encoding="utf-8"))
-        print("[startup] applied initial database schema")
+        if not exists:
+            await raw.driver_connection.execute(schema_path.read_text(encoding="utf-8"))
+            print("[startup] applied initial database schema")
+
+        # The initial-schema bootstrap deliberately does nothing on a populated
+        # production database. Apply explicitly idempotent incremental DDL too,
+        # otherwise a new API route can deploy successfully but fail at runtime
+        # because its table was added after the database was first created.
+        migrations = ("003_shopping_list.sql",)
+        for migration_name in migrations:
+            migration_path = schema_path.parent / migration_name
+            if not migration_path.exists():
+                raise RuntimeError(f"Missing database migration: {migration_path}")
+            await raw.driver_connection.execute(migration_path.read_text(encoding="utf-8"))
+            print(f"[startup] checked migration {migration_name}")
 
 
 async def _apply_food_value_migration() -> None:

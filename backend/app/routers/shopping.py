@@ -234,10 +234,17 @@ async def update_shopping_item(
     user: UserProfile = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Manual tick / untick (AC 8.3.5)."""
+    """Manual tick / untick (AC 8.3.5), or an Epic 7 quantity edit."""
     row = await _get_owned_row(list_item_id, user, db)
-    row.status = body.status
-    row.bought_at = datetime.now(timezone.utc) if body.status == "bought" else None
+    if body.status is not None:
+        row.status = body.status
+        row.bought_at = datetime.now(timezone.utc) if body.status == "bought" else None
+    if body.quantity is not None:
+        row.quantity = body.quantity
+        row.remaining_qty = body.quantity
+        # A user-edited suggestion must not be overwritten by the next
+        # recommendation sync. It is now an explicit user choice.
+        row.source = "manual"
     await db.commit()
     await db.refresh(row)
     return ShoppingItemOut.model_validate(row)

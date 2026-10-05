@@ -233,6 +233,21 @@ async def test_manual_tick_untick_and_clear(client, registered_device):
     assert data["bought"] == [] and data["to_buy"] == []
 
 
+async def test_user_can_edit_recommended_quantity(client, registered_device, monkeypatch):
+    _fake_epic7(monkeypatch, [{"name": "Milk", "category": "Dairy", "state": "BUY_LESS", "recommended_qty": 2}])
+    row = (await _list(client, registered_device))["to_buy"][0]
+    url = f"/v1/shopping-list/items/{row['list_item_id']}"
+
+    resp = await client.patch(url, json={"quantity": 1}, headers=_h(registered_device))
+
+    assert resp.status_code == 200
+    assert resp.json()["quantity"] == 1
+    assert resp.json()["remaining_qty"] == 1
+    assert resp.json()["source"] == "manual"
+    # A later list refresh must retain the user's explicit quantity.
+    assert (await _list(client, registered_device))["to_buy"][0]["quantity"] == 1
+
+
 async def test_rows_isolated_between_devices(client, registered_device):
     row = (await _add(client, registered_device, "Bread", category="Pantry")).json()
     other = str(uuid.uuid4())
