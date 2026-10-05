@@ -1,0 +1,119 @@
+item_code,month,name_en,aliases,sold_as,item,unit,median_price_rm,observations,price_quality,source_url,license
+1,2026-08-01,chicken,whole chicken|fresh chicken|ayam|ayam bersih,loose,AYAM BERSIH - STANDARD,1kg,9.29,21185,raw_min_contaminated|raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1551,2026-08-01,chicken breast,breast chicken|dada ayam|chicken breasts,loose,DADA AYAM (CHICKEN KEEL) (1KG),1kg,13.5,2283,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1804,2026-08-01,chicken wings,chicken wing|kepak ayam,loose,KEPAK AYAM (CHICKEN WING) (1KG),1kg,15.49,4216,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1550,2026-08-01,chicken drumsticks,chicken drumstick|drumstick|drumsticks|paha ayam,loose,PAHA AYAM (CHICKEN DRUMSTICK),1kg,14.99,2886,raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1552,2026-08-01,chicken thighs,chicken thigh|thigh ayam,loose,THIGH AYAM,1kg,11.99,1886,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1553,2026-08-01,chicken legs,chicken leg|whole leg,loose,WHOLE LEG AYAM,1kg,15.2,3871,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1431,2026-08-01,beef,fresh beef|local beef|daging lembu,loose,DAGING LEMBU TEMPATAN (BAHAGIAN 1 DAGING PAHA (KECUALI BATANG PINANG - TENDERLOIN),1kg,36.0,394,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1914,2026-08-01,buffalo meat,daging kerbau,loose,DAGING KERBAU IMPORT (INDIA) (BLOCK),1kg,23.99,942,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+9,2026-08-01,mutton,lamb|kambing|daging kambing,loose,DAGING KAMBING BEBIRI IMPORT BERTULANG (MUTTON) (AUSTRALIA - KOTAK),1kg,33.59,716,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1380,2026-08-01,pork,daging babi,loose,DAGING BABI (DAGING & LEMAK / LEAN & FAT),1kg,32.0,200,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1379,2026-08-01,pork belly,,loose,DAGING BABI (PERUT / BELLY),1kg,40.0,320,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1476,2026-08-01,mackerel,indian mackerel|kembung|ikan kembung,loose,IKAN KEMBUNG (ANTARA 8 HINGGA 12 EKOR SEKILOGRAM),1kg,16.0,10457,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1921,2026-08-01,tilapia,red tilapia|ikan tilapia,loose,IKAN TILAPIA MERAH (ANTARA 2 HINGGA 5 EKOR SEKILOGRAM),1kg,16.0,12963,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+88,2026-08-01,catfish,keli|ikan keli,loose,IKAN KELI (ANTARA 2 HINGGA 5 EKOR SEKILOGRAM),1kg,9.99,14575,raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1437,2026-08-01,sea bass,siakap|ikan siakap|barramundi,loose,IKAN SIAKAP (ANTARA 2 HINGGA 4 EKOR SEKILOGRAM),1kg,20.0,2262,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1475,2026-08-01,white pomfret,pomfret|bawal putih|ikan bawal putih,loose,IKAN BAWAL PUTIH (ANTARA 2 HINGGA 5 EKOR SEKILOGRAM),1kg,47.9,2503,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+43,2026-08-01,black pomfret,bawal hitam|ikan bawal hitam,loose,IKAN BAWAL HITAM (ANTARA 2 HINGGA 5 EKOR SEKILOGRAM),1kg,26.99,2411,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1554,2026-08-01,red snapper,ikan merah,loose,IKAN MERAH (KEPINGAN),1kg,52.0,1429,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1438,2026-08-01,spanish mackerel,tenggiri|ikan tenggiri,loose,IKAN TENGGIRI BATANG (KEPINGAN),1kg,48.0,1365,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+70,2026-08-01,scad,selar|ikan selar|yellowtail scad,loose,IKAN SELAR PELATA (≤ 7 EKOR SEKILOGRAM),1kg,18.9,16377,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+47,2026-08-01,hardtail scad,cencaru|ikan cencaru|torpedo scad,loose,IKAN CENCARU (ANTARA 4 HINGGA 6 EKOR SEKILOGRAM),1kg,10.0,17685,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1436,2026-08-01,threadfin bream,kerisi|ikan kerisi,loose,IKAN KERISI (ANTARA 5 HINGGA 10 EKOR SEKILOGRAM),1kg,15.9,16162,raw_min_contaminated|raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+845,2026-08-01,squid,sotong|calamari,loose,SOTONG (≥ 6 EKOR SEKILOGRAM),1kg,36.0,13887,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+847,2026-08-01,crab,flower crab|ketam|blue swimming crab,loose,KETAM RENJONG/BUNGA (ANTARA 5 HINGGA 8 EKOR SEKILOGRAM),1kg,36.9,9315,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1555,2026-08-01,prawns,prawn|shrimp|shrimps|udang,loose,UDANG PUTIH/VANNAMEI (TERNAK) (ANTARA 41 HINGGA 60 EKOR SEKILOGRAM),1kg,33.99,17344,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+850,2026-08-01,tiger prawns,tiger prawn|udang harimau,loose,UDANG HARIMAU (ANTARA 20 HINGGA 30 EKOR SEKILOGRAM),1kg,39.9,748,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1562,2026-08-01,dried shrimp,dried shrimps|udang kering,pack,UDANG KERING,100 g,7.9,1685,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1563,2026-08-01,dried squid,sotong kering,loose,SOTONG KERING (SAIZ SERDAHANA),1kg,93.9,335,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1109,2026-08-01,eggs,egg|chicken eggs|chicken egg|telur|telur ayam,pack,TELUR AYAM GRED A,30 biji,14.4,15591,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1556,2026-08-01,spinach,bayam|green spinach|amaranth,loose,BAYAM HIJAU,1kg,5.0,17401,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1479,2026-08-01,broccoli,brokoli,loose,BROKOLI,1kg,11.5,3010,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+94,2026-08-01,red chilli,chilli|chili|chillies|chilies|red chili|cili merah,loose,CILI MERAH - MINYAK,1kg,12.99,17746,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+92,2026-08-01,green chilli,green chili|cili hijau,loose,CILI HIJAU,1kg,12.0,21157,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+716,2026-08-01,bird's eye chilli,bird eye chilli|cili padi|chili padi,loose,CILI API/PADI HIJAU,1kg,27.95,1196,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+95,2026-08-01,ginger,halia,loose,HALIA BASAH (TUA),1kg,7.99,28244,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+96,2026-08-01,okra,lady's finger|ladies finger|lady finger|bendi,loose,KACANG BENDI,1kg,9.0,23724,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+97,2026-08-01,french beans,green beans|buncis,loose,KACANG BUNCIS,1kg,12.0,22267,raw_min_contaminated|raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+98,2026-08-01,long beans,snake beans|kacang panjang,loose,KACANG PANJANG,1kg,8.0,23117,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1560,2026-08-01,kailan,kai lan|gai lan|chinese kale,loose,KAILAN,1kg,9.29,15698,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1559,2026-08-01,kangkung,water spinach|morning glory,loose,KANGKUNG,1kg,5.0,19482,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1458,2026-08-01,cabbage,round cabbage|kubis,loose,KUBIS BULAT IMPORT (BEIJING),1kg,4.9,23000,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1481,2026-08-01,cauliflower,kubis bunga,loose,KUBIS BUNGA (CAULIFLOWER),1kg,8.0,25857,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1412,2026-08-01,chinese cabbage,napa cabbage|wombok|kubis panjang,loose,KUBIS PANJANG CHINA - BESAR,1kg,4.49,31,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+108,2026-08-01,turmeric,fresh turmeric|kunyit,loose,KUNYIT HIDUP,1kg,9.89,24682,raw_min_contaminated|raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1128,2026-08-01,capsicum,bell pepper|green capsicum|green pepper,loose,LADA BENGGALA HIJAU (CAPSICUM),1kg,11.99,4056,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1819,2026-08-01,galangal,lengkuas,loose,LENGKUAS,1kg,9.99,24572,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1928,2026-08-01,calamansi,calamansi lime|limau kasturi,loose,LIMAU KASTURI,1kg,5.99,25046,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+109,2026-08-01,carrot,carrots|lobak merah,loose,LOBAK MERAH,1kg,3.58,27545,raw_min_contaminated|raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1558,2026-08-01,choy sum,choi sum|sawi|sawi hijau|mustard greens,loose,SAWI HIJAU,1kg,5.99,22565,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1923,2026-08-01,eggplant,brinjal|aubergine|terung,loose,TERUNG BULAT,1kg,9.99,2980,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+113,2026-08-01,cucumber,cucumbers|timun,loose,TIMUN,1kg,3.99,26822,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+114,2026-08-01,tomato,tomatoes,loose,TOMATO,1kg,9.39,25959,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+129,2026-08-01,onion,onions|yellow onion|big onion|brown onion|bawang besar,loose,BAWANG BESAR KUNING/HOLLAND,1kg,3.99,28156,raw_min_contaminated|raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+131,2026-08-01,shallots,shallot|red onion|red onions|small onion|bawang merah,loose,BAWANG KECIL MERAH ROSE IMPORT (INDIA),1kg,5.0,18094,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1564,2026-08-01,garlic,bawang putih,loose,BAWANG PUTIH IMPORT (CHINA),1kg,8.8,27791,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1131,2026-08-01,potato,potatoes|kentang,loose,UBI KENTANG IMPORT (CHINA),1kg,2.99,24104,raw_min_contaminated|raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1899,2026-08-01,dried chilli,dried chillies|dried chili|cili kering,loose,CILI KERING KERINTING (BERTANGKAI/TIDAK BERTANGKAI),1kg,20.0,4922,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+101,2026-08-01,coconut,whole coconut|kelapa,loose,KELAPA BIJI,1 biji,3.5,1246,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+102,2026-08-01,grated coconut,shredded coconut|kelapa parut,loose,KELAPA PARUT,1kg,12.0,834,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+103,2026-08-01,fresh coconut milk,santan segar|fresh santan,loose,SANTAN KELAPA SEGAR (BIASA),1kg,10.36,1235,raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1422,2026-08-01,lentils,dhal|dal|kacang dal,loose,KACANG DAL (AUSTRALIA),1kg,4.99,4459,raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1944,2026-08-01,soybeans,soy beans|soya beans|kacang soya,loose,KACANG SOYA (IMPORT),1kg,6.99,1801,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+368,2026-08-01,peanuts,groundnuts|kacang tanah,loose,KACANG TANAH (IMPORT),1kg,9.0,5745,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+27,2026-08-01,grapes,red grapes|anggur,loose,ANGGUR MERAH BERBIJI,1kg,11.99,1091,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+26,2026-08-01,green grapes,,loose,ANGGUR HIJAU BERBIJI,1kg,13.99,23,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+16,2026-08-01,papaya,betik,loose,BETIK BIASA,1kg,7.49,662,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+22,2026-08-01,dragon fruit,red dragon fruit|pitaya|buah naga,loose,DRAGON FRUIT MERAH,1kg,7.99,736,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+38,2026-08-01,guava,jambu batu,loose,JAMBU BATU BERBIJI,1kg,7.9,617,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+31,2026-08-01,pear,pears|chinese pear|lai,loose,LAI KUNING (SAIZ M),1 biji,2.2,284,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1132,2026-08-01,lime,limes|limau nipis,loose,LIMAU NIPIS,1kg,7.0,23271,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+25,2026-08-01,pineapple,nenas|nanas,loose,NENAS BIASA (JOSAPINE/MORRIS/SARAWAK),1 biji,4.49,849,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+18,2026-08-01,banana,bananas|pisang|pisang berangan,loose,PISANG BERANGAN,1kg,7.9,664,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+21,2026-08-01,watermelon,seedless watermelon|tembikai,loose,TEMBIKAI MERAH TANPA BIJI,1kg,4.0,928,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+904,2026-08-01,rice,white rice|super rice|beras,pack,BERAS SUPER CAP RAMBUTAN 5% (IMPORT),10 kg,35.99,1577,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1492,2026-08-01,glutinous rice,sticky rice|pulut|beras pulut,pack,BERAS PULUT THAILAND (BIASA) PELBAGAI JENAMA,1kg,7.6,22,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1585,2026-08-01,rice vermicelli,vermicelli|bihun|bee hoon|beehoon|mee hoon,pack,BIHUN KERING IMPORT (CAP BINTANG),400 g,3.7,4955,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1589,2026-08-01,sugar,white sugar|granulated sugar|gula,pack,GULA PUTIH BERTAPIS KASAR (PELBAGAI JENAMA),1kg,2.85,7337,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1588,2026-08-01,brown sugar,gula merah,pack,GULA MERAH LEMBUT (PELBAGAI JENAMA),+- 500g,3.35,1525,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+191,2026-08-01,sardines,sardine|canned sardines|tinned sardines|sardin,pack,SARDIN CAP AYAM (SOS TOMATO),425 g,10.5,5265,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+214,2026-08-01,sweet soy sauce,sweet soya sauce|kicap|kicap manis,pack,KICAP LEMAK MANIS CAP KIPAS UDANG,345ml,6.9,6391,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1070,2026-08-01,chilli sauce,chili sauce|sos cili,pack,SOS CILI MAGGI,340 g,4.3,6687,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1138,2026-08-01,oyster sauce,sos tiram,pack,SOS TIRAM MAGGI,340 g,5.9,6297,raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+217,2026-08-01,tomato sauce,ketchup|tomato ketchup|sos tomato,pack,SOS TOMATO MAGGI,325 g,4.2,5999,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+883,2026-08-01,condensed milk,sweetened condensed milk|sweetened creamer|condensed creamer|krimer manis,pack,KRIMER MANIS BERVITAMIN CAP F&N,500 g,4.2,5004,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1619,2026-08-01,milk powder,powdered milk|susu tepung,pack,SUSU TEPUNG SEGERA DUTCHLADY (BIASA ),600 g,19.9,1622,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1615,2026-08-01,butter,salted butter|mentega,pack,MENTEGA ANCHOR (SALTED),227g,15.5,2554,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1976,2026-08-01,instant noodles,instant noodle|maggi|maggi noodles|maggi mee|mi segera,pack,MAGGI MI SEGERA PERISA KARI,5 X 79g,5.2,7148,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1094,2026-08-01,cooking oil,palm oil|vegetable oil|minyak masak,pack,MINYAK MASAK TULEN CAP BURUH,1kg,6.9,3236,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1086,2026-08-01,corn oil,minyak jagung,pack,MINYAK JAGUNG CAP DAISY,1kg,16.4,2463,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1603,2026-08-01,ghee,minyak sapi,pack,MINYAK SAPI CAP WINDMILL GHEEBLEND,400 g,19.5,2083,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1489,2026-08-01,tamarind,asam jawa,pack,ASAM JAWA (BERBIJI) PELBAGAI JENAMA,200 g,1.4,2192,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1605,2026-08-01,salt,table salt|fine salt|garam,pack,GARAM HALUS BIASA (PELBAGAI JENAMA),+-350g,0.8,2050,raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+364,2026-08-01,chilli powder,chili powder|serbuk cili,pack,SERBUK CILI BABAS,250 g,7.69,6834,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1572,2026-08-01,curry powder,meat curry powder|serbuk kari,pack,SERBUK KARI DAGING BABAS,250 g,6.3,7340,raw_min_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+365,2026-08-01,turmeric powder,serbuk kunyit,pack,SERBUK KUNYIT CAMPURAN (SEBATIAN) ADABI,250 g,7.2,5201,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+869,2026-08-01,mustard seeds,biji sawi,pack,BIJI SAWI,100 g,1.15,1353,raw_max_contaminated,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1611,2026-08-01,coconut milk,coconut cream|santan|kara coconut milk,pack,SANTAN KELAPA JENAMA KARA,200 ml,3.99,6790,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+201,2026-08-01,jam,strawberry jam|jem,pack,JEM STRAWBERI LADY'S CHOICE,400 g,9.35,1730,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+203,2026-08-01,cheese spread,,pack,MAINLAND CHESDALE CHEDDAR CHEESE SPREAD 12 CHEDDAR,250 g,12.6,2526,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+206,2026-08-01,margarine,marjerin|planta,pack,MARJERIN PLANTA,480 g,11.5,4251,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1872,2026-08-01,mayonnaise,mayo|mayonis,pack,MAYONIS SEBENAR LADY'S CHOICE,220ml,8.2,2418,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1606,2026-08-01,peanut butter,,pack,MENTEGA KACANG HALUS LADY'S CHOICE,500 g,18.6,2290,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+917,2026-08-01,flour,wheat flour|plain flour|all purpose flour|all-purpose flour|tepung|tepung gandum,pack,"TEPUNG GANDUM NGP (BERBUNGKUS, CAP SAUH)",1kg,3.2,6025,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1849,2026-08-01,self-raising flour,self raising flour|self rising flour,pack,TEPUNG NAIK SENDIRI CAP 'BLUE KEY',1kg,5.1,2168,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1947,2026-08-01,baking powder,,pack,SERBUK PENAIK ROYAL (TIN),113g,6.6,1790,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1483,2026-08-01,yellow noodles,yellow mee|mee kuning|fresh noodles|hokkien mee,pack,MEE KUNING BASAH (PELBAGAI JENAMA),+-450g,1.8,5080,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1964,2026-08-01,oats,rolled oats|instant oats|oatmeal|quaker oats,pack,QUAKER OATS INSTANT OATMEALS,1kg,10.99,263,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+929,2026-08-01,coffee,instant coffee|nescafe|kopi,pack,NESCAFE CLASSIC (PAKET),200 g,23.9,1212,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+2019,2026-08-01,3 in 1 coffee,3-in-1 coffee|coffee mix|nescafe 3 in 1,pack,NESCAFE 3 IN 1 ORIGINAL (AROMATIC & BALANCED),25 x 18g,14.49,2993,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1650,2026-08-01,tea,tea bags|teabags|teh,pack,TEH LIPTON (UNCANG),100 beg,16.5,1016,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1635,2026-08-01,coffee creamer,creamer|coffee-mate|coffeemate,pack,NESTLE COFFEE-MATE,450 g,9.9,2197,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+224,2026-08-01,milk,fresh milk|full cream milk|susu|susu segar|dutch lady milk,pack,SUSU SEGAR DUTCH LADY,1 liter,8.49,583,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+235,2026-08-01,orange juice,juice|jus oren,pack,JUS OREN PEEL FRESH (MARIGOLD),1 liter,6.8,2494,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1651,2026-08-01,soy milk,soya milk|soymilk|susu soya,pack,YEO'S SOYA (KOTAK),250 ml,1.2,175,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+228,2026-08-01,cola,coca cola|coca-cola|coke,pack,COCA COLA (BOTOL),1.5 liter,3.9,2072,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1355,2026-08-01,isotonic drink,100 plus|100plus,pack,100 PLUS (ORIGINAL),1.5 liter,3.69,2523,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+910,2026-08-01,rose syrup,cordial|rose cordial|sirap|sirap ros,pack,KORDIAL F&N (SIRAP ROS),2 liter,12.0,1102,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0
+1955,2026-08-01,yogurt,yoghurt|strawberry yogurt|yogurt cup,pack,YOGURT MARIGOLD (LOW FAT) (STRAWBERRY),130g,2.9,1943,ok,https://storage.data.gov.my/pricecatcher/pricecatcher_2026-08.csv,CC BY 4.0

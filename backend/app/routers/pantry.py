@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.deps import get_current_user
+from app.food_value import apply_estimate, item_value, money
 from app.models import FoodItem, UserProfile
 from app.schemas import FoodItemCreate, FoodItemOut, FoodItemStatus, FoodItemUpdate
 from app.shopping import clear_dismissals_for, tick_shopping_list
@@ -59,7 +60,22 @@ def _to_out(item: FoodItem) -> FoodItemOut:
     out = FoodItemOut.model_validate(item)
     if item.expiry_date is not None:
         out.days_to_expiry = (item.expiry_date - date.today()).days
+    # Epic 9: what's left of the item is worth unit value x current quantity.
+    out.est_value_rm = money(item_value(item.est_unit_value_rm, item.quantity))
     return out
+
+
+def _estimate_value(item: FoodItem) -> None:
+    """Epic 9 (AC 9.1.1 / 9.1.2): store the PriceCatcher-based estimate.
+
+    Never allowed to break a save -- if the snapshot file is missing or
+    unreadable the item is simply saved without a value, exactly like an
+    item with no PriceCatcher match.
+    """
+    try:
+        apply_estimate(item)
+    except Exception as exc:  # noqa: BLE001 -- valuation is optional by design
+        print(f"[pantry] value estimate skipped: {exc.__class__.__name__}: {exc}")
 
 
 async def _get_owned_item(item_id: UUID, user: UserProfile, db: AsyncSession) -> FoodItem:
@@ -129,6 +145,7 @@ async def create_pantry_item(
     if not fields.get("canonical_food_name"):
         fields["canonical_food_name"] = _canonical(fields.get("name"))
     item = FoodItem(user_id=user.user_id, **fields)
+    _estimate_value(item)
     db.add(item)
     await db.flush()
     # Epic 8: every save path (Add Food, Photo Review, old photo screen) comes
@@ -173,6 +190,9 @@ async def update_pantry_item(
         # key is still auto-derived. Once the user has chosen a food explicitly,
         # their choice outranks whatever the new name would derive to.
         item.canonical_food_name = _canonical(fields["name"])
+    if "name" in fields or "unit" in fields:
+        # A rename or unit fix is how a user repairs a missed estimate too.
+        _estimate_value(item)
     await db.commit()
     await db.refresh(item)
     return _to_out(item)

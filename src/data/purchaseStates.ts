@@ -25,7 +25,14 @@ export type PurchaseRecommendation = PurchaseInsightParams & {
   state: PurchaseState;
   recommended_qty: number;
   reason: string;
+  /** Purchases of this item in the last 8 weeks. Below 3 the Item Purchase
+   *  Insight page shows "Not enough history" (AC 7.1.4, reached from AC 9.4.3).
+   *  Optional so an older backend without it keeps working. */
+  purchase_count_8w?: number;
 };
+
+/** AC 7.1.4: purchases needed in the last 8 weeks before showing insights. */
+export const MIN_PURCHASES_FOR_INSIGHT = 3;
 
 export type PurchaseStateStyle = { label: string; backgroundColor: string; textColor: string };
 

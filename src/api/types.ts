@@ -48,6 +48,56 @@ export type FoodItem = {
   /** Epic 8: only on the POST /v1/pantry response. True when saving this item
    *  fully ticked off a "To Buy" row on the shopping list (AC 8.3.2). */
   shopping_ticked?: boolean;
+  /** Epic 9 (AC 9.1.1): estimated RM per ONE of this item's units, from the
+   *  PriceCatcher snapshot -- never what the user paid. null = no estimate
+   *  (no match, or the unit can't be converted -- AC 9.1.2). */
+  est_unit_value_rm?: number | null;
+  /** est_unit_value_rm x current quantity, rounded to sen. */
+  est_value_rm?: number | null;
+  est_price_month?: string | null;
+};
+
+// --- Epic 9: estimated food value ------------------------------------------
+
+export type FoodValueMeta = {
+  snapshot_month: string; // "2026-08-01"
+  /** AC 9.1.4: "Based on Malaysian market prices, August 2026 (PriceCatcher)" */
+  label: string;
+  item_count: number;
+  source: string;
+  source_url: string;
+  license: string;
+};
+
+export type FoodValueCategory = { label: string; value_rm: number; is_other: boolean };
+
+export type FoodValueTopItem = {
+  name: string;
+  category: string | null;
+  unit: string | null;
+  value_rm: number;
+  quantity: number;
+};
+
+export type FoodValueWasted = {
+  month: string; // "2026-10"
+  is_current_month: boolean;
+  label: string;
+  wasted_count: number;
+  valued_count: number;
+  unvalued_count: number;
+  coverage: number;
+  /** false -> "Not enough price data to estimate this month's total" (AC 9.3.3) */
+  sufficient: boolean;
+  total_rm: number | null;
+  previous_month: string;
+  previous_total_rm: number | null;
+  /** total - previous total; null when last month has no records to compare. */
+  change_rm: number | null;
+  /** AC 9.3.5 monthly-report headline, null when there is no total. */
+  headline: string | null;
+  by_category: FoodValueCategory[];
+  top_items: FoodValueTopItem[];
 };
 
 export type ConsumptionWasteLog = {

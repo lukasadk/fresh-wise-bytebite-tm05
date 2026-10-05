@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useScrollToTop } from '@react-navigation/native';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
@@ -9,6 +9,16 @@ import SwipeToManage from '../components/SwipeToManage';
 import UrgencyOutline, { urgencyPalette } from '../components/UrgencyOutline';
 import { foodIconFor } from '../icons/FoodIcons';
 import { usePantry, getExpiryInfo, formatDisplayDate, PantryItem } from '../data/pantryItems';
+import PriceDataLabel from '../components/PriceDataLabel';
+import { ChevronRight, X } from '../icons/NavIcons';
+import {
+  AT_RISK_DAYS,
+  INSUFFICIENT_AT_RISK_TEXT,
+  atRiskBannerText,
+  currentValue,
+  formatRM,
+  summariseAtRisk,
+} from '../data/foodValue';
 
 // AC 2.2.4 -- the three bands, in priority order. Boundaries match
 // getExpiryInfo()/ExpiryPill exactly (Coral Red is 0-days/expired only), so a
@@ -78,13 +88,86 @@ export default function UseFirstScreen({ navigation, route }: any) {
 
   const goToDetail = (id: string) => navigation.navigate('FoodDetail', { id });
 
+  // Epic 9 -- Food Value at Risk (US 9.2). Recomputed from the same pantry
+  // list on every render, so marking an item consumed drops the total as soon
+  // as the list refetches on focus (AC 9.2.4) -- no separate request.
+  const atRisk = useMemo(() => summariseAtRisk(items), [items]);
+  const [atRiskOnly, setAtRiskOnly] = useState(false);
+  const showAtRiskList = atRiskOnly && atRisk.banner !== 'hidden';
+
+  const renderRow = (item: PantryItem, withValue: boolean) => {
+    const expiry = getExpiryInfo(item);
+    const value = withValue ? currentValue(item) : null;
+    return (
+      // Swipe matches the row's "Swipe for recipe" hint and
+      // Pantry's behaviour; tapping the row still opens Food Detail.
+      <SwipeToManage
+        key={item.id}
+        onManage={() =>
+          navigation.navigate('Recipes', {
+            focusFoodName: item.name,
+            focusFoodId: item.id,
+          })
+        }
+        actionLabel="Recipe"
+      >
+        <FoodRow
+          name={item.name}
+          category={item.category}
+          subtitle={item.category}
+          expiryDate={formatDisplayDate(item.expiryDate)}
+          expiryLabel={expiry.rowExpiryLabel}
+          expiryLevel={expiry.expiryLevel}
+          source={item.source}
+          onPress={() => goToDetail(item.id)}
+          valueLabel={withValue ? (value !== null ? formatRM(value) : 'No value') : undefined}
+          valueMuted={withValue && value === null}
+        />
+      </SwipeToManage>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Use First</Text>
         <Text style={styles.subtitle}>Prioritised by expiry so nothing gets forgotten.</Text>
 
-        {loading && items.length === 0 ? (
+        {/* AC 9.2.2 / 9.2.6 -- hidden entirely when nothing valued is at risk (AC 9.2.5). */}
+        {!error && atRisk.banner !== 'hidden' ? (
+          <View style={styles.atRiskBlock}>
+            <Pressable
+              accessibilityRole={atRisk.banner === 'total' ? 'button' : undefined}
+              disabled={atRisk.banner !== 'total'}
+              onPress={() => setAtRiskOnly(true)}
+              style={({ pressed }) => [styles.atRiskBanner, pressed && { opacity: 0.9 }]}
+            >
+              <Text style={styles.atRiskText}>
+                {atRisk.banner === 'total' ? atRiskBannerText(atRisk.totalRm) : INSUFFICIENT_AT_RISK_TEXT}
+              </Text>
+              {atRisk.banner === 'total' ? <ChevronRight size={18} color={colors.textPrimary} /> : null}
+            </Pressable>
+            {atRisk.banner === 'total' ? <PriceDataLabel /> : null}
+          </View>
+        ) : null}
+
+        {showAtRiskList ? (
+          // AC 9.2.3 -- only what expires within 3 days, each with its RM value.
+          <View style={styles.section}>
+            <View style={styles.filterHeader}>
+              <Text style={styles.filterTitle}>Expiring in the next {AT_RISK_DAYS} days</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setAtRiskOnly(false)}
+                style={({ pressed }) => [styles.showAllChip, pressed && { opacity: 0.85 }]}
+              >
+                <Text style={styles.showAllText}>Show all</Text>
+                <X size={14} color={colors.white} strokeWidth={2.5} />
+              </Pressable>
+            </View>
+            <View style={styles.sectionList}>{atRisk.items.map((item) => renderRow(item, true))}</View>
+          </View>
+        ) : loading && items.length === 0 ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
         ) : error ? (
           <View style={styles.messageCard}>
@@ -140,7 +223,7 @@ export default function UseFirstScreen({ navigation, route }: any) {
           </SwipeToManage>
         )}
 
-        {buckets.map((section) =>
+        {!showAtRiskList && buckets.map((section) =>
           section.items.length === 0 ? null : (
             <View key={section.key} style={styles.section}>
               <View style={styles.sectionHeader}>
@@ -150,36 +233,7 @@ export default function UseFirstScreen({ navigation, route }: any) {
               </View>
               <Text style={styles.sectionBlurb}>{section.blurb}</Text>
 
-              <View style={styles.sectionList}>
-                {section.items.map((item) => {
-                  const expiry = getExpiryInfo(item);
-                  return (
-                    // Swipe matches the row's "Swipe for recipe" hint and
-                    // Pantry's behaviour; tapping the row still opens Food Detail.
-                    <SwipeToManage
-                      key={item.id}
-                      onManage={() =>
-                        navigation.navigate('Recipes', {
-                          focusFoodName: item.name,
-                          focusFoodId: item.id,
-                        })
-                      }
-                      actionLabel="Recipe"
-                    >
-                      <FoodRow
-                        name={item.name}
-                        category={item.category}
-                        subtitle={item.category}
-                        expiryDate={formatDisplayDate(item.expiryDate)}
-                        expiryLabel={expiry.rowExpiryLabel}
-                        expiryLevel={expiry.expiryLevel}
-                        source={item.source}
-                        onPress={() => goToDetail(item.id)}
-                      />
-                    </SwipeToManage>
-                  );
-                })}
-              </View>
+              <View style={styles.sectionList}>{section.items.map((item) => renderRow(item, false))}</View>
             </View>
           ),
         )}
@@ -304,5 +358,53 @@ const styles = StyleSheet.create({
   sectionList: {
     gap: spacing.md,
     marginTop: spacing.xs,
+  },
+  atRiskBlock: {
+    gap: spacing.xs,
+    marginTop: -spacing.sm,
+  },
+  // AC 9.2.2 -- Amber Gold banner. Dark ink rather than white: white on
+  // #C68A2E is ~3:1 and fails WCAG AA for body text; #13331E is ~4.7:1.
+  atRiskBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.statusSoon,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  atRiskText: {
+    flex: 1,
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    lineHeight: 20,
+    color: colors.textPrimary,
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  filterTitle: {
+    flex: 1,
+    fontFamily: fonts.bold,
+    fontSize: 19,
+    color: colors.statusSoon,
+  },
+  showAllChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.filterChipBg,
+    borderRadius: radii.pill,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+  },
+  showAllText: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.white,
   },
 });

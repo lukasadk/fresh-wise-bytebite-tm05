@@ -15,6 +15,7 @@ import {
   mockTickAfterPantrySave,
 } from '../data/shoppingMock';
 import { selectMalaysianRecipeHints } from '../data/malaysianRecipeRag';
+import { getDeviceTimeZone } from '../data/timezone';
 import type { PurchaseRecommendation } from '../data/purchaseStates';
 import type {
   ConsumptionWasteLog,
@@ -23,6 +24,8 @@ import type {
   FoodItem,
   FoodItemStorage,
   FoodkeeperStorage,
+  FoodValueMeta,
+  FoodValueWasted,
   NameSuggestion,
   OpenFoodFactsProduct,
   PriceReference,
@@ -554,6 +557,19 @@ export const getWeeklyWaste = (weeks = 12) =>
  *  repeatedly-wasted item, computed over the household's entire waste history
  *  (no time-window query params -- unlike summary/weekly-waste above). */
 export const getWastePatterns = () => request<WastePatternsOut>('/v1/dashboard/waste-patterns');
+
+// --- Epic 9: estimated food value (FoodDetail, UseFirst, Activity) ---------
+
+/** The price-data label and snapshot month behind every RM figure (AC 9.1.4). */
+export const getFoodValueMeta = () => request<FoodValueMeta>('/v1/food-value/meta');
+
+/** Estimated value wasted in one calendar month (AC 9.3.1-9.4.2). `month` is
+ *  "YYYY-MM"; omitted = the current month in the device's time zone. */
+export const getFoodValueWasted = (month?: string) => {
+  const q = new URLSearchParams({ tz: getDeviceTimeZone() });
+  if (month) q.set('month', month);
+  return request<FoodValueWasted>(`/v1/food-value/wasted?${q.toString()}`);
+};
 
 /** Epic 7 item-level insight. The name is URL-encoded because the shared
  * Epic 8 navigation contract passes a display name rather than a database id. */

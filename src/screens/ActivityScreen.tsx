@@ -67,6 +67,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Leaf, Lightbulb } from 'lucide-react-native';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
+import FoodValueWastedCard from '../components/FoodValueWastedCard';
 import { ChevronRight, Refrigerator, Snowflake, Sun } from '../icons/NavIcons';
 import { getDashboardSummary, getWeeklyWaste, getWastePatterns, getAlternativesFromFoodkeeper } from '../api/freshwise';
 import type { FoodkeeperAlternative } from '../api/freshwise';
@@ -2103,6 +2104,8 @@ export default function ActivityScreen() {
                         onPress={() => switchTab('Patterns')}
                       />
                     )}
+                    {/* Epic 9 (US 9.3) -- estimated RM value of this month's waste. */}
+                    <FoodValueWastedCard onOpen={() => navigation.navigate('FoodValueWasted')} />
                   </>
                 )}
 

@@ -12,7 +12,7 @@ from app.auto_waste import run_daily_auto_waste_expired
 from app.config import get_settings
 from app.db import AsyncSessionLocal, engine
 from app.notifications import run_daily_expiry_check
-from app.routers import dashboard, diet, logs, pantry, recipes, reference, shopping, users
+from app.routers import dashboard, diet, food_value, logs, pantry, recipes, reference, shopping, users
 from app.purchase_insights import router as purchase_insights_router
 from app.security import ApiKeyMiddleware, RateLimitMiddleware
 from wastewise_grocery_vlm.main import app as grocery_ai_app
@@ -70,6 +70,7 @@ app.include_router(recipes.router)
 app.include_router(reference.router)
 app.include_router(purchase_insights_router)
 app.include_router(shopping.router)
+app.include_router(food_value.router)
 
 AI_GATEWAY_ROUTE_PREFIXES = (
     "/v1/api-recognition/",
@@ -131,9 +132,41 @@ async def _apply_initial_schema_if_needed() -> None:
         print("[startup] applied initial database schema")
 
 
+async def _apply_food_value_migration() -> None:
+    """Epic 9: add the food_item estimate columns if this DB predates them.
+
+    schema/004_food_value.sql is ADD COLUMN IF NOT EXISTS only, so running it
+    on every boot is a no-op once applied -- and it means a Railway deploy
+    doesn't depend on someone remembering to run the migration by hand. It
+    must run before any request: the FoodItem model selects these columns,
+    so without them every pantry read would fail.
+    """
+    migration = Path(__file__).resolve().parent / "schema" / "004_food_value.sql"
+    try:
+        async with engine.begin() as conn:
+            exists = await conn.scalar(text("SELECT to_regclass('public.food_item') IS NOT NULL"))
+            if not exists:
+                return
+            raw = await conn.get_raw_connection()
+            sql = migration.read_text(encoding="utf-8").replace("BEGIN;", "").replace("COMMIT;", "")
+            await raw.driver_connection.execute(sql)
+    except Exception as exc:  # noqa: BLE001 -- log loudly, keep booting
+        print(f"[startup] food value migration FAILED -- run db/004_food_value.sql manually: {exc}")
+        return
+
+    try:
+        async with AsyncSessionLocal() as db:
+            count = await food_value.backfill_food_values(db)
+        if count:
+            print(f"[startup] estimated food value for {count} pantry item(s)")
+    except Exception as exc:  # noqa: BLE001 -- estimates are optional
+        print(f"[startup] food value backfill skipped: {exc}")
+
+
 @app.on_event("startup")
 async def start_scheduler():
     await _apply_initial_schema_if_needed()
+    await _apply_food_value_migration()
     # Runs once daily at 08:00 server time. Change the hour to whatever suits
     # actual usage -- there's nothing special about 8am beyond "a reasonable
     # default for a morning check."

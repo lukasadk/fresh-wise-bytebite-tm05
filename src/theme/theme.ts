@@ -60,6 +60,10 @@ export const colors = {
   // Success confirmation toast (e.g. "Added" on My Pantry)
   toastSuccessBg: '#2C5F3E',
 
+  // Epic 9: price-data label, "Value not available", "Suggested" tags and the
+  // grouped "Other" bar (#8A8F87 Grey in the ACs).
+  neutralGrey: '#8A8F87',
+
   // Entry-source tags on pantry rows
   sourceManual: '#8A8F87',
   sourcePhotoAI: '#4A6B7A',

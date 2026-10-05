@@ -1,0 +1,119 @@
+item_code,name_en,aliases,sold_as
+1,chicken,whole chicken|fresh chicken|ayam|ayam bersih,loose
+1551,chicken breast,breast chicken|dada ayam|chicken breasts,loose
+1804,chicken wings,chicken wing|kepak ayam,loose
+1550,chicken drumsticks,chicken drumstick|drumstick|drumsticks|paha ayam,loose
+1552,chicken thighs,chicken thigh|thigh ayam,loose
+1553,chicken legs,chicken leg|whole leg,loose
+1431,beef,fresh beef|local beef|daging lembu,loose
+1914,buffalo meat,daging kerbau,loose
+9,mutton,lamb|kambing|daging kambing,loose
+1380,pork,daging babi,loose
+1379,pork belly,,loose
+1476,mackerel,indian mackerel|kembung|ikan kembung,loose
+1921,tilapia,red tilapia|ikan tilapia,loose
+88,catfish,keli|ikan keli,loose
+1437,sea bass,siakap|ikan siakap|barramundi,loose
+1475,white pomfret,pomfret|bawal putih|ikan bawal putih,loose
+43,black pomfret,bawal hitam|ikan bawal hitam,loose
+1554,red snapper,ikan merah,loose
+1438,spanish mackerel,tenggiri|ikan tenggiri,loose
+70,scad,selar|ikan selar|yellowtail scad,loose
+47,hardtail scad,cencaru|ikan cencaru|torpedo scad,loose
+1436,threadfin bream,kerisi|ikan kerisi,loose
+845,squid,sotong|calamari,loose
+847,crab,flower crab|ketam|blue swimming crab,loose
+1555,prawns,prawn|shrimp|shrimps|udang,loose
+850,tiger prawns,tiger prawn|udang harimau,loose
+1562,dried shrimp,dried shrimps|udang kering,pack
+1563,dried squid,sotong kering,loose
+1109,eggs,egg|chicken eggs|chicken egg|telur|telur ayam,pack
+1556,spinach,bayam|green spinach|amaranth,loose
+1479,broccoli,brokoli,loose
+94,red chilli,chilli|chili|chillies|chilies|red chili|cili merah,loose
+92,green chilli,green chili|cili hijau,loose
+716,bird's eye chilli,bird eye chilli|cili padi|chili padi,loose
+95,ginger,halia,loose
+96,okra,lady's finger|ladies finger|lady finger|bendi,loose
+97,french beans,green beans|buncis,loose
+98,long beans,snake beans|kacang panjang,loose
+1560,kailan,kai lan|gai lan|chinese kale,loose
+1559,kangkung,water spinach|morning glory,loose
+1458,cabbage,round cabbage|kubis,loose
+1481,cauliflower,kubis bunga,loose
+1412,chinese cabbage,napa cabbage|wombok|kubis panjang,loose
+108,turmeric,fresh turmeric|kunyit,loose
+1128,capsicum,bell pepper|green capsicum|green pepper,loose
+1819,galangal,lengkuas,loose
+1928,calamansi,calamansi lime|limau kasturi,loose
+109,carrot,carrots|lobak merah,loose
+1558,choy sum,choi sum|sawi|sawi hijau|mustard greens,loose
+1923,eggplant,brinjal|aubergine|terung,loose
+113,cucumber,cucumbers|timun,loose
+114,tomato,tomatoes,loose
+129,onion,onions|yellow onion|big onion|brown onion|bawang besar,loose
+131,shallots,shallot|red onion|red onions|small onion|bawang merah,loose
+1564,garlic,bawang putih,loose
+1131,potato,potatoes|kentang,loose
+1899,dried chilli,dried chillies|dried chili|cili kering,loose
+101,coconut,whole coconut|kelapa,loose
+102,grated coconut,shredded coconut|kelapa parut,loose
+103,fresh coconut milk,santan segar|fresh santan,loose
+1422,lentils,dhal|dal|kacang dal,loose
+1944,soybeans,soy beans|soya beans|kacang soya,loose
+368,peanuts,groundnuts|kacang tanah,loose
+27,grapes,red grapes|anggur,loose
+26,green grapes,,loose
+16,papaya,betik,loose
+22,dragon fruit,red dragon fruit|pitaya|buah naga,loose
+38,guava,jambu batu,loose
+31,pear,pears|chinese pear|lai,loose
+1132,lime,limes|limau nipis,loose
+25,pineapple,nenas|nanas,loose
+18,banana,bananas|pisang|pisang berangan,loose
+21,watermelon,seedless watermelon|tembikai,loose
+904,rice,white rice|super rice|beras,pack
+1492,glutinous rice,sticky rice|pulut|beras pulut,pack
+1585,rice vermicelli,vermicelli|bihun|bee hoon|beehoon|mee hoon,pack
+1589,sugar,white sugar|granulated sugar|gula,pack
+1588,brown sugar,gula merah,pack
+191,sardines,sardine|canned sardines|tinned sardines|sardin,pack
+214,sweet soy sauce,sweet soya sauce|kicap|kicap manis,pack
+1070,chilli sauce,chili sauce|sos cili,pack
+1138,oyster sauce,sos tiram,pack
+217,tomato sauce,ketchup|tomato ketchup|sos tomato,pack
+883,condensed milk,sweetened condensed milk|sweetened creamer|condensed creamer|krimer manis,pack
+1619,milk powder,powdered milk|susu tepung,pack
+1615,butter,salted butter|mentega,pack
+1976,instant noodles,instant noodle|maggi|maggi noodles|maggi mee|mi segera,pack
+1094,cooking oil,palm oil|vegetable oil|minyak masak,pack
+1086,corn oil,minyak jagung,pack
+1603,ghee,minyak sapi,pack
+1489,tamarind,asam jawa,pack
+1605,salt,table salt|fine salt|garam,pack
+364,chilli powder,chili powder|serbuk cili,pack
+1572,curry powder,meat curry powder|serbuk kari,pack
+365,turmeric powder,serbuk kunyit,pack
+869,mustard seeds,biji sawi,pack
+1611,coconut milk,coconut cream|santan|kara coconut milk,pack
+201,jam,strawberry jam|jem,pack
+203,cheese spread,,pack
+206,margarine,marjerin|planta,pack
+1872,mayonnaise,mayo|mayonis,pack
+1606,peanut butter,,pack
+917,flour,wheat flour|plain flour|all purpose flour|all-purpose flour|tepung|tepung gandum,pack
+1849,self-raising flour,self raising flour|self rising flour,pack
+1947,baking powder,,pack
+1483,yellow noodles,yellow mee|mee kuning|fresh noodles|hokkien mee,pack
+1964,oats,rolled oats|instant oats|oatmeal|quaker oats,pack
+929,coffee,instant coffee|nescafe|kopi,pack
+2019,3 in 1 coffee,3-in-1 coffee|coffee mix|nescafe 3 in 1,pack
+1650,tea,tea bags|teabags|teh,pack
+1635,coffee creamer,creamer|coffee-mate|coffeemate,pack
+224,milk,fresh milk|full cream milk|susu|susu segar|dutch lady milk,pack
+235,orange juice,juice|jus oren,pack
+1651,soy milk,soya milk|soymilk|susu soya,pack
+228,cola,coca cola|coca-cola|coke,pack
+1355,isotonic drink,100 plus|100plus,pack
+910,rose syrup,cordial|rose cordial|sirap|sirap ros,pack
+1955,yogurt,yoghurt|strawberry yogurt|yogurt cup,pack

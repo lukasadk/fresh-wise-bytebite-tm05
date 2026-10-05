@@ -94,6 +94,12 @@ CREATE TABLE food_item (
     source              food_item_source NOT NULL DEFAULT 'manual',
     status              food_item_status NOT NULL DEFAULT 'active',
     storage             storage_type,         -- nullable: 'not specified'
+    -- Epic 9 (see 004_food_value.sql): estimated RM value of ONE of this
+    -- item's units, from the PriceCatcher snapshot. NULL = not valued.
+    -- Never what the user paid -- that is not collected anywhere.
+    est_unit_value_rm   NUMERIC(12,5),
+    est_price_item_code TEXT,
+    est_price_month     DATE,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

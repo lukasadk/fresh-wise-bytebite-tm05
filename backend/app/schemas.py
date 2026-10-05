@@ -121,6 +121,12 @@ class FoodItemOut(BaseModel):
     # True when saving this item fully ticked off a "To Buy" row on the
     # shopping list; the client adds these up for the "N items ticked off" toast.
     shopping_ticked: bool = False
+    # Epic 9 (AC 9.1.1-9.1.3): estimated RM per one of this item's units, from
+    # the PriceCatcher snapshot -- never what the user paid. None = no estimate.
+    est_unit_value_rm: float | None = None
+    # Derived: est_unit_value_rm x current quantity, rounded to sen.
+    est_value_rm: float | None = None
+    est_price_month: date | None = None
 
 
 # --- Consumption / waste log ---------------------------------------------
@@ -521,3 +527,53 @@ class DuplicateStockOut(BaseModel):
     qty_at_home: float
     unit: str | None
     earliest_expiry: date | None
+
+
+# --- Epic 9: Estimated food value ------------------------------------------
+
+
+class FoodValueMetaOut(BaseModel):
+    """Where every RM estimate comes from (AC 9.1.4)."""
+
+    snapshot_month: date
+    label: str              # "Based on Malaysian market prices, August 2026 (PriceCatcher)"
+    item_count: int
+    source: str
+    source_url: str
+    license: str
+
+
+class FoodValueCategory(BaseModel):
+    label: str
+    value_rm: float
+    is_other: bool = False   # the grouped "Other" bar (AC 9.4.1), drawn in Grey
+
+
+class FoodValueTopItem(BaseModel):
+    name: str
+    category: str | None
+    unit: str | None
+    value_rm: float
+    quantity: float
+
+
+class FoodValueWastedOut(BaseModel):
+    """Estimated value of food wasted in one calendar month (AC 9.3.1-9.4.2)."""
+
+    month: str                          # "2026-10"
+    is_current_month: bool
+    label: str
+    wasted_count: int                   # wasted records this month
+    valued_count: int
+    unvalued_count: int                 # AC 9.3.2 "3 items could not be valued"
+    coverage: float
+    sufficient: bool                    # False -> show "Not enough price data" (AC 9.3.3)
+    total_rm: float | None
+    previous_month: str
+    previous_total_rm: float | None
+    # total - previous total. None when last month has no records at all, so a
+    # brand-new user isn't told they wasted "RM 30 more than last month".
+    change_rm: float | None
+    headline: str | None                # AC 9.3.5 monthly-report headline
+    by_category: list[FoodValueCategory]
+    top_items: list[FoodValueTopItem]

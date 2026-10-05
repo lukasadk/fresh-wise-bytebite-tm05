@@ -107,6 +107,12 @@ class FoodItem(Base):
     # specified" -- it is NOT a fallback to the FoodKeeper recommendation,
     # which stays in ref_foodkeeper_storage and is served separately.
     storage: Mapped[str | None] = mapped_column(storage_type_enum)
+    # Epic 9 (db/004_food_value.sql): estimated RM per ONE of this item's own
+    # units, from the PriceCatcher snapshot -- see app/food_value.py. NULL means
+    # no match / unit not convertible, and the item is left out of RM totals.
+    est_unit_value_rm: Mapped[float | None] = mapped_column(Numeric(12, 5))
+    est_price_item_code: Mapped[str | None] = mapped_column(Text)
+    est_price_month: Mapped[date | None] = mapped_column(Date)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["UserProfile"] = relationship(back_populates="food_items")

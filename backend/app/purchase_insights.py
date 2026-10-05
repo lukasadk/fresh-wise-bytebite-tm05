@@ -129,6 +129,9 @@ def _build_recommendations(rows: Iterable[Mapping[str, Any]]) -> list[dict[str, 
     """Pure recommendation policy, separated from the SQL for unit testing."""
 
     grouped: dict[str, dict[str, Any]] = {}
+    # Epic 9 (AC 9.4.3 -> AC 7.1.4): purchases in the last 8 weeks, so the
+    # Item Purchase Insight page can show "Not enough history" below 3.
+    history_cutoff = datetime.now(timezone.utc) - timedelta(weeks=8)
     for row in rows:
         display_name = str(row["name"]).strip()
         if not display_name:
@@ -143,6 +146,7 @@ def _build_recommendations(rows: Iterable[Mapping[str, Any]]) -> list[dict[str, 
                 "unit": row.get("unit"),
                 "latest_at": created_at,
                 "purchase_count": 0,
+                "purchase_count_8w": 0,
                 "original_qty": 0.0,
                 "on_hand": 0.0,
                 "consumed": 0.0,
@@ -166,6 +170,8 @@ def _build_recommendations(rows: Iterable[Mapping[str, Any]]) -> list[dict[str, 
         consumed = _number(row.get("consumed_qty"))
         wasted = _number(row.get("wasted_qty"))
         group["purchase_count"] += 1
+        if created_at is not None and created_at >= history_cutoff:
+            group["purchase_count_8w"] += 1
         group["original_qty"] += remaining + consumed + wasted
         if row.get("status") in {"active", "partially_used"}:
             group["on_hand"] += remaining
@@ -229,6 +235,8 @@ def _build_recommendations(rows: Iterable[Mapping[str, Any]]) -> list[dict[str, 
             "state": state,
             "recommended_qty": recommended_qty,
             "reason": reason,
+            # Additive (Epic 9): Epic 8's PurchaseRecommendation ignores it.
+            "purchase_count_8w": group["purchase_count_8w"],
         }
         # Guard the dynamic Epic 8 boundary even if this policy is edited later.
         assert recommendation["state"] in PURCHASE_STATES

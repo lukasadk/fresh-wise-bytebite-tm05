@@ -45,6 +45,10 @@ export type PantryItem = {
   source: FoodItem['source'];
   canonicalFoodName: string | null;
   barcode: string | null;
+  /** Epic 9: estimated RM per one unit (PriceCatcher); null = not valued. */
+  estUnitValueRm: number | null;
+  /** Epic 9: estimated RM of what's left (unit value x current quantity). */
+  estValueRm: number | null;
 };
 
 // Display labels for the backend's raw source enum -- 'Manual'/'Photo AI'
@@ -73,6 +77,8 @@ export function toPantryItem(f: FoodItem): PantryItem {
     source: f.source,
     canonicalFoodName: f.canonical_food_name,
     barcode: f.barcode,
+    estUnitValueRm: f.est_unit_value_rm == null ? null : Number(f.est_unit_value_rm),
+    estValueRm: f.est_value_rm == null ? null : Number(f.est_value_rm),
   };
 }
 

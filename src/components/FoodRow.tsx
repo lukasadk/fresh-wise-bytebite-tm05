@@ -19,6 +19,10 @@ type Props = {
   highlighted?: boolean; // brief flash after this item was just edited/added -- see PantryScreen
   highlightLabel?: string; // tag text while highlighted -- defaults to "Updated"
   onPress?: () => void;
+  /** Epic 9 (AC 9.2.3): estimated RM value shown on the right, e.g. "RM 4.50". */
+  valueLabel?: string;
+  /** Grey styling for "No value" when the item has no estimate. */
+  valueMuted?: boolean;
 };
 
 // Forest Green / Amber Gold / Coral Red -- matches the left-border + dot spec in Epic 2.
@@ -41,6 +45,8 @@ export default function FoodRow({
   highlighted,
   highlightLabel,
   onPress,
+  valueLabel,
+  valueMuted,
 }: Props) {
   const Icon = foodIconFor(name, category);
   const borderColor = expiryLevel ? expiryBorderColor[expiryLevel] : colors.borderSoft;
@@ -83,7 +89,12 @@ export default function FoodRow({
         {expiryDate ? <Text style={styles.expiryDateText} numberOfLines={1}>Exp {expiryDate}</Text> : null}
       </View>
       <View style={styles.expiryCol}>
-        {expiryLevel ? <View style={[styles.dot, { backgroundColor: borderColor }]} /> : null}
+        {valueLabel ? (
+          <Text style={[styles.valueLabel, valueMuted && styles.valueLabelMuted]} numberOfLines={1}>
+            {valueLabel}
+          </Text>
+        ) : null}
+        {expiryLevel && !valueLabel ? <View style={[styles.dot, { backgroundColor: borderColor }]} /> : null}
         <ExpiryPill label={expiryLabel} level={expiryLevel} />
         {!selectMode ? <Text style={styles.swipeHint}>Swipe for recipe →</Text> : null}
       </View>
@@ -183,6 +194,16 @@ const styles = StyleSheet.create({
   expiryCol: {
     alignItems: 'center',
     gap: 4,
+  },
+  valueLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.textPrimary,
+  },
+  valueLabelMuted: {
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    color: colors.neutralGrey,
   },
   dot: {
     width: 8,

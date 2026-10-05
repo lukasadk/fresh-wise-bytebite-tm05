@@ -13,6 +13,7 @@ import { getPurchaseInsight } from '../api/freshwise';
 import { ApiError } from '../api/client';
 import BackButton from '../components/BackButton';
 import {
+  MIN_PURCHASES_FOR_INSIGHT,
   purchaseStateStyle,
   type PurchaseInsightParams,
   type PurchaseRecommendation,
@@ -93,6 +94,17 @@ export default function PurchaseInsightScreen({ navigation, route }: any) {
             >
               <Text style={styles.retryText}>Try again</Text>
             </Pressable>
+          </View>
+        ) : insight &&
+          typeof insight.purchase_count_8w === 'number' &&
+          insight.purchase_count_8w < MIN_PURCHASES_FOR_INSIGHT ? (
+          // AC 7.1.4 (reached from AC 9.4.3): too few purchases for a
+          // trustworthy recommendation, so no quantity or waste rate is shown.
+          <View style={styles.recommendationCard}>
+            <View style={[styles.badge, styles.learningBadge]}>
+              <Text style={[styles.badgeText, styles.learningBadgeText]}>Not enough history</Text>
+            </View>
+            <Text style={styles.reason}>Buy and log this item 3 times to see insights</Text>
           </View>
         ) : insight && stateStyle ? (
           <>
@@ -182,6 +194,13 @@ const styles = StyleSheet.create({
   badgeText: {
     fontFamily: fonts.bold,
     fontSize: fontSize.base,
+  },
+  // AC 7.1.4 -- Slate Teal (#4A6B7A) "Not enough history" badge.
+  learningBadge: {
+    backgroundColor: colors.slateTeal,
+  },
+  learningBadgeText: {
+    color: colors.white,
   },
   quantityLabel: {
     marginTop: spacing.xl,

@@ -15,6 +15,8 @@ import type { Guidance, StorageMethodKey } from '../data/storageGuidance';
 import { LoadingState, ErrorState } from '../components/ScreenState';
 import FoodMatchPicker from '../components/FoodMatchPicker';
 import ShoppingTickedToast from '../components/ShoppingTickedToast';
+import PriceDataLabel from '../components/PriceDataLabel';
+import { currentValue, formatRM } from '../data/foodValue';
 import { usePantryPhoto, deletePantryPhoto } from '../vlm/pantryPhotos';
 
 type IconComponent = typeof Refrigerator;
@@ -182,6 +184,7 @@ export default function FoodDetailScreen({ navigation, route }: any) {
     expiry.expiryLevel === 'urgent' ? colors.expiryUrgentText : expiry.expiryLevel === 'warn' ? colors.expiryWarnText : colors.primary;
   const expiryShort = shortDate(item.expiryDate);
   const BannerIcon = expiry.daysLeft === null ? Calendar : AlertTriangle;
+  const estimatedValue = currentValue(item);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -264,6 +267,20 @@ export default function FoodDetailScreen({ navigation, route }: any) {
           <DetailRow label="Purchased" value={formatDisplayDate(item.purchaseDate)} />
           <View style={styles.divider} />
           <DetailRow label="Expires" value={formatDisplayDate(item.expiryDate)} />
+          <View style={styles.divider} />
+          {/* Epic 9 (AC 9.1.3): estimated from PriceCatcher, never what the
+              user paid -- so it says "Est." and names its source and month. */}
+          <View style={styles.valueRow}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Estimated value</Text>
+              {estimatedValue !== null ? (
+                <Text style={styles.detailValue}>Est. {formatRM(estimatedValue)}</Text>
+              ) : (
+                <Text style={styles.valueUnavailable}>Value not available</Text>
+              )}
+            </View>
+            {estimatedValue !== null ? <PriceDataLabel style={styles.valueSource} /> : null}
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>Storage guidance</Text>
@@ -575,6 +592,19 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: colors.borderSoft,
+  },
+  valueRow: {
+    paddingBottom: spacing.xs,
+  },
+  valueUnavailable: {
+    fontFamily: fonts.semibold,
+    fontSize: 14,
+    color: colors.neutralGrey,
+  },
+  valueSource: {
+    textAlign: 'right',
+    marginTop: -spacing.sm,
+    paddingBottom: spacing.sm,
   },
   guidanceCard: {
     backgroundColor: colors.primaryTint,
