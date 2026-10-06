@@ -5,11 +5,6 @@ __pycache__/
 tests/
 .pytest_cache/
 src/wastewise_grocery_vlm/static/downloads/
-# Ship only the current public Android release. Name the local legacy builds
-# explicitly so the current APK never depends on a negated wildcard being
-# interpreted consistently by both the Railway uploader and Docker.
-app/static/downloads/FreshWise-Friend-Test-v20260918-profilefix.apk
-app/static/downloads/FreshWise-Native-ExpoNotifications-v20260917.apk
-app/static/downloads/FreshWise-v1.4.2-latest-main-20260927.apk
-app/static/downloads/FreshWise-v1.4.3-latest-main-20261002.apk
-app/static/downloads/FreshWise-v1.4.4-figma-20261005.apk
+# APKs are release artifacts, not backend runtime dependencies. Host them in
+# GitHub Releases/object storage so a missing local build cannot break Railway.
+app/static/downloads/

@@ -88,6 +88,15 @@ URL, so nothing else needs setting.
 Service → Settings → **Networking → Generate Domain**. You get
 `https://<something>.up.railway.app`. Put it in `CORS_ORIGINS` (step 4).
 
+### Android APK downloads
+
+Do not copy a locally-built APK into the backend Docker image. APK files under
+`app/static/downloads/` are deliberately excluded by both `.dockerignore` and
+`.railwayignore`, so a GitHub-triggered Railway deployment never depends on an
+uncommitted binary from one developer's computer. Publish Android builds as a
+GitHub Release asset or in object storage and share that stable download URL
+separately from the API domain.
+
 ## 6. Create the schema
 
 From your laptop, using the **public** database URL (copy it from the Postgres

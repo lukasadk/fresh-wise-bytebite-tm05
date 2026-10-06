@@ -4,6 +4,5 @@ __pycache__/
 *.pyc
 .pytest_cache/
 tests/
-app/static/downloads/*
-!app/static/downloads/FreshWise-v1.4.5-early-estimate-20261005.apk
+app/static/downloads/
 src/wastewise_grocery_vlm/static/downloads/
