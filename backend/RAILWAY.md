@@ -33,14 +33,17 @@ Staging `backend/` specifically rather than `.` keeps two things out:
 ## 2. Create the project
 
 Railway → **New Project → Deploy from GitHub repo** → pick
-`waste-wise-bytebite-tm05`.
+`fresh-wise-bytebite-tm05`.
 
-> **Set Root Directory to `backend`** (service → Settings → Source).
-> The repo root is the Expo app, so without this Railway tries to build the
-> mobile app and fails with a confusing Node error. This is the single most
-> common way this deployment goes wrong.
+The recommended path is to leave **Root Directory empty**. The repository-root
+`Dockerfile`, `.dockerignore`, and `railway.json` deliberately package only the
+FastAPI runtime under `backend/`, so Railway can build directly from `main`
+without mistaking the Expo app for the service.
 
-It then finds `backend/Dockerfile` and `backend/railway.json` on its own.
+Setting Root Directory to `backend` remains supported for existing services;
+that path uses `backend/Dockerfile` and `backend/railway.json`. Do not combine a
+`backend` Root Directory with a manually entered `backend/Dockerfile` path --
+inside that build root the correct Dockerfile path is simply `Dockerfile`.
 
 ## 3. Add Postgres
 

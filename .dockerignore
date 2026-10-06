@@ -1,0 +1,26 @@
+# Send only the FastAPI runtime to a root-level Railway/Docker build. This
+# keeps the Expo app, Android build tree, local models and release APKs out of
+# the upload while still allowing Railway to connect to the monorepo root.
+**
+!backend/
+backend/**
+!backend/requirements.txt
+!backend/app/
+!backend/app/**
+!backend/src/
+!backend/src/**
+!backend/models/
+!backend/models/**
+!backend/data/
+!backend/data/**
+!backend/scripts/
+!backend/scripts/**
+
+# Release artifacts and generated caches are never backend runtime inputs.
+backend/app/static/downloads/
+backend/src/wastewise_grocery_vlm/static/downloads/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.env
+**/.env.*

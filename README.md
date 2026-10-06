@@ -106,6 +106,11 @@ uvicorn app.main:app --reload
 
 Full setup, identity model, and endpoint reference: **[`backend/README.md`](backend/README.md)**.
 
+For Railway, connect this GitHub repository at its root and leave **Root
+Directory empty**. The root `Dockerfile` packages only `backend/`, so Railway
+does not try to build the Expo app. Add PostgreSQL and the required environment
+variables using **[`backend/RAILWAY.md`](backend/RAILWAY.md)**.
+
 ## Conventions
 
 - **Line endings are LF.** `.gitattributes` enforces this. After your first
