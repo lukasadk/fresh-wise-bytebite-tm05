@@ -309,22 +309,20 @@ def _recommendation_summary(
     over_purchase: bool,
     waste_rate: float | None,
 ) -> str:
-    """Build a short, factual summary from the same auditable rule inputs."""
+    """Build a short, friendly summary from the same auditable rule inputs."""
 
     amount = _quantity_with_unit(recommended, unit)
     if state == "DO_NOT_BUY_YET":
-        decision = f"No new {name} purchase is recommended yet."
+        decision = f"You probably do not need to buy {name} yet."
     elif state == "BUY_LESS":
-        decision = f"Plan to buy {amount} of {name}, less than your usual amount."
+        decision = f"Buying {amount} of {name} next time should be enough."
     elif state == "BUY_MORE":
-        decision = f"Plan to buy {amount} of {name}, more than your usual amount."
+        decision = f"Try buying {amount} of {name} next time so you are less likely to run out."
     else:
-        decision = f"Keep your next {name} purchase close to {amount}."
+        decision = f"Your usual routine looks right; buy about {amount} of {name} next time."
 
-    trip_word = "trip" if purchase_count == 1 else "trips"
     evidence = (
-        f"This uses {purchase_count} purchase {trip_word} from the last 8 weeks; "
-        f"you usually buy {_quantity_with_unit(usual_purchase, unit)} and currently have "
+        f"You usually buy {_quantity_with_unit(usual_purchase, unit)} and currently have "
         f"{_quantity_with_unit(current_inventory, unit)}."
     )
 
@@ -332,18 +330,20 @@ def _recommendation_summary(
         trips_needed = RELIABLE_PURCHASE_TRIPS - purchase_count
         needed_word = "trip" if trips_needed == 1 else "trips"
         confidence = (
-            f"Record {trips_needed} more purchase {needed_word} before treating the waste-rate "
-            "assessment as reliable."
+            "I'm still learning from your shopping history. "
+            f"Record {trips_needed} more shopping {needed_word} to improve this suggestion."
         )
     elif not has_outcomes:
-        confidence = "Log consumption or waste outcomes before a waste-rate assessment is shown."
+        confidence = (
+            "After you use it, mark it as eaten or wasted so the next suggestion can improve."
+        )
     elif over_purchase and waste_rate is not None:
         confidence = (
-            f"Recorded outcomes show a {round(_ratio(waste_rate) * 100)}% waste rate, so this item "
-            "needs attention."
+            f"About {round(_ratio(waste_rate) * 100)}% of the amount you finished tracking was "
+            "wasted, so a smaller purchase may help."
         )
     else:
-        confidence = "Recorded consumption and waste outcomes indicate this item is on track."
+        confidence = "Your recent buying amount is close to what you actually use."
 
     return " ".join((decision, evidence, confidence))
 

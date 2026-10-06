@@ -93,6 +93,7 @@ export default function NextShopScreen({ navigation, route }: any) {
       setQuantity(listed?.quantity ?? nextInsight.recommended_qty);
       setDraftQuantity(listed?.quantity ?? nextInsight.recommended_qty);
       setIsSetByUser(listed?.source === 'manual');
+      setAddedToList(Boolean(listed));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'The next-shop recommendation could not be loaded.');
     } finally {
@@ -109,6 +110,34 @@ export default function NextShopScreen({ navigation, route }: any) {
 
   const maximum = useMemo(() => Math.max(insight?.usual_purchase ?? 0, quantity, 1), [insight, quantity]);
   const stateStyle = insight ? purchaseStateStyle(insight.state) : null;
+  const shoppingPlan = useMemo(() => {
+    if (!insight) return null;
+    const daysSinceLastPurchase = insight.days_since_last_purchase ?? 0;
+    const daysUntilBuy = Math.max(0, Math.ceil(insight.days_until_next_shop - daysSinceLastPurchase));
+    const when = quantity <= 0
+      ? 'Not yet'
+      : daysUntilBuy <= 0
+        ? 'On your next shop'
+        : daysUntilBuy === 1
+          ? 'In about 1 day'
+          : `In about ${daysUntilBuy} days`;
+
+    let nextStep: string;
+    if (addedToList && quantity > 0) {
+      nextStep = `You're set — ${formatQuantity(quantity, insight.unit)} is already on your Shopping List.`;
+    } else if (quantity <= 0 && insight.current_inventory > 0) {
+      nextStep = `Use the ${formatQuantity(insight.current_inventory, insight.unit)} you already have first.`;
+    } else if (quantity <= 0) {
+      nextStep = 'Wait a little longer before buying this item again.';
+    } else if (insight.state === 'BUY_LESS') {
+      nextStep = `Choose a smaller pack, or buy only ${formatQuantity(quantity, insight.unit)}.`;
+    } else if (insight.state === 'BUY_MORE') {
+      nextStep = `Add ${formatQuantity(quantity, insight.unit)} to your list so you are less likely to run out.`;
+    } else {
+      nextStep = `Stick close to ${formatQuantity(quantity, insight.unit)} on your next shop.`;
+    }
+    return { when, nextStep };
+  }, [addedToList, insight, quantity]);
 
   const openEditor = () => {
     setDraftQuantity(quantity);
@@ -224,6 +253,24 @@ export default function NextShopScreen({ navigation, route }: any) {
               <Text style={styles.summaryTitle}>Recommendation summary</Text>
               <Text style={styles.summaryBody}>{insight.summary}</Text>
             </View>
+
+            {shoppingPlan ? (
+              <View style={styles.planCard}>
+                <Text style={styles.planTitle}>Your shopping plan</Text>
+                <View style={styles.planRow}>
+                  <Text style={styles.planLabel}>When</Text>
+                  <Text style={styles.planValue}>{shoppingPlan.when}</Text>
+                </View>
+                <View style={styles.planRow}>
+                  <Text style={styles.planLabel}>Amount</Text>
+                  <Text style={styles.planValue}>{formatQuantity(quantity, insight.unit)}</Text>
+                </View>
+                <View style={styles.nextStepBox}>
+                  <Text style={styles.nextStepLabel}>What to do now</Text>
+                  <Text style={styles.nextStepText}>{shoppingPlan.nextStep}</Text>
+                </View>
+              </View>
+            ) : null}
 
             <View style={styles.whyCard}>
               <Text style={styles.whyTitle}>Why this amount</Text>
@@ -344,6 +391,14 @@ const styles = StyleSheet.create({
   summaryCard: { borderWidth: 1, borderColor: colors.borderSoft, borderRadius: radii.lg, backgroundColor: colors.primaryTint, padding: spacing.xl },
   summaryTitle: { color: colors.primaryDark, fontFamily: fonts.bold, fontSize: fontSize.title },
   summaryBody: { marginTop: spacing.sm, color: colors.textPrimary, fontFamily: fonts.regular, fontSize: fontSize.md, lineHeight: 22 },
+  planCard: { borderRadius: radii.lg, backgroundColor: colors.card, padding: spacing.xl },
+  planTitle: { color: colors.textPrimary, fontFamily: fonts.bold, fontSize: fontSize.title },
+  planRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, paddingVertical: spacing.md },
+  planLabel: { color: colors.textSecondary, fontFamily: fonts.regular, fontSize: fontSize.md },
+  planValue: { color: colors.primaryDark, fontFamily: fonts.bold, fontSize: fontSize.md },
+  nextStepBox: { marginTop: spacing.lg, borderRadius: radii.md, backgroundColor: colors.foodIconBg, padding: spacing.lg },
+  nextStepLabel: { color: colors.primary, fontFamily: fonts.bold, fontSize: fontSize.sm },
+  nextStepText: { marginTop: spacing.xs, color: colors.textPrimary, fontFamily: fonts.regular, fontSize: fontSize.md, lineHeight: 21 },
   whyCard: { borderRadius: radii.lg, backgroundColor: colors.expiryWarnBg, padding: spacing.xl },
   whyTitle: { color: colors.expiryWarnText, fontFamily: fonts.bold, fontSize: fontSize.title },
   whyBody: { marginTop: spacing.sm, color: colors.expiryWarnText, fontFamily: fonts.regular, fontSize: fontSize.md, lineHeight: 21 },
