@@ -12,6 +12,7 @@ the purchase-recommendation technical design.
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Iterable, Mapping
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
@@ -103,6 +104,10 @@ def _normalise_category(category: str | None, name: str) -> str:
     raw = f"{category or ''} {name}".casefold()
     if "frozen" in raw:
         return "Frozen"
+    # Check drinks before fruit so names such as "Orange Juice" are not
+    # misclassified as Fruit merely because they contain a fruit name.
+    if any(word in raw for word in ("beverage", "drink", "juice", "coffee", "tea", "soda", "water")):
+        return "Beverages"
     if any(word in raw for word in ("fruit", "apple", "banana", "orange", "mango", "berry")):
         return "Fruit"
     if any(
@@ -117,6 +122,8 @@ def _normalise_category(category: str | None, name: str) -> str:
             "potato",
             "onion",
             "cabbage",
+            "tomato",
+            "zucchini",
         )
     ):
         return "Vegetables"
@@ -134,13 +141,14 @@ def _normalise_category(category: str | None, name: str) -> str:
             "chicken",
             "beef",
             "lamb",
+            "salmon",
+            "tilapia",
+            "turkey",
             "tofu",
             "tempeh",
         )
     ):
         return "Protein"
-    if any(word in raw for word in ("beverage", "drink", "juice", "coffee", "tea", "soda", "water")):
-        return "Beverages"
     if any(
         word in raw
         for word in (
@@ -230,6 +238,56 @@ def _latest_row(rows: list[Mapping[str, Any]]) -> Mapping[str, Any]:
     return max(rows, key=sort_key)
 
 
+def _preferred_display_unit(rows: list[Mapping[str, Any]]) -> Any:
+    """Choose the unit family represented by the most records.
+
+    Exact aliases (for example ``litre``/``l``) are grouped, and compatible
+    units (for example ``ml``/``l``) vote for the same dimension. Ties use the
+    newest matching record, preserving the old behaviour only when there is no
+    clear majority. The returned spelling comes from the newest record in the
+    winning canonical unit so existing API display conventions remain stable.
+    """
+
+    if not rows:
+        return None
+
+    unit_rows = [
+        (
+            row,
+            *_unit_definition(row.get("unit"))[:2],
+        )
+        for row in rows
+    ]
+    dimension_counts = Counter(dimension for _, _, dimension in unit_rows)
+    max_dimension_count = max(dimension_counts.values())
+    candidate_dimensions = {
+        dimension
+        for dimension, count in dimension_counts.items()
+        if count == max_dimension_count
+    }
+    newest_dimension_row = _latest_row(
+        [row for row, _, dimension in unit_rows if dimension in candidate_dimensions]
+    )
+    preferred_dimension = _unit_definition(newest_dimension_row.get("unit"))[1]
+
+    compatible_rows = [
+        (row, canonical)
+        for row, canonical, dimension in unit_rows
+        if dimension == preferred_dimension
+    ]
+    canonical_counts = Counter(canonical for _, canonical in compatible_rows)
+    max_canonical_count = max(canonical_counts.values())
+    candidate_canonicals = {
+        canonical
+        for canonical, count in canonical_counts.items()
+        if count == max_canonical_count
+    }
+    newest_unit_row = _latest_row(
+        [row for row, canonical in compatible_rows if canonical in candidate_canonicals]
+    )
+    return newest_unit_row.get("unit")
+
+
 def _purchase_interval_days(cycle_dates: list[date]) -> float | None:
     unique_dates = sorted(set(cycle_dates))
     if len(unique_dates) < 2:
@@ -257,7 +315,12 @@ def _build_recommendations(
     for key, source_rows in raw_groups.items():
         latest = _latest_row(source_rows)
         display_name = " ".join(str(latest["name"]).split())
-        display_unit = latest.get("unit")
+        recent_rows = [
+            row
+            for row in source_rows
+            if (row_date := _row_date(row)) is not None and row_date >= history_cutoff
+        ]
+        display_unit = _preferred_display_unit(recent_rows or source_rows)
         category = _normalise_category(latest.get("category"), display_name)
         aliases = {key, *(_normalise_name(row.get("name")) for row in source_rows)}
 
@@ -338,7 +401,7 @@ def _build_recommendations(
         )
         if not has_reliable_history:
             habit_status = "still_learning"
-            status_label = "Early Estimate"
+            status_label = "Not enough history"
         elif over_purchase:
             habit_status = "possible_over_purchase"
             status_label = "Possible Over-Purchase"
@@ -434,8 +497,8 @@ def _build_recommendations(
             "recommendation": state,
             "recommended_qty": _quantity(recommended),
             "reason": reason,
-            # Additive Epic 9 audit field. The current product still exposes an
-            # Early Estimate below three purchases rather than blocking it.
+            # Additive Epic 9 audit field. A recommendation remains available
+            # below three purchases, while AC 7.1.4 hides the waste-rate metric.
             "purchase_count_8w": purchase_count,
             "usual_purchase": _quantity(usual_purchase),
             "predicted_demand": _quantity(predicted_demand),
@@ -443,9 +506,13 @@ def _build_recommendations(
             "average_consumption": _quantity(average_consumption),
             "average_wasted": _quantity(average_wasted),
             "average_weekly_consumption": _quantity(average_weekly_consumption),
-            "average_waste_rate": _ratio(waste_rate) if waste_rate is not None else None,
+            "average_waste_rate": (
+                _ratio(waste_rate) if has_reliable_history and waste_rate is not None else None
+            ),
             "purchase_waste_rate": (
-                _ratio(purchase_waste_rate) if purchase_waste_rate is not None else None
+                _ratio(purchase_waste_rate)
+                if has_reliable_history and purchase_waste_rate is not None
+                else None
             ),
             "waste_risk": waste_risk,
             "over_purchase_detected": over_purchase,

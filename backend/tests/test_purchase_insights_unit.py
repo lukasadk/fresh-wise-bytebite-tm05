@@ -113,11 +113,28 @@ def test_waste_rate_uses_outcomes_and_keeps_purchase_denominator_as_secondary_me
             _row(
                 name="Bread",
                 unit="loaf",
-                quantity=10,
+                purchase_date=TODAY - timedelta(days=14),
+                quantity=4,
                 status="partially_used",
-                consumed_qty=8,
-                wasted_qty=2,
-            )
+                consumed_qty=3,
+                wasted_qty=1,
+            ),
+            _row(
+                name="Bread",
+                unit="loaf",
+                purchase_date=TODAY - timedelta(days=7),
+                quantity=3,
+                status="partially_used",
+                consumed_qty=3,
+            ),
+            _row(
+                name="Bread",
+                unit="loaf",
+                quantity=3,
+                status="partially_used",
+                consumed_qty=2,
+                wasted_qty=1,
+            ),
         ]
     )["Bread"]
 
@@ -136,7 +153,9 @@ def test_over_purchase_requires_three_trips_and_thirty_percent_outcome_waste():
     )["Spinach"]
     assert two_trip_item["over_purchase_detected"] is False
     assert two_trip_item["habit_status"] == "still_learning"
-    assert two_trip_item["status_label"] == "Early Estimate"
+    assert two_trip_item["status_label"] == "Not enough history"
+    assert two_trip_item["average_waste_rate"] is None
+    assert two_trip_item["purchase_waste_rate"] is None
     assert two_trip_item["reason"].startswith("Early estimate from 2 recent purchases")
     assert two_trip_item["recommendation_available"] is True
     assert two_trip_item["recommended_qty"] == 1
@@ -197,7 +216,50 @@ def test_exact_unit_conversion_and_incompatible_unit_exclusion():
     assert any("Excluded 1" in warning for warning in item["warnings"])
 
 
-def test_two_dates_use_observed_interval_but_remain_an_early_estimate():
+def test_most_common_compatible_unit_wins_over_newest_incompatible_unit():
+    rows = [
+        _row(name="Milk", unit="carton", purchase_date=TODAY - timedelta(days=21), consumed_qty=1),
+        _row(name="Milk", unit="carton", purchase_date=TODAY - timedelta(days=14), consumed_qty=1),
+        _row(name="Milk", unit="carton", purchase_date=TODAY - timedelta(days=7), consumed_qty=1),
+        _row(name="Milk", unit="piece", consumed_qty=1),
+        _row(name="Orange Juice", unit="ml", purchase_date=TODAY - timedelta(days=21), consumed_qty=500),
+        _row(name="Orange Juice", unit="ml", purchase_date=TODAY - timedelta(days=14), consumed_qty=500),
+        _row(name="Orange Juice", unit="l", purchase_date=TODAY - timedelta(days=7), consumed_qty=1),
+        _row(name="Orange Juice", unit="piece", consumed_qty=1),
+    ]
+
+    items = _by_name(rows)
+    milk = items["Milk"]
+    assert milk["unit"] == "carton"
+    assert milk["purchase_count"] == 3
+    assert any("Excluded 1" in warning and "carton" in warning for warning in milk["warnings"])
+
+    orange_juice = items["Orange Juice"]
+    assert orange_juice["unit"] == "ml"
+    assert orange_juice["purchase_count"] == 3
+    assert orange_juice["category"] == "Beverages"
+    assert any("Excluded 1" in warning and "ml" in warning for warning in orange_juice["warnings"])
+
+
+@pytest.mark.parametrize(
+    ("name", "expected_category"),
+    [
+        ("Salmon", "Protein"),
+        ("Tilapia", "Protein"),
+        ("Turkey", "Protein"),
+        ("Tomatoes", "Vegetables"),
+        ("Zucchini", "Vegetables"),
+    ],
+)
+def test_specific_food_names_are_normalised_for_shopping_list_matching(
+    name: str,
+    expected_category: str,
+):
+    item = _by_name([_row(name=name)])[name]
+    assert item["category"] == expected_category
+
+
+def test_two_dates_use_observed_interval_but_report_not_enough_history():
     item = _by_name(
         [
             _row(name="Apples", purchase_date=TODAY - timedelta(days=20), consumed_qty=4),
@@ -210,7 +272,8 @@ def test_two_dates_use_observed_interval_but_remain_an_early_estimate():
     assert item["days_until_next_shop"] == 20
     assert item["is_cold_start"] is True
     assert item["recommendation_available"] is True
-    assert item["status_label"] == "Early Estimate"
+    assert item["status_label"] == "Not enough history"
+    assert item["average_waste_rate"] is None
 
 
 def test_reason_text_matches_each_board_pattern():
@@ -317,7 +380,8 @@ async def test_post_recommendation_contract_filters_internal_fields(path: str):
     assert body["recommendation"] == body["state"]
     assert body["recommendation_available"] is True
     assert body["recommended_qty"] == 0
-    assert body["status_label"] == "Early Estimate"
+    assert body["status_label"] == "Not enough history"
+    assert body["average_waste_rate"] is None
     assert body["evidence_window_days"] == 56
     assert body["method"] == "rule_baseline_v2_early_estimate"
     assert "_aliases" not in body

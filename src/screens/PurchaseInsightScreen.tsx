@@ -89,14 +89,27 @@ export default function PurchaseInsightScreen({ navigation, route }: any) {
   }, [insight]);
 
   const stateStyle = insight ? purchaseStateStyle(insight.state) : null;
-  const wastePercent = insight?.average_waste_rate === null || insight?.average_waste_rate === undefined
+  const wastePercent = insight?.purchase_count === undefined
+    || insight.purchase_count < 3
+    || insight.average_waste_rate === null
+    || insight.average_waste_rate === undefined
     ? '—'
     : `${Math.round(insight.average_waste_rate * 100)}%`;
   const alertCopy = insight?.habit_status === 'possible_over_purchase'
     ? { title: 'Possible over-purchase', body: 'Your waste rate is higher than usual.', urgent: true }
     : insight?.habit_status === 'on_track'
       ? { title: 'On track', body: 'Your purchases are close to what you use.', urgent: false }
-      : { title: 'Early estimate', body: 'Available now; more purchase and outcome history will improve it.', urgent: false };
+      : insight && insight.purchase_count >= 3
+        ? {
+          title: 'Not enough history',
+          body: 'Log consumption or waste outcomes before showing a waste rate.',
+          urgent: false,
+        }
+        : {
+          title: 'Not enough history',
+          body: 'At least 3 purchase trips are needed before showing a waste rate.',
+          urgent: false,
+        };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

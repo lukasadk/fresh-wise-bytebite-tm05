@@ -57,7 +57,9 @@ function HabitRow({ item, onPress }: { item: PurchaseRecommendation; onPress: ()
         <Text style={styles.rowMeta} numberOfLines={2}>
           {hasRate
             ? `${item.purchase_count} purchase trips in the last 8 weeks`
-            : 'Early estimate available — more history will improve it'}
+            : item.purchase_count < 3
+              ? 'Not enough history — at least 3 purchase trips are needed'
+              : 'Not enough history — log consumption or waste outcomes'}
         </Text>
         <View style={[styles.statusBadge, { backgroundColor: tone.backgroundColor }]}>
           <Text style={[styles.statusText, { color: tone.color }]}>{item.status_label}</Text>

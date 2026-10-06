@@ -47,7 +47,7 @@ export type PurchaseRecommendation = PurchaseInsightParams & {
   waste_risk: 'unknown' | 'low' | 'medium' | 'high';
   over_purchase_detected: boolean;
   habit_status: 'possible_over_purchase' | 'on_track' | 'still_learning';
-  status_label: 'Possible Over-Purchase' | 'On Track' | 'Early Estimate';
+  status_label: 'Possible Over-Purchase' | 'On Track' | 'Not enough history';
   recommendation_available: boolean;
   has_outcomes: boolean;
   purchase_count: number;

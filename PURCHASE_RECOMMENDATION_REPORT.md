@@ -2,9 +2,9 @@
 
 ## 结论
 
-本功能按 Google Drive 中的 `FreshWise_Iteration_3.pptx`、LeanKit Epic 7/8 验收规则和 FreshWise Figma 概念稿实现为 **手机 App 调用 FastAPI** 的规则型服务，不训练、加载或依赖本地机器学习模型。所有结果只来自当前设备用户最近 8 周的购买、消耗、浪费记录和当前未过期库存；API 会把计算证据一起返回，App 负责展示、编辑确认和加入购物清单。根据 2026-10-05 的产品决定，推荐入口已从“3 次购买且有 outcome 后才开放”调整为“首次购买即可显示 Early Estimate”；3 次购买且有 outcome 仍是可靠建议和过量购买判定的门槛。
+本功能按 Google Drive 中的 `FreshWise_Iteration_3.pptx`、LeanKit Epic 7/8 验收规则和 FreshWise Figma 概念稿实现为 **手机 App 调用 FastAPI** 的规则型服务，不训练、加载或依赖本地机器学习模型。所有结果只来自当前设备用户最近 8 周的购买、消耗、浪费记录和当前未过期库存；API 会把计算证据一起返回，App 负责展示、编辑确认和加入购物清单。推荐从首次购买起即可提供，但少于 3 个购买日期时按 AC 7.1.4 显示 `Not enough history`，并隐藏浪费率；至少 3 次购买且有 outcome 才显示浪费率并参与过量购买判定。
 
-本次只读取看板进行核对，没有修改看板，也没有上传或推送本地仓库。
+2026-10-06 修正了历史单位选择、食品分类词表和 AC 7.1.4 的展示契约；看板本身未被修改。
 
 ## 计算契约
 
@@ -31,10 +31,10 @@ recommended quantity = ceil(max(0, raw recommendation))
 - 推荐量低于通常购买量的 80%：`BUY_LESS`。
 - 推荐量高于通常购买量的 120%：`BUY_MORE`。
 - 其余：`KEEP_SAME`。
-- 首次购买即提供 `Still Learning / Early Estimate`，不要求先记录 consumed/wasted。
+- 首次购买即提供购买建议；少于 3 次时为 `Still Learning / Not enough history`，且不返回可展示的浪费率。
 - 至少 3 次购买且浪费率不低于 30%：`Possible Over-Purchase`；否则为 `On Track`。
 
-`g/kg`、`mL/L` 等精确可换算单位会统一计算；bag、box、carton 等没有可靠换算关系的单位不会猜测，相关记录会被排除并返回 `warnings`。
+系统按最近 8 周记录中出现最多的兼容单位族选择计算单位，不再由最新一条记录决定；同票时才以最新记录决胜。`g/kg`、`mL/L` 等精确可换算单位会统一计算；bag、box、carton 等没有可靠换算关系的单位不会猜测，相关记录会被排除并返回 `warnings`。分类归一化已覆盖 Salmon、Tilapia、Turkey、Tomatoes、Zucchini，并优先把 Orange Juice 等含 `juice` 的名称归为 Beverages。
 
 ## 逐条验收结果
 
@@ -43,7 +43,7 @@ recommended quantity = ceil(max(0, raw recommendation))
 | AC 7.1.1 最近 8 周逐商品指标 | 已实现 | API 返回 trips、三项平均值、outcome waste rate、非过期库存；名称忽略大小写和重复空格分组 |
 | AC 7.1.2 Activity → Buying Habits | 已实现 | Overview 卡片和 `View All`；列表按浪费率降序 |
 | AC 7.1.3 过量购买标记 | 已实现 | 3 次且 waste rate ≥ 30% 为 Coral Red；否则 Forest Green |
-| AC 7.1.4 Still Learning | 已按产品决定调整 | 少于 3 次仍放到底部，但首次购买即显示明确标记的 Early Estimate |
+| AC 7.1.4 Still Learning | 已实现 | 少于 3 次仍放到底部并显示 `Not enough history`，浪费率显示为 `—`；建议本身仍可提前提供 |
 | AC 7.1.5 查看证据 | 已实现 | Item Purchase Insight 的 purchased/consumed/wasted 三条横向证据条及指定颜色；返回时保留列表页面和滚动位置 |
 | AC 7.1.6 空状态 | 已实现 | 无 consumed/wasted 记录时显示指定文案和 `Go to Pantry` |
 | AC 7.2.1 推荐数量公式 | 已扩展冷启动 | 可靠历史沿用 weekly consumption；早期建议按已记录 consumption 或 usual purchase，均扣除非过期库存 |
@@ -97,7 +97,8 @@ App 沿用现有 `X-Device-Id` 身份机制和 API 配置，不需要新增模�
 
 ## 验证结果
 
-- 购买建议纯逻辑专项测试：`12 passed`，另有现有 Pydantic/FastAPI 弃用警告 5 条。
+- 购买建议纯逻辑专项测试：`18 passed`；覆盖多数单位优先、兼容单位换算、5 个新增食品分类、少于 3 次隐藏浪费率和公开 API 契约。
+- 全部不依赖 PostgreSQL 的后端单元测试：`64 passed`，另有现有 Pydantic/FastAPI 弃用警告 5 条。
 - TypeScript 类型检查：通过，`tsc --noEmit` 无错误。
 - Expo Web 生产导出：通过，2,504 个模块成功打包。
 - Shopping List schema 与 OpenAPI smoke test：通过。
