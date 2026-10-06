@@ -24,6 +24,9 @@ modules/*/android/src/main/jniLibs/
 android/app/src/main/assets/wastewise-vlm/
 artifacts/
 backend/src/wastewise_grocery_vlm/static/downloads/
+# Android packages are release artifacts. Publish them through GitHub Releases
+# or object storage instead of committing machine-local builds to the repo.
+backend/app/static/downloads/*.apk
 *.jks
 *.keystore
 *.p8

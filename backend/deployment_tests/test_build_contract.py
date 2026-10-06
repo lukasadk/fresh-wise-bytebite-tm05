@@ -26,3 +26,11 @@ def test_deployment_context_excludes_local_apks(ignore_name: str) -> None:
 
     assert "app/static/downloads/" in rules
     assert not any(rule.startswith("!") and "app/static/downloads" in rule for rule in rules)
+
+
+def test_git_ignores_new_local_apk_builds() -> None:
+    """A normal ``git add`` must not pick up a developer's APK build."""
+
+    gitignore = (BACKEND_ROOT.parent / ".gitignore").read_text(encoding="utf-8").splitlines()
+
+    assert "backend/app/static/downloads/*.apk" in {line.strip() for line in gitignore}
