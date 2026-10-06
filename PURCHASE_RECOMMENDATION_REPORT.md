@@ -36,6 +36,8 @@ recommended quantity = ceil(max(0, raw recommendation))
 
 系统按最近 8 周记录中出现最多的兼容单位族选择计算单位，不再由最新一条记录决定；同票时才以最新记录决胜。`g/kg`、`mL/L` 等精确可换算单位会统一计算；bag、box、carton 等没有可靠换算关系的单位不会猜测，相关记录会被排除并返回 `warnings`。分类归一化已覆盖 Salmon、Tilapia、Turkey、Tomatoes、Zucchini，并优先把 Orange Juice 等含 `juice` 的名称归为 Beverages。
 
+每个推荐额外返回 `summary`：使用相同的规则输入概括购买结论、最近 8 周购买次数、通常购买量、当前库存和数据可信度。少于 3 次购买时只说明仍需多少次记录，不显示实际浪费率。App 的 Buying Habits 页面另有一张 `8-week summary` 卡片，汇总 Needs attention、On track 和 Still learning 的商品数量。
+
 ## 逐条验收结果
 
 | 验收项 | 状态 | 实现证据 |
@@ -52,6 +54,7 @@ recommended quantity = ceil(max(0, raw recommendation))
 | AC 7.2.4 Next Shop 展示 | 已实现 | 独立 Next Shop 页面展示 badge、大号数量、单位、usual quantity 和四种指定颜色 |
 | AC 7.2.5 数据刷新 | 已实现 | Buying Habits 与详情页每次重新获得焦点时重新调用 API 计算 |
 | AC 7.3.1 原因文案 | 已实现 | 四种状态由 API 返回看板指定模板，不调用 LLM 生成 |
+| 建议总结 | 已实现 | API 返回逐商品事实总结；Buying Habits 汇总三种可信度/风险状态，不调用 LLM |
 | AC 7.3.2 数量对比 | 已实现 | `Show comparison` 展开 Usual/Recommended 两条带数字的对比条 |
 | AC 7.3.3 编辑数量 | 已实现 | bottom sheet、0–99 stepper、Confirm/Cancel、`Set by you`、绿色 `Quantity updated` toast |
 | AC 7.3.4 加入购物清单 | 已实现 | 复用 Lukas 的 Epic 8 UUID 清单契约；按钮确认后变为 `View Shopping List`；编辑建议数量会写回清单且不再被自动同步覆盖 |
@@ -90,9 +93,9 @@ App 沿用现有 `X-Device-Id` 身份机制和 API 配置，不需要新增模�
 - `backend/app/routers/shopping.py`：Lukas Epic 8 购物清单查询、新增、状态/数量更新、删除和建议同步。
 - `backend/app/schemas.py`、`backend/app/models.py`：公开响应契约和 ORM。
 - `src/screens/ActivityScreen.tsx`：Buying Habits 入口卡片。
-- `src/screens/BuyingHabitsScreen.tsx`：排序、状态区和空状态。
+- `src/screens/BuyingHabitsScreen.tsx`：8 周总览、排序、状态区和空状态。
 - `src/screens/PurchaseInsightScreen.tsx`：过量购买提示、8 周证据、统计卡、未过期库存和 Next Shop 入口。
-- `src/screens/NextShopScreen.tsx`：推荐量、解释、对比、计算证据、数量编辑和购物清单联动。
+- `src/screens/NextShopScreen.tsx`：推荐总结、推荐量、解释、对比、计算证据、数量编辑和购物清单联动。
 - `backend/tests/test_purchase_insights_unit.py`：看板公式、阈值、8 周窗口、单位、路由和 schema 测试。
 
 ## 验证结果

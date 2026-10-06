@@ -220,6 +220,11 @@ export default function NextShopScreen({ navigation, route }: any) {
               <Text style={styles.usualText}>Usual: {formatQuantity(insight.usual_purchase, insight.unit)}</Text>
             </View>
 
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>Recommendation summary</Text>
+              <Text style={styles.summaryBody}>{insight.summary}</Text>
+            </View>
+
             <View style={styles.whyCard}>
               <Text style={styles.whyTitle}>Why this amount</Text>
               <Text style={styles.whyBody}>{insight.reason}</Text>
@@ -336,6 +341,9 @@ const styles = StyleSheet.create({
   stateBadge: { borderRadius: radii.pill, paddingVertical: 6, paddingHorizontal: spacing.md },
   stateBadgeText: { fontFamily: fonts.bold, fontSize: fontSize.sm, textTransform: 'uppercase' },
   usualText: { marginTop: spacing.md, color: colors.textSecondary, fontFamily: fonts.regular, fontSize: fontSize.md },
+  summaryCard: { borderWidth: 1, borderColor: colors.borderSoft, borderRadius: radii.lg, backgroundColor: colors.primaryTint, padding: spacing.xl },
+  summaryTitle: { color: colors.primaryDark, fontFamily: fonts.bold, fontSize: fontSize.title },
+  summaryBody: { marginTop: spacing.sm, color: colors.textPrimary, fontFamily: fonts.regular, fontSize: fontSize.md, lineHeight: 22 },
   whyCard: { borderRadius: radii.lg, backgroundColor: colors.expiryWarnBg, padding: spacing.xl },
   whyTitle: { color: colors.expiryWarnText, fontFamily: fonts.bold, fontSize: fontSize.title },
   whyBody: { marginTop: spacing.sm, color: colors.expiryWarnText, fontFamily: fonts.regular, fontSize: fontSize.md, lineHeight: 21 },

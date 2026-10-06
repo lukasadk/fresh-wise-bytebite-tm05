@@ -88,6 +88,7 @@ def test_policy_returns_all_four_next_shop_states():
     assert milk["average_purchase_interval_days"] == 28
     assert milk["days_until_next_shop"] == 28
     assert milk["category"] == "Dairy"
+    assert "This uses 3 purchase trips from the last 8 weeks" in milk["summary"]
 
     eggs = by_name["Eggs"]
     assert eggs["state"] == "KEEP_SAME"
@@ -156,6 +157,8 @@ def test_over_purchase_requires_three_trips_and_thirty_percent_outcome_waste():
     assert two_trip_item["status_label"] == "Not enough history"
     assert two_trip_item["average_waste_rate"] is None
     assert two_trip_item["purchase_waste_rate"] is None
+    assert "Record 1 more purchase trip" in two_trip_item["summary"]
+    assert "90%" not in two_trip_item["summary"]
     assert two_trip_item["reason"].startswith("Early estimate from 2 recent purchases")
     assert two_trip_item["recommendation_available"] is True
     assert two_trip_item["recommended_qty"] == 1
@@ -170,6 +173,7 @@ def test_over_purchase_requires_three_trips_and_thirty_percent_outcome_waste():
     assert three_trip_item["average_waste_rate"] == 0.3
     assert three_trip_item["over_purchase_detected"] is True
     assert three_trip_item["habit_status"] == "possible_over_purchase"
+    assert "30% waste rate" in three_trip_item["summary"]
 
 
 def test_eight_week_window_and_non_expired_inventory_are_applied_separately():
@@ -345,6 +349,7 @@ def test_public_schema_and_all_routes_are_registered():
     validated = PurchaseRecommendationOut.model_validate(item)
     assert validated.food_name == "Milk"
     assert validated.recommendation == validated.state
+    assert validated.summary.startswith("No new Milk purchase is recommended yet.")
     assert validated.method == "rule_baseline_v2_early_estimate"
 
     paths = app.openapi()["paths"]
@@ -382,6 +387,7 @@ async def test_post_recommendation_contract_filters_internal_fields(path: str):
     assert body["recommended_qty"] == 0
     assert body["status_label"] == "Not enough history"
     assert body["average_waste_rate"] is None
+    assert body["summary"].startswith("No new Milk purchase is recommended yet.")
     assert body["evidence_window_days"] == 56
     assert body["method"] == "rule_baseline_v2_early_estimate"
     assert "_aliases" not in body

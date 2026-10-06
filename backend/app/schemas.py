@@ -224,6 +224,7 @@ class PurchaseRecommendationOut(BaseModel):
     recommendation: PurchaseState
     recommended_qty: float
     reason: str
+    summary: str
     usual_purchase: float
     predicted_demand: float
     current_inventory: float

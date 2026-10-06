@@ -32,6 +32,8 @@ export type PurchaseRecommendation = PurchaseInsightParams & {
   recommendation: PurchaseState;
   recommended_qty: number;
   reason: string;
+  /** Short factual overview generated from the same rule inputs as the recommendation. */
+  summary: string;
   /** Distinct purchase dates observed in the latest eight-week window. */
   purchase_count_8w?: number;
   usual_purchase: number;

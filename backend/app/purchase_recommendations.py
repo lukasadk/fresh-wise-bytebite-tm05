@@ -64,6 +64,7 @@ class PurchaseRecommendation(BaseModel):
     state: PurchaseState
     recommended_qty: float = Field(default=0, ge=0)
     reason: str | None = None
+    summary: str | None = None
 
     @field_validator("state", mode="before")
     @classmethod

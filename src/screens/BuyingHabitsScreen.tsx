@@ -130,6 +130,11 @@ export default function BuyingHabitsScreen({ navigation }: any) {
   const onTrack = allItems
     .filter((item) => item.habit_status === 'on_track' && !learningNames.has(item.name))
     .sort((a, b) => (b.average_waste_rate ?? -1) - (a.average_waste_rate ?? -1));
+  const overviewSummary = attention.length > 0
+    ? `${attention.length} item${attention.length === 1 ? '' : 's'} may be over-purchased. Review ${attention.length === 1 ? 'it' : 'them'} before your next shop.`
+    : onTrack.length > 0
+      ? `No over-purchase pattern is currently flagged across ${onTrack.length} reliable item${onTrack.length === 1 ? '' : 's'}.`
+      : 'Keep recording purchases and outcomes to unlock a reliable buying-pattern summary.';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -173,6 +178,26 @@ export default function BuyingHabitsScreen({ navigation }: any) {
           </View>
         ) : (
           <>
+            <View style={styles.overviewCard}>
+              <Text style={styles.overviewTitle}>8-week summary</Text>
+              <Text style={styles.overviewBody}>{overviewSummary}</Text>
+              <View style={styles.overviewMetrics}>
+                <View style={styles.overviewMetric}>
+                  <Text style={[styles.overviewValue, { color: colors.statusToday }]}>{attention.length}</Text>
+                  <Text style={styles.overviewLabel}>Needs attention</Text>
+                </View>
+                <View style={styles.overviewDivider} />
+                <View style={styles.overviewMetric}>
+                  <Text style={[styles.overviewValue, { color: colors.statusFresh }]}>{onTrack.length}</Text>
+                  <Text style={styles.overviewLabel}>On track</Text>
+                </View>
+                <View style={styles.overviewDivider} />
+                <View style={styles.overviewMetric}>
+                  <Text style={[styles.overviewValue, { color: colors.slateTeal }]}>{learning.length}</Text>
+                  <Text style={styles.overviewLabel}>Still learning</Text>
+                </View>
+              </View>
+            </View>
             <HabitGroup
               title="Needs attention"
               subtitle={`${attention.length} item${attention.length === 1 ? '' : 's'} with higher waste rates`}
@@ -256,6 +281,33 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     lineHeight: 21,
   },
+  overviewCard: {
+    marginBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    borderRadius: radii.lg,
+    backgroundColor: colors.primaryTint,
+    padding: spacing.xl,
+  },
+  overviewTitle: { color: colors.primaryDark, fontFamily: fonts.bold, fontSize: fontSize.title },
+  overviewBody: {
+    marginTop: spacing.sm,
+    color: colors.textPrimary,
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    lineHeight: 21,
+  },
+  overviewMetrics: { flexDirection: 'row', alignItems: 'stretch', marginTop: spacing.lg },
+  overviewMetric: { flex: 1, alignItems: 'center', paddingHorizontal: spacing.xs },
+  overviewValue: { fontFamily: fonts.bold, fontSize: 24 },
+  overviewLabel: {
+    marginTop: spacing.xs,
+    color: colors.textSecondary,
+    fontFamily: fonts.regular,
+    fontSize: fontSize.xs,
+    textAlign: 'center',
+  },
+  overviewDivider: { width: StyleSheet.hairlineWidth, backgroundColor: colors.border },
   group: { marginBottom: spacing.xl },
   groupTitle: { color: colors.textPrimary, fontFamily: fonts.bold, fontSize: fontSize.title },
   groupSubtitle: {

@@ -296,6 +296,58 @@ def _purchase_interval_days(cycle_dates: list[date]) -> float | None:
     return round(sum(intervals) / len(intervals), 1)
 
 
+def _recommendation_summary(
+    *,
+    name: str,
+    state: str,
+    recommended: float,
+    usual_purchase: float,
+    current_inventory: float,
+    unit: str | None,
+    purchase_count: int,
+    has_outcomes: bool,
+    over_purchase: bool,
+    waste_rate: float | None,
+) -> str:
+    """Build a short, factual summary from the same auditable rule inputs."""
+
+    amount = _quantity_with_unit(recommended, unit)
+    if state == "DO_NOT_BUY_YET":
+        decision = f"No new {name} purchase is recommended yet."
+    elif state == "BUY_LESS":
+        decision = f"Plan to buy {amount} of {name}, less than your usual amount."
+    elif state == "BUY_MORE":
+        decision = f"Plan to buy {amount} of {name}, more than your usual amount."
+    else:
+        decision = f"Keep your next {name} purchase close to {amount}."
+
+    trip_word = "trip" if purchase_count == 1 else "trips"
+    evidence = (
+        f"This uses {purchase_count} purchase {trip_word} from the last 8 weeks; "
+        f"you usually buy {_quantity_with_unit(usual_purchase, unit)} and currently have "
+        f"{_quantity_with_unit(current_inventory, unit)}."
+    )
+
+    if purchase_count < RELIABLE_PURCHASE_TRIPS:
+        trips_needed = RELIABLE_PURCHASE_TRIPS - purchase_count
+        needed_word = "trip" if trips_needed == 1 else "trips"
+        confidence = (
+            f"Record {trips_needed} more purchase {needed_word} before treating the waste-rate "
+            "assessment as reliable."
+        )
+    elif not has_outcomes:
+        confidence = "Log consumption or waste outcomes before a waste-rate assessment is shown."
+    elif over_purchase and waste_rate is not None:
+        confidence = (
+            f"Recorded outcomes show a {round(_ratio(waste_rate) * 100)}% waste rate, so this item "
+            "needs attention."
+        )
+    else:
+        confidence = "Recorded consumption and waste outcomes indicate this item is on track."
+
+    return " ".join((decision, evidence, confidence))
+
+
 def _build_recommendations(
     rows: Iterable[Mapping[str, Any]],
     *,
@@ -457,6 +509,19 @@ def _build_recommendations(
         else:
             reason = "Your usual amount matches what you use."
 
+        summary = _recommendation_summary(
+            name=display_name,
+            state=state,
+            recommended=recommended,
+            usual_purchase=usual_purchase,
+            current_inventory=current_inventory,
+            unit=display_unit,
+            purchase_count=purchase_count,
+            has_outcomes=has_outcomes,
+            over_purchase=over_purchase,
+            waste_rate=waste_rate,
+        )
+
         if not has_outcomes:
             waste_risk = "unknown"
             data_quality = "no_outcomes"
@@ -497,6 +562,7 @@ def _build_recommendations(
             "recommendation": state,
             "recommended_qty": _quantity(recommended),
             "reason": reason,
+            "summary": summary,
             # Additive Epic 9 audit field. A recommendation remains available
             # below three purchases, while AC 7.1.4 hides the waste-rate metric.
             "purchase_count_8w": purchase_count,
