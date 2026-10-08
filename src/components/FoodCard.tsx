@@ -46,6 +46,9 @@ export default function FoodCard({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole={selectMode ? 'checkbox' : 'button'}
+      accessibilityState={selectMode ? { checked: Boolean(selected) } : undefined}
+      accessibilityLabel={selectMode ? `${name}, ${selected ? 'selected' : 'not selected'}` : name}
       style={({ pressed }) => [
         styles.card,
         { borderLeftWidth: 4, borderLeftColor: borderColor },

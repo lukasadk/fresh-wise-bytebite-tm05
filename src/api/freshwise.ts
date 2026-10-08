@@ -16,6 +16,7 @@ import {
   mockUpdateShoppingItemQuantity,
 } from '../data/shoppingMock';
 import { selectMalaysianRecipeHints } from '../data/malaysianRecipeRag';
+import { toRecipeInventoryPayload } from '../data/recipeSelection';
 import { getDeviceTimeZone } from '../data/timezone';
 import type { PurchaseRecommendation } from '../data/purchaseStates';
 import type {
@@ -56,6 +57,8 @@ type RecipeRagOptions = {
   useAi?: boolean;
   cuisineProfile?: 'malaysia';
   focusFoodName?: string;
+  /** Pantry explicitly chose these items; never broaden back to the full pantry. */
+  selectionMode?: boolean;
   /** Recipes already shown ("Show other recipes"): leave these out. */
   excludeTitles?: string[];
 };
@@ -230,7 +233,11 @@ function expiresIn(days: number): string {
  *                 (or, if none does, the one that expires first)
  *    Available -- the pantry items the recipe uses, one per food, soonest first
  *    Missing   -- recipe ingredients nothing in the pantry covers */
-function withPantryPriority(recipe: RecipeRecommendation, rank: ExpiryRank): RecipeRecommendation {
+function withPantryPriority(
+  recipe: RecipeRecommendation,
+  rank: ExpiryRank,
+  selectionMode = false,
+): RecipeRecommendation {
   const unique = (values: string[]) =>
     values.filter((value, index) => values.findIndex((v) => v.toLowerCase() === value.toLowerCase()) === index);
   if (!rank.used.length) return recipe;
@@ -246,7 +253,13 @@ function withPantryPriority(recipe: RecipeRecommendation, rank: ExpiryRank): Rec
   ]).filter((ingredient) => !rank.covers(ingredient));
 
   let reason = recipe.reason;
-  if (listsOwnIngredients) {
+  if (selectionMode) {
+    const first = rank.urgent[0];
+    const used = available.slice(0, 3).join(', ');
+    reason = first
+      ? `Uses your ${used}. Helps you use ${first.name} before it expires ${expiresIn(first.days_to_expiry as number)}.`
+      : `Uses your ${used}.`;
+  } else if (listsOwnIngredients) {
     const first = rank.urgent[0];
     reason = first
       ? `Uses ${first.name} before it expires ${expiresIn(first.days_to_expiry as number)}.`
@@ -269,13 +282,20 @@ function rankRecipeRecommendations(
   recipes: RecipeRecommendation[],
   inventory: FoodItem[],
   focusFoodName?: string,
+  selectionMode = false,
 ): RecipeRecommendation[] {
   const ranked = recipes.map((recipe) => ({ recipe, rank: expiryRank(recipe, inventory) }));
   ranked.sort((a, b) => {
     // 1. The food the user tapped "Find recipes" on comes first.
     const focus = Number(usesFocusFood(b.recipe, focusFoodName)) - Number(usesFocusFood(a.recipe, focusFoodName));
     if (focus) return focus;
-    // 2. More pantry items expiring within URGENT_DAYS.
+    // An explicit Pantry selection is a stronger signal than expiry: first use
+    // as many selected foods as possible, then prefer the ones expiring soon.
+    if (selectionMode) {
+      const selectedCoverage = b.rank.used.length - a.rank.used.length;
+      if (selectedCoverage) return selectedCoverage;
+    }
+    // More pantry items expiring within URGENT_DAYS.
     const urgent = b.rank.urgent.length - a.rank.urgent.length;
     if (urgent) return urgent;
     // 2b. ...and prefers a recipe that names that food over one that only says "vegetables".
@@ -289,7 +309,9 @@ function rankRecipeRecommendations(
     // 5. The original score.
     return priorityUsageScore(b.recipe, focusFoodName) - priorityUsageScore(a.recipe, focusFoodName);
   });
-  return ranked.map(({ recipe, rank }) => withPantryPriority(recipe, rank));
+  return ranked
+    .map(({ recipe, rank }) => withPantryPriority(recipe, rank, selectionMode))
+    .filter((recipe) => !selectionMode || (recipe.available_ingredients ?? []).length > 0);
 }
 
 function localMalaysianRecipeRecommendations(
@@ -297,6 +319,7 @@ function localMalaysianRecipeRecommendations(
   limit = 3,
   focusFoodName?: string,
   exclude: Set<string> = new Set(),
+  selectionMode = false,
 ): RecipeRecommendation[] {
   const rankedInventory = focusFoodName
     ? [...inventory].sort((a, b) => {
@@ -307,7 +330,11 @@ function localMalaysianRecipeRecommendations(
     : inventory;
   // A wider candidate pool than the 3 shown, so the expiry-first ranking below
   // can reach a recipe that uses whatever expires soonest.
-  const candidates = selectMalaysianRecipeHints(rankedInventory, Math.max(limit * 20, 60) + exclude.size)
+  const candidates = selectMalaysianRecipeHints(
+    rankedInventory,
+    Math.max(limit * 20, 60) + exclude.size,
+    { selectionMode },
+  )
     .filter((hint) => !exclude.has(hint.title.trim().toLowerCase()))
     .map((hint, index) => {
     const inventoryNames = rankedInventory.map((item) => item.canonical_food_name || item.name).filter(Boolean);
@@ -350,7 +377,7 @@ function localMalaysianRecipeRecommendations(
     recipePantrySignals.set(recipe, hint.pantrySignals);
     return recipe;
   });
-  return rankRecipeRecommendations(candidates, inventory, focusFoodName)
+  return rankRecipeRecommendations(candidates, inventory, focusFoodName, selectionMode)
     // When showing "other recipes", stop at the ones that use something you
     // have, rather than padding with unrelated dishes (the screen starts over).
     .filter((recipe) => !exclude.size || (recipe.available_ingredients ?? []).length > 0)
@@ -363,6 +390,7 @@ function ensureThreeRecipeRecommendations(
   limit = 3,
   focusFoodName?: string,
   exclude: Set<string> = new Set(),
+  selectionMode = false,
 ): RecipeRecommendation[] {
   // The AI's recipes are pooled with the library's best expiry-first picks and
   // ranked together: AI recipes still win ties (rule 4 in rankRecipeRecommendations),
@@ -370,14 +398,14 @@ function ensureThreeRecipeRecommendations(
   // can take a slot. Also tops the list up to `limit` when the AI returns fewer.
   const pool = recipes.filter((recipe) => !exclude.has(recipeKey(recipe)));
   const seen = new Set(pool.map(recipeKey));
-  for (const recipe of localMalaysianRecipeRecommendations(inventory, limit, focusFoodName, exclude)) {
+  for (const recipe of localMalaysianRecipeRecommendations(inventory, limit, focusFoodName, exclude, selectionMode)) {
     const title = recipeKey(recipe);
     if (!seen.has(title)) {
       pool.push(recipe);
       seen.add(title);
     }
   }
-  return rankRecipeRecommendations(pool, inventory, focusFoodName).slice(0, limit);
+  return rankRecipeRecommendations(pool, inventory, focusFoodName, selectionMode).slice(0, limit);
 }
 
 // --- Identity -------------------------------------------------------------
@@ -770,10 +798,23 @@ export async function getRagRecipeRecommendations(
         cuisine_profile: opts.cuisineProfile ?? 'malaysia',
         locale: 'Malaysia',
         focus_food: opts.focusFoodName ? { name: opts.focusFoodName } : null,
+        selection_mode: opts.selectionMode ?? false,
+        selected_ingredients: opts.selectionMode
+          ? inventory.map((item) => item.canonical_food_name || item.name).filter(Boolean)
+          : [],
         exclude_recipes: opts.excludeTitles ?? [],
         cuisine_guidance: {
           style: 'Malaysian everyday home cooking',
           priority: [
+            ...(opts.selectionMode
+              ? [
+                  'treat every selected ingredient as the highest priority',
+                  'prefer candidates that use the greatest number of selected ingredients',
+                  'use expiry only after selected-ingredient coverage when ranking candidates',
+                  'clearly separate selected ingredients already available from missing ingredients',
+                  'never claim an ingredient is available unless it is in the selected inventory payload',
+                ]
+              : []),
             opts.focusFoodName
               ? `rank recipes that use "${opts.focusFoodName}" first`
               : 'rank recipes by priority-ingredient usage first',
@@ -802,17 +843,14 @@ export async function getRagRecipeRecommendations(
             'sambal-style stir fry',
           ],
         },
-        local_recipe_hints: selectMalaysianRecipeHints(inventory, 24 + exclude.size)
+        local_recipe_hints: selectMalaysianRecipeHints(
+          inventory,
+          24 + exclude.size,
+          { selectionMode: opts.selectionMode ?? false },
+        )
           .filter((hint) => !exclude.has(hint.title.trim().toLowerCase()))
           .slice(0, 24),
-        inventory: inventory.map((item) => ({
-          name: item.canonical_food_name || item.name,
-          quantity: item.quantity,
-          unit: item.unit,
-          category: item.category,
-          expiry_date: item.expiry_date,
-          expiry_days: item.days_to_expiry,
-        })),
+        inventory: toRecipeInventoryPayload(inventory),
       }),
     });
     const text = await response.text();
@@ -821,7 +859,18 @@ export async function getRagRecipeRecommendations(
       const detail = typeof payload?.detail === 'string' ? payload.detail : `HTTP ${response.status}`;
       throw new Error(detail);
     }
-    const rawRecommendations = Array.isArray(payload?.recommendations) ? payload.recommendations : [];
+    const rawRecommendations = (Array.isArray(payload?.recommendations) ? payload.recommendations : [])
+      .filter((recipe: any) => {
+        if (!opts.selectionMode) return true;
+        const source = String(recipe?.source ?? '').toLowerCase();
+        const recipeId = String(recipe?.recipe_id ?? '').toLowerCase();
+        // Older deployments may not understand selection_mode and may fill a
+        // short result with newly generated recipes. Never let those enter the
+        // explicit Pantry-selection flow; the bundled library tops it up.
+        return !source.includes('generation')
+          && !recipeId.startsWith('api-generated-')
+          && !recipeId.startsWith('generated-fallback-');
+      });
     const inventoryNames = inventory.map((item) => item.canonical_food_name || item.name).filter(Boolean);
     const mapped = rawRecommendations.map((recipe: any): RecipeRecommendation => {
       const title = typeof recipe?.title === 'string' ? recipe.title : recipe?.recipe_name ?? 'Untitled recipe';
@@ -869,12 +918,31 @@ export async function getRagRecipeRecommendations(
         total_score: Number.isFinite(Number(recipe?.score)) ? Number(recipe.score) : 0,
       };
     });
-    return ensureThreeRecipeRecommendations(mapped, inventory, opts.limit ?? 3, opts.focusFoodName, exclude);
+    return ensureThreeRecipeRecommendations(
+      mapped,
+      inventory,
+      opts.limit ?? 3,
+      opts.focusFoodName,
+      exclude,
+      opts.selectionMode ?? false,
+    );
   } catch (error: any) {
     if (error?.name === 'AbortError') {
-      return localMalaysianRecipeRecommendations(inventory, opts.limit ?? 3, opts.focusFoodName, exclude);
+      return localMalaysianRecipeRecommendations(
+        inventory,
+        opts.limit ?? 3,
+        opts.focusFoodName,
+        exclude,
+        opts.selectionMode ?? false,
+      );
     }
-    return localMalaysianRecipeRecommendations(inventory, opts.limit ?? 3, opts.focusFoodName, exclude);
+    return localMalaysianRecipeRecommendations(
+      inventory,
+      opts.limit ?? 3,
+      opts.focusFoodName,
+      exclude,
+      opts.selectionMode ?? false,
+    );
   } finally {
     clearTimeout(timer);
   }

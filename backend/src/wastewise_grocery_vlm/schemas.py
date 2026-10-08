@@ -433,6 +433,18 @@ class RecipeRecommendRequest(BaseModel):
     limit: int = Field(default=3, ge=1, le=10)
     use_ai: bool = True
     language: Literal["en", "zh"] = "en"
+    selection_mode: bool = False
+    selected_ingredients: list[str] = Field(default_factory=list, max_length=120)
+
+    @field_validator("selected_ingredients")
+    @classmethod
+    def clean_selected_ingredients(cls, values: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for value in values:
+            item = str(value).strip()
+            if item and item.casefold() not in {existing.casefold() for existing in cleaned}:
+                cleaned.append(item[:200])
+        return cleaned
 
 
 class RecipeRecommendationItem(BaseModel):

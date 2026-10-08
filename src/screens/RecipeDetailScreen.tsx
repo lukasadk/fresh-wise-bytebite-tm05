@@ -138,7 +138,7 @@ export default function RecipeDetailScreen() {
             <View style={styles.metaPill}>
               <Clock3 size={14} color={colors.primary} />
               <Text style={styles.metaText}>
-                {myRecipeId ? 'Your recipe' : recipe.ai_enhanced ? 'AI refined' : 'RAG matched'}
+                {myRecipeId ? 'Your recipe' : recipe.ai_enhanced ? 'AI refined' : 'Pantry match'}
               </Text>
             </View>
             {recipe.prep_minutes !== null && recipe.prep_minutes !== undefined ? (

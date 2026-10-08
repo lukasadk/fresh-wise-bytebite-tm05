@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, FlatList, Pressable, ScrollView, StyleSheet, Platform, useWindowDimensions, LayoutAnimation } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useScrollToTop } from '@react-navigation/native';
+import { ChefHat } from 'lucide-react-native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import { ALL_FILTER, categoryForFilter, deriveFilters, isFilterStillValid } from '../data/pantryFilters';
 import { DEFAULT_SORT, SORT_SHORT_LABEL, SortKey, compareItems, isDescending } from '../data/pantrySort';
@@ -19,11 +20,13 @@ import { Plus, ChevronDown, ChevronUp, List, LayoutGrid, PackageOpen, X, Check }
 import { formatQuantity, getExpiryInfo, formatDisplayDate, usePantry, PantryItem } from '../data/pantryItems';
 import { recordOutcome, deletePantryItem, WASTE_REASON_BY_LABEL } from '../api/freshwise';
 import { ApiError } from '../api/client';
+import { canFindRecipes, selectedIngredientLabel, uniqueSelectedIds } from '../data/recipeSelection';
 
 type WasteReasonLabel = keyof typeof WASTE_REASON_BY_LABEL;
 
 
 type ViewMode = 'list' | 'grid';
+type SelectionMode = 'manage' | 'recipes' | null;
 
 // Grid is the default on web/tablet, list on mobile -- width is the practical proxy
 // for "tablet" since RN has no direct device-class API.
@@ -62,13 +65,18 @@ export default function PantryScreen({ navigation, route }: any) {
     Platform.OS === 'web' || width >= TABLET_WIDTH_BREAKPOINT ? 'grid' : 'list'
   );
 
-  // Bulk-selection state
-  const [selectMode, setSelectMode] = useState(false);
+  // The same checkboxes support two deliberately separate jobs. "manage"
+  // exposes the existing consumed/wasted/delete actions; "recipes" only
+  // exposes recipe discovery and can never mutate pantry items.
+  const [selectionMode, setSelectionMode] = useState<SelectionMode>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkError, setBulkError] = useState<string | null>(null);
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const [wastePickerVisible, setWastePickerVisible] = useState(false);
+  const selectMode = selectionMode !== null;
+  const recipeSelectMode = selectionMode === 'recipes';
+  const hasRecipeSelection = canFindRecipes(selectedIds.size);
 
   // Shows the "Added" toast (from Add Food) and the row highlight (from Edit) when
   // we're focused right after FoodDetailScreen's back button set one of these
@@ -84,6 +92,16 @@ export default function PantryScreen({ navigation, route }: any) {
       const highlightId = route?.params?.highlightId;
       const incomingNewIds = route?.params?.newIds;
       const incomingTicked = Number(route?.params?.shoppingTicked) || 0;
+      const recipeSelectionRequest = route?.params?.recipeSelectionRequest;
+      if (recipeSelectionRequest) {
+        setSelectionMode('recipes');
+        setSelectedIds(new Set(uniqueSelectedIds(route?.params?.selectedIngredientIds)));
+        setBulkError(null);
+        navigation.setParams({
+          recipeSelectionRequest: undefined,
+          selectedIngredientIds: undefined,
+        });
+      }
       if (incomingTicked > 0) {
         setShoppingTicked(incomingTicked);
         navigation.setParams({ shoppingTicked: undefined });
@@ -150,6 +168,8 @@ export default function PantryScreen({ navigation, route }: any) {
       route?.params?.highlightId,
       route?.params?.newIds,
       route?.params?.shoppingTicked,
+      route?.params?.recipeSelectionRequest,
+      route?.params?.selectedIngredientIds,
     ])
   );
 
@@ -194,9 +214,33 @@ export default function PantryScreen({ navigation, route }: any) {
   };
 
   const exitSelectMode = () => {
-    setSelectMode(false);
+    setSelectionMode(null);
     setSelectedIds(new Set());
     setBulkError(null);
+  };
+
+  const enterManageSelection = () => {
+    setSelectionMode('manage');
+    setSelectedIds(new Set());
+    setBulkError(null);
+  };
+
+  const enterRecipeSelection = (initialIds: string[] = []) => {
+    setSelectionMode('recipes');
+    setSelectedIds(new Set(initialIds));
+    setBulkError(null);
+  };
+
+  const findRecipesWithSelectedIngredients = () => {
+    const availableIds = items
+      .filter((item) => selectedIds.has(item.id))
+      .map((item) => item.id);
+    if (!hasRecipeSelection || !availableIds.length) return;
+    navigation.navigate('Recipes', {
+      selectedIngredientIds: availableIds,
+      selectionRequestId: Date.now(),
+    });
+    exitSelectMode();
   };
 
   const [sortKey, setSortKey] = useState<SortKey>(DEFAULT_SORT);
@@ -360,7 +404,10 @@ export default function PantryScreen({ navigation, route }: any) {
         keyExtractor={(item) => item.id}
         numColumns={viewMode === 'grid' ? 2 : 1}
         columnWrapperStyle={viewMode === 'grid' ? styles.gridRow : undefined}
-        contentContainerStyle={[styles.content, selectMode && selectedIds.size > 0 && styles.contentWithActionBar]}
+        contentContainerStyle={[
+          styles.content,
+          selectMode && (recipeSelectMode || selectedIds.size > 0) && styles.contentWithActionBar,
+        ]}
         refreshing={itemsLoading}
         ListHeaderComponent={
           <View style={styles.headerBlock}>
@@ -433,17 +480,61 @@ export default function PantryScreen({ navigation, route }: any) {
               />
             ) : null}
 
+            {items.length > 0 && !selectMode ? (
+              <Pressable
+                style={({ pressed }) => [styles.recipePickerEntry, pressed && styles.recipePickerEntryPressed]}
+                onPress={() => enterRecipeSelection()}
+                accessibilityRole="button"
+                accessibilityHint="Select one or more pantry foods to find matching recipes"
+              >
+                <View style={styles.recipePickerIcon}>
+                  <ChefHat size={21} color={colors.primary} strokeWidth={2.4} />
+                </View>
+                <View style={styles.recipePickerCopy}>
+                  <Text style={styles.recipePickerTitle}>Cook with these ingredients</Text>
+                  <Text style={styles.recipePickerSubtitle}>Choose what you want to use, then find a meal.</Text>
+                </View>
+              </Pressable>
+            ) : recipeSelectMode ? (
+              <View style={styles.recipeSelectionIntro}>
+                <View style={styles.recipePickerIcon}>
+                  <ChefHat size={21} color={colors.primary} strokeWidth={2.4} />
+                </View>
+                <View style={styles.recipePickerCopy}>
+                  <Text style={styles.recipePickerTitle}>Choose ingredients</Text>
+                  <Text style={styles.recipePickerSubtitle}>Pick one or more foods you would like to cook with.</Text>
+                </View>
+              </View>
+            ) : null}
+
             <View style={styles.listHeaderRow}>
               <View style={styles.listHeaderLeft}>
                 <Text style={styles.itemCount}>
-                  {itemsLoading ? 'Loading…' : `${sortedItems.length} item${sortedItems.length === 1 ? '' : 's'}`}
+                  {recipeSelectMode
+                    ? `Selected: ${selectedIds.size}`
+                    : itemsLoading
+                      ? 'Loading…'
+                      : `${sortedItems.length} item${sortedItems.length === 1 ? '' : 's'}`}
                 </Text>
-                {items.length > 0 ? (
+                {recipeSelectMode ? (
                   <Pressable
                     style={styles.selectToggleInline}
-                    onPress={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+                    onPress={() => setSelectedIds(new Set())}
+                    disabled={selectedIds.size === 0}
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: selectedIds.size === 0 }}
                   >
-                    <Text style={styles.selectToggleText}>{selectMode ? 'Cancel' : 'Select'}</Text>
+                    <Text style={[
+                      styles.selectToggleText,
+                      selectedIds.size === 0 && styles.selectToggleTextDisabled,
+                    ]}>Clear</Text>
+                  </Pressable>
+                ) : items.length > 0 ? (
+                  <Pressable
+                    style={styles.selectToggleInline}
+                    onPress={() => (selectionMode === 'manage' ? exitSelectMode() : enterManageSelection())}
+                  >
+                    <Text style={styles.selectToggleText}>{selectionMode === 'manage' ? 'Cancel' : 'Select'}</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -570,7 +661,7 @@ export default function PantryScreen({ navigation, route }: any) {
         ItemSeparatorComponent={viewMode === 'list' ? () => <View style={{ height: spacing.md }} /> : undefined}
       />
 
-      {selectMode && selectedIds.size > 0 ? (
+      {selectionMode === 'manage' && selectedIds.size > 0 ? (
         <View style={styles.actionBar}>
           {bulkError ? <Text style={styles.actionBarError}>{bulkError}</Text> : null}
           <Text style={styles.actionBarCount}>{selectedIds.size} selected</Text>
@@ -595,6 +686,32 @@ export default function PantryScreen({ navigation, route }: any) {
               <Text style={styles.actionBarButtonDeleteText}>Delete</Text>
             </Pressable>
           </View>
+        </View>
+      ) : null}
+
+      {recipeSelectMode ? (
+        <View style={styles.actionBar}>
+          <View style={styles.recipeActionHeader}>
+            <Text style={styles.actionBarCount}>Selected: {selectedIds.size}</Text>
+            <Pressable onPress={exitSelectMode} accessibilityRole="button">
+              <Text style={styles.recipeActionCancel}>Cancel</Text>
+            </Pressable>
+          </View>
+          <Pressable
+            style={[
+              styles.findRecipesButton,
+              !hasRecipeSelection && styles.findRecipesButtonDisabled,
+            ]}
+            onPress={findRecipesWithSelectedIngredients}
+            disabled={!hasRecipeSelection}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !hasRecipeSelection }}
+          >
+            <ChefHat size={18} color={colors.white} strokeWidth={2.5} />
+            <Text style={styles.findRecipesButtonText}>
+              Find recipes with {selectedIngredientLabel(selectedIds.size)}
+            </Text>
+          </Pressable>
         </View>
       ) : null}
 
@@ -702,6 +819,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
   },
+  selectToggleTextDisabled: {
+    color: colors.neutralGrey,
+  },
   addButton: {
     width: 39,
     height: 39,
@@ -737,6 +857,53 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontSize: 12,
     color: colors.white,
+  },
+  recipePickerEntry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.primaryPale,
+    backgroundColor: colors.primaryTint,
+    padding: spacing.lg,
+  },
+  recipePickerEntryPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.995 }],
+  },
+  recipeSelectionIntro: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.primaryPale,
+    backgroundColor: colors.card,
+    padding: spacing.lg,
+  },
+  recipePickerIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+  },
+  recipePickerCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  recipePickerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.textPrimary,
+  },
+  recipePickerSubtitle: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textSecondary,
   },
   listHeaderRow: {
     flexDirection: 'row',
@@ -855,6 +1022,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textPrimary,
     textAlign: 'center',
+  },
+  recipeActionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  recipeActionCancel: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.primary,
+  },
+  findRecipesButton: {
+    minHeight: 48,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  findRecipesButtonDisabled: {
+    backgroundColor: colors.neutralGrey,
+    opacity: 0.55,
+  },
+  findRecipesButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.white,
   },
   actionBarButtons: {
     flexDirection: 'row',

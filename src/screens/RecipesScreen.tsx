@@ -24,6 +24,11 @@ import {
 } from '../api/freshwise';
 import type { FoodItem, RecipeRecommendation, UserRecipe } from '../api/types';
 import EstimatedProgressBar, { useEstimatedProgress } from '../components/EstimatedProgressBar';
+import {
+  filterRecipeInventoryByIds,
+  selectedCoverageLabel,
+  uniqueSelectedIds,
+} from '../data/recipeSelection';
 
 function recipeTitle(recipe: RecipeRecommendation): string {
   return recipe.title || recipe.recipe_name || 'Untitled recipe';
@@ -111,7 +116,15 @@ export default function RecipesScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { width } = useWindowDimensions();
-  const focusFoodName = typeof route.params?.focusFoodName === 'string' ? route.params.focusFoodName : null;
+  const selectedIngredientIds = React.useMemo(
+    () => uniqueSelectedIds(route.params?.selectedIngredientIds),
+    [route.params?.selectedIngredientIds, route.params?.selectionRequestId],
+  );
+  const selectedIngredientKey = selectedIngredientIds.join('|');
+  const selectionMode = selectedIngredientIds.length > 0;
+  const focusFoodName = !selectionMode && typeof route.params?.focusFoodName === 'string'
+    ? route.params.focusFoodName
+    : null;
   const isWebLayout = Platform.OS === 'web';
   const mobileCardWidth = Math.max(278, Math.min(330, width - spacing.xxl * 2));
   const [recipes, setRecipes] = React.useState<RecipeRecommendation[]>([]);
@@ -182,6 +195,22 @@ export default function RecipesScreen() {
     navigation.navigate('RecipeDetail', { recipe, ...(userRecipe ? { userRecipe } : {}) });
   };
   const openAddRecipe = () => navigation.navigate('AddRecipe');
+  const changeIngredients = () => navigation.navigate('Pantry', {
+    recipeSelectionRequest: Date.now(),
+    selectedIngredientIds,
+  });
+  const useWholePantry = () => navigation.setParams({
+    selectedIngredientIds: undefined,
+    selectionRequestId: Date.now(),
+  });
+
+  React.useEffect(() => {
+    shownTitles.current = [];
+    setRecipes([]);
+    setInventory([]);
+    setLoading(true);
+    if (selectionMode) setTab('recommended');
+  }, [selectedIngredientKey, selectionMode]);
 
   const load = React.useCallback(async (isRefresh = false, different = false) => {
     if (isRefresh) setRefreshing(true);
@@ -193,8 +222,11 @@ export default function RecipesScreen() {
     try {
       const pantry = await listPantry();
       const usablePantry = pantry.filter((item) => item.status === 'active' || item.status === 'partially_used');
-      setInventory(usablePantry);
-      if (usablePantry.length === 0) {
+      const recommendationInventory = selectionMode
+        ? filterRecipeInventoryByIds(usablePantry, selectedIngredientIds)
+        : usablePantry;
+      setInventory(recommendationInventory);
+      if (recommendationInventory.length === 0) {
         setRecipes([]);
         return;
       }
@@ -204,14 +236,15 @@ export default function RecipesScreen() {
         useAi: true,
         cuisineProfile: 'malaysia' as const,
         focusFoodName: focusFoodName ?? undefined,
+        selectionMode,
       };
       const exclude = different ? shownTitles.current : [];
       // Recommended is AI recipes only -- homemade recipes stay in My recipes.
-      let recommended = await getRagRecipeRecommendations(usablePantry, { ...options, excludeTitles: exclude });
+      let recommended = await getRagRecipeRecommendations(recommendationInventory, { ...options, excludeTitles: exclude });
       let seenBefore = exclude;
       if (different && recommended.length === 0) {
         // Every matching recipe has been shown: start again from the best three.
-        recommended = await getRagRecipeRecommendations(usablePantry, options);
+        recommended = await getRagRecipeRecommendations(recommendationInventory, options);
         seenBefore = [];
       }
       if (!isRefresh) await progress.finish(); // fill to 100% before showing the cards
@@ -225,13 +258,15 @@ export default function RecipesScreen() {
       setRefreshing(false);
       if (!isRefresh) progress.cancel();
     }
-  }, [focusFoodName, progress.start, progress.finish, progress.cancel]);
+  }, [focusFoodName, progress.start, progress.finish, progress.cancel, selectedIngredientKey, selectionMode]);
 
   React.useEffect(() => {
     load();
   }, [load]);
 
   const expiringCount = inventory.filter((item) => item.days_to_expiry !== null && item.days_to_expiry <= 3).length;
+  const selectedIngredientNames = inventory.map((item) => item.name);
+  const selectedIngredientSummary = shortIngredients(selectedIngredientNames, 'your selected ingredients');
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -245,20 +280,49 @@ export default function RecipesScreen() {
             <ChefHat size={24} color={colors.primary} strokeWidth={2.4} />
           </View>
           <View style={styles.heroCopy}>
-            <Text style={styles.eyebrow}>AI recipe RAG</Text>
-            <Text style={styles.title}>{focusFoodName ? `Cook ${focusFoodName} first` : 'Cook Malaysian meals first'}</Text>
+            <Text style={styles.eyebrow}>Smart recipes</Text>
+            <Text style={styles.title}>
+              {selectionMode
+                ? 'Cook with what you picked'
+                : focusFoodName
+                  ? `Cook ${focusFoodName} first`
+                  : 'Cook Malaysian meals first'}
+            </Text>
             <Text style={styles.subtitle}>
-              {focusFoodName
-                ? `Top 3 grounded recipe suggestions that prioritise ${focusFoodName}. Tap a card to see the full recipe.`
+              {selectionMode
+                ? 'Malaysian meals that make the most of your selected ingredients.'
+                : focusFoodName
+                ? `Top 3 recipe suggestions that prioritise ${focusFoodName}. Tap a card to see the full recipe.`
                 : 'Three Malaysian-style suggestions from your pantry. Tap a card to see the full recipe.'}
             </Text>
           </View>
         </View>
 
+        {selectionMode ? (
+          <View style={styles.selectionBanner}>
+            <View style={styles.selectionBannerCopy}>
+              <Text style={styles.selectionBannerLabel}>Recipes using:</Text>
+              <Text style={styles.selectionBannerNames}>{selectedIngredientSummary}</Text>
+            </View>
+            <View style={styles.selectionBannerActions}>
+              <Pressable style={styles.changeIngredientsButton} onPress={changeIngredients} accessibilityRole="button">
+                <Text style={styles.changeIngredientsText}>Change ingredients</Text>
+              </Pressable>
+              <Pressable onPress={useWholePantry} accessibilityRole="button">
+                <Text style={styles.useWholePantryText}>Use whole pantry</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.statsRow}>
           <View style={styles.statPill}>
             <Text style={styles.statNumber}>{inventory.length}</Text>
-            <Text style={styles.statLabel}>{inventory.length === 1 ? 'Pantry item' : 'Pantry items'}</Text>
+            <Text style={styles.statLabel}>
+              {selectionMode
+                ? inventory.length === 1 ? 'Selected ingredient' : 'Selected ingredients'
+                : inventory.length === 1 ? 'Pantry item' : 'Pantry items'}
+            </Text>
           </View>
           <View style={[styles.statPill, expiringCount > 0 && styles.statPillWarn]}>
             <Text style={[styles.statNumber, expiringCount > 0 && styles.statNumberWarn]}>{expiringCount}</Text>
@@ -353,7 +417,11 @@ export default function RecipesScreen() {
           <View style={styles.stateCard}>
             <ChefHat size={24} color={colors.primary} strokeWidth={2.2} />
             <Text style={styles.stateTitle}>Building recommendations...</Text>
-            <Text style={styles.stateText}>Checking your pantry and matching Malaysian-style recipe ideas.</Text>
+            <Text style={styles.stateText}>
+              {selectionMode
+                ? 'Finding Malaysian meals that use the ingredients you selected.'
+                : 'Checking your pantry and matching Malaysian-style recipe ideas.'}
+            </Text>
             <EstimatedProgressBar {...progress.barProps} />
           </View>
         ) : error ? (
@@ -369,13 +437,24 @@ export default function RecipesScreen() {
           <View style={styles.stateCard}>
             <Sparkles size={24} color={colors.primary} />
             <Text style={styles.stateTitle}>
-              {inventory.length === 0 ? 'Add a few foods first' : 'No recipe matched this pantry yet'}
+              {selectionMode && inventory.length === 0
+                ? 'Choose your ingredients again'
+                : inventory.length === 0
+                  ? 'Add a few foods first'
+                  : 'No matching recipe found yet'}
             </Text>
             <Text style={styles.stateText}>
-              {inventory.length === 0
+              {selectionMode && inventory.length === 0
+                ? 'Those selected foods are no longer available in your pantry.'
+                : inventory.length === 0
                 ? 'Scan groceries or add pantry items, then this page will recommend meals around what you already have.'
-                : `You have ${inventory.length} item${inventory.length === 1 ? '' : 's'} saved, but the Malaysian recipe RAG needs a recognisable cooking ingredient such as rice, noodles, egg, chicken, fish, tofu, vegetables, sambal, soy sauce, curry powder, or coconut milk.`}
+                : `Try another ingredient such as rice, noodles, egg, chicken, fish, tofu, vegetables, sambal, soy sauce, curry powder, or coconut milk.`}
             </Text>
+            {selectionMode ? (
+              <Pressable style={styles.retryButton} onPress={changeIngredients}>
+                <Text style={styles.retryText}>Change ingredients</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : (
           <View style={styles.recipeSection}>
@@ -423,9 +502,23 @@ export default function RecipesScreen() {
                     </Text>
                     <View style={styles.chipRow}>
                       <View style={styles.chip}>
-                        <Leaf size={13} color={colors.primary} />
-                        <Text style={styles.chipText}>Priority: {shortIngredients(priority, focusFoodName || 'Use first')}</Text>
+                        {selectionMode ? (
+                          <CheckCircle2 size={13} color={colors.primary} />
+                        ) : (
+                          <Leaf size={13} color={colors.primary} />
+                        )}
+                        <Text style={styles.chipText}>
+                          {selectionMode
+                            ? selectedCoverageLabel(matched.length, inventory.length)
+                            : `Priority: ${shortIngredients(priority, focusFoodName || 'Use first')}`}
+                        </Text>
                       </View>
+                      {selectionMode && priority.length ? (
+                        <View style={[styles.chip, styles.warnChip]}>
+                          <Leaf size={13} color={colors.expiryWarnText} />
+                          <Text style={styles.warnChipText}>Use soon: {shortIngredients(priority, '')}</Text>
+                        </View>
+                      ) : null}
                       {totalMinutes > 0 ? (
                         <View style={styles.chip}>
                           <Clock3 size={13} color={colors.primary} />
@@ -434,8 +527,8 @@ export default function RecipesScreen() {
                       ) : null}
                     </View>
                     <View style={styles.checklists}>
-                      <IngredientChecklist title="Available" values={matched} tone="available" />
-                      <IngredientChecklist title="Missing" values={missing} tone="missing" />
+                      <IngredientChecklist title="You already have" values={matched} tone="available" />
+                      <IngredientChecklist title="Still needed" values={missing} tone="missing" />
                     </View>
                     <View style={styles.stepsPreview}>
                       <Text style={styles.stepsTitle}>Cooking steps</Text>
@@ -521,6 +614,53 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     color: colors.textSecondary,
     marginTop: spacing.sm,
+  },
+  selectionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: colors.primaryPale,
+    backgroundColor: colors.primaryTint,
+  },
+  selectionBannerCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  selectionBannerLabel: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  selectionBannerNames: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    lineHeight: 19,
+    color: colors.textPrimary,
+  },
+  selectionBannerActions: {
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+  },
+  changeIngredientsButton: {
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  changeIngredientsText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.white,
+  },
+  useWholePantryText: {
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    color: colors.primary,
+    textDecorationLine: 'underline',
   },
   statsRow: {
     flexDirection: 'row',

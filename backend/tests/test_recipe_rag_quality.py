@@ -7,8 +7,10 @@ import pytest_asyncio
 from wastewise_grocery_vlm.recipe_rag import (
     PROJECT_ROOT,
     _image_for_recipe,
+    _recipe_system_prompt,
     hosted_recipe_image_path,
     load_recipe_docs,
+    rank_recipes,
     recommend_recipes,
 )
 from wastewise_grocery_vlm.schemas import RecipeInventoryItem, RecipeRecommendRequest
@@ -105,3 +107,89 @@ def test_every_recipe_image_has_a_same_origin_cached_copy() -> None:
         asset = PROJECT_ROOT / "app" / "static" / path.removeprefix("/static/")
         assert asset.is_file()
         assert asset.stat().st_size > 100_000
+
+
+def test_selected_mode_ranks_recipe_coverage_before_expiry() -> None:
+    request = RecipeRecommendRequest(
+        inventory=[
+            RecipeInventoryItem(name="rice", expiry_days=8),
+            RecipeInventoryItem(name="egg", expiry_days=1),
+            RecipeInventoryItem(name="tomato", expiry_days=2),
+            RecipeInventoryItem(name="onion", expiry_days=6),
+        ],
+        limit=5,
+        use_ai=False,
+        selection_mode=True,
+        selected_ingredients=["rice", "egg", "tomato", "onion"],
+    )
+
+    scored, _, _ = rank_recipes(request, top_k=10)
+    match_counts = [len(item.matched) for item in scored]
+
+    assert match_counts == sorted(match_counts, reverse=True)
+    assert match_counts[0] >= 3
+
+
+def test_selected_mode_prompt_is_candidate_grounded_and_inventory_scoped() -> None:
+    request = RecipeRecommendRequest(
+        inventory=[
+            RecipeInventoryItem(name="chicken", expiry_days=1),
+            RecipeInventoryItem(name="tomato", expiry_days=2),
+        ],
+        selection_mode=True,
+        selected_ingredients=["chicken", "tomato"],
+    )
+
+    prompt = _recipe_system_prompt(request)
+
+    assert "FreshWise's Malaysian home-cooking recipe assistant" in prompt
+    assert '"chicken"' in prompt and '"tomato"' in prompt
+    assert "greatest number of selected ingredients" in prompt
+    assert "Do not invent recipes outside the retrieved recipe candidates" in prompt
+    assert "Return structured JSON only" in prompt
+
+
+def test_selected_mode_never_fills_with_generated_recipes() -> None:
+    response = recommend_recipes(
+        RecipeRecommendRequest(
+            inventory=[RecipeInventoryItem(name="not-a-real-recipe-ingredient")],
+            limit=3,
+            selection_mode=True,
+            use_ai=True,
+            selected_ingredients=["not-a-real-recipe-ingredient"],
+        )
+    )
+
+    assert response.recommendations == []
+    assert all("generated" not in warning.lower() for warning in response.warnings)
+
+
+def test_selected_mode_uses_retrieved_fallback_when_ai_is_unavailable(monkeypatch) -> None:
+    import wastewise_grocery_vlm.recipe_rag as recipe_rag
+
+    monkeypatch.setattr(
+        recipe_rag,
+        "_ai_polish",
+        lambda scored, request: (None, None, "AI unavailable in test."),
+    )
+    response = recommend_recipes(
+        RecipeRecommendRequest(
+            inventory=[
+                RecipeInventoryItem(name="chicken", expiry_days=1),
+                RecipeInventoryItem(name="onion", expiry_days=2),
+            ],
+            limit=3,
+            selection_mode=True,
+            use_ai=True,
+            selected_ingredients=["chicken", "onion"],
+        )
+    )
+    known_ids = {recipe.recipe_id for recipe in load_recipe_docs()}
+
+    assert response.recommendations
+    assert all(recipe.recipe_id in known_ids for recipe in response.recommendations)
+    assert all(recipe.source == "mini_recipe_rag" for recipe in response.recommendations)
+    selected = {"Chicken", "Onion"}
+    for recipe in response.recommendations:
+        assert set(recipe.available_ingredients) <= selected
+        assert not (set(recipe.available_ingredients) & set(recipe.missing_ingredients))

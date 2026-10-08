@@ -2321,7 +2321,11 @@ function matchesSignal(text: string, signal: string): boolean {
   return !!normalisedSignal && text.includes(normalisedSignal);
 }
 
-export function selectMalaysianRecipeHints(inventory: FoodItem[], limit = 8): MalaysianRecipeHint[] {
+export function selectMalaysianRecipeHints(
+  inventory: FoodItem[],
+  limit = 8,
+  options: { selectionMode?: boolean } = {},
+): MalaysianRecipeHint[] {
   const inventoryTexts = inventory.map(itemText).filter(Boolean);
   const expiringTexts = inventory
     .filter((item) => item.days_to_expiry !== null && item.days_to_expiry <= 3)
@@ -2336,10 +2340,21 @@ export function selectMalaysianRecipeHints(inventory: FoodItem[], limit = 8): Ma
       const expiringHits = hint.pantrySignals.filter((signal) =>
         expiringTexts.some((text) => matchesSignal(text, signal)),
       ).length;
-      return { hint, score: signalHits * 2 + expiringHits * 3 };
+      const selectedCoverage = inventoryTexts.filter((text) =>
+        hint.pantrySignals.some((signal) => matchesSignal(text, signal)),
+      ).length;
+      const expiringCoverage = expiringTexts.filter((text) =>
+        hint.pantrySignals.some((signal) => matchesSignal(text, signal)),
+      ).length;
+      return { hint, score: signalHits * 2 + expiringHits * 3, selectedCoverage, expiringCoverage };
     })
     .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score || a.hint.title.localeCompare(b.hint.title))
+    .sort((a, b) => options.selectionMode
+      ? b.selectedCoverage - a.selectedCoverage
+        || b.expiringCoverage - a.expiringCoverage
+        || b.score - a.score
+        || a.hint.title.localeCompare(b.hint.title)
+      : b.score - a.score || a.hint.title.localeCompare(b.hint.title))
     .slice(0, limit)
     .map(({ hint }) => hint);
 

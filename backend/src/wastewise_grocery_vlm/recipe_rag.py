@@ -250,6 +250,7 @@ class ScoredRecipe:
     coverage_score: float
     expiry_score: float
     score: float
+    soonest_expiry_days: int | None = None
 
 
 def _clean(value: str) -> str:
@@ -449,6 +450,13 @@ def _inventory_tokens(items: list[RecipeInventoryItem]) -> tuple[set[str], set[s
 
 def rank_recipes(request: RecipeRecommendRequest, top_k: int = 5) -> tuple[list[ScoredRecipe], list[str], list[str]]:
     pantry, priority = _inventory_tokens(request.inventory)
+    expiry_by_ingredient: dict[str, int] = {}
+    today = date.today()
+    for item in request.inventory:
+        token = _canonicalize(item.name)
+        days = _expiry_days(item, today)
+        if token and days is not None and days >= 0:
+            expiry_by_ingredient[token] = min(days, expiry_by_ingredient.get(token, days))
     scored: list[ScoredRecipe] = []
     for recipe in load_recipe_docs():
         recipe_ingredients = set(recipe.ingredients)
@@ -470,9 +478,26 @@ def rank_recipes(request: RecipeRecommendRequest, top_k: int = 5) -> tuple[list[
                 coverage_score=round(coverage, 4),
                 expiry_score=round(expiry, 4),
                 score=score,
+                soonest_expiry_days=min(
+                    (expiry_by_ingredient[value] for value in matched if value in expiry_by_ingredient),
+                    default=None,
+                ),
             )
         )
-    scored.sort(key=lambda item: (item.score, len(item.priority_matched), len(item.matched)), reverse=True)
+    if request.selection_mode:
+        # The user's taps are the strongest intent signal: first cover the most
+        # selected foods, then break ties with expiring-sooner items.
+        scored.sort(
+            key=lambda item: (
+                -len(item.matched),
+                -len(item.priority_matched),
+                item.soonest_expiry_days if item.soonest_expiry_days is not None else 10**9,
+                -item.score,
+                item.recipe.title.casefold(),
+            )
+        )
+    else:
+        scored.sort(key=lambda item: (item.score, len(item.priority_matched), len(item.matched)), reverse=True)
     return scored[:top_k], sorted(pantry), sorted(priority)
 
 
@@ -589,12 +614,7 @@ def _ai_polish(
         for item in request.inventory
     ]
     prompt_language = "Chinese" if request.language == "zh" else "English"
-    system = (
-        "You are a food-waste reduction recipe assistant. Recommend only from the "
-        "provided recipe candidates. Do not invent new recipes, ingredients, IDs, "
-        "expiry dates, images, or steps. Preserve the candidate's precise cooking steps; "
-        "never reduce a recipe below five steps. Return only compact JSON."
-    )
+    system = _recipe_system_prompt(request)
     user = {
         "task": f"Choose the best {request.limit} recipes and write short {prompt_language} reasons.",
         "inventory": inventory,
@@ -666,6 +686,34 @@ def _ai_polish(
     if not polished:
         return None, None, "AI recipe enhancement returned no usable candidate IDs; rule-based recommendations were used."
     return polished, f"api:{recipe_model}", None
+
+
+def _recipe_system_prompt(request: RecipeRecommendRequest) -> str:
+    if request.selection_mode:
+        selected = [item.name for item in request.inventory]
+        return (
+            "You are FreshWise's Malaysian home-cooking recipe assistant.\n"
+            "Recommend recipes only from the retrieved recipe candidates.\n"
+            "The user explicitly selected these pantry ingredients:\n"
+            f"{json.dumps(selected, ensure_ascii=False)}\n\n"
+            "Requirements:\n"
+            "- Treat selected ingredients as the highest priority.\n"
+            "- Prefer recipes that use the greatest number of selected ingredients.\n"
+            "- Prioritize selected ingredients that expire sooner.\n"
+            "- Clearly separate ingredients the user already has from missing ingredients.\n"
+            "- Do not claim the user owns an ingredient unless it is present in the selected inventory.\n"
+            "- Do not invent recipes outside the retrieved recipe candidates.\n"
+            "- Prefer practical Malaysian household meals.\n"
+            "- Avoid pork and alcohol unless explicitly present in the selected ingredients.\n"
+            "- Preserve the candidate's precise cooking steps and never reduce a recipe below five steps.\n"
+            "- Return structured JSON only."
+        )
+    return (
+        "You are a food-waste reduction recipe assistant. Recommend only from the "
+        "provided recipe candidates. Do not invent new recipes, ingredients, IDs, "
+        "expiry dates, images, or steps. Preserve the candidate's precise cooking steps; "
+        "never reduce a recipe below five steps. Return only compact JSON."
+    )
 
 
 def _recipe_api_settings() -> tuple[str | None, str | None, dict[str, str], str | None]:
@@ -939,7 +987,11 @@ def recommend_recipes(request: RecipeRecommendRequest) -> RecipeRecommendRespons
     warnings: list[str] = []
     scored, pantry, priority = rank_recipes(request, top_k=max(5, request.limit))
     if not scored:
-        warnings.append("No recipe in the small local knowledge base matched the current inventory; API generation was used.")
+        warnings.append(
+            "No retrieved recipe candidate matched the selected ingredients."
+            if request.selection_mode
+            else "No recipe in the small local knowledge base matched the current inventory; API generation was used."
+        )
         recommendations = []
         model_id = "mini-rag:rules"
     else:
@@ -953,8 +1005,24 @@ def recommend_recipes(request: RecipeRecommendRequest) -> RecipeRecommendRespons
             ]
             model_id = "mini-rag:rules"
 
+    # AI polishing is allowed to reorder and explain retrieved candidates, but
+    # it may return fewer IDs than requested. In explicit selection mode, fill
+    # remaining cards from the same retrieved set instead of generating meals.
+    if request.selection_mode and len(recommendations) < request.limit:
+        existing_ids = {item.recipe_id for item in recommendations}
+        for scored_item in scored:
+            if scored_item.recipe.recipe_id in existing_ids:
+                continue
+            recommendations.append(_to_recommendation(scored_item, language=request.language))
+            existing_ids.add(scored_item.recipe.recipe_id)
+            if len(recommendations) >= request.limit:
+                break
+    if request.selection_mode:
+        selected_rank = {item.recipe.recipe_id: index for index, item in enumerate(scored)}
+        recommendations.sort(key=lambda item: selected_rank.get(item.recipe_id, 10**9))
+
     existing_titles = {item.title for item in recommendations}
-    if len(recommendations) < request.limit and request.inventory:
+    if not request.selection_mode and len(recommendations) < request.limit and request.inventory:
         needed = request.limit - len(recommendations)
         generated, generated_model_id, generation_warning = _ai_generate_from_inventory(
             request,
@@ -971,7 +1039,7 @@ def recommend_recipes(request: RecipeRecommendRequest) -> RecipeRecommendRespons
             recommendations.extend(generated)
             model_id = generated_model_id or model_id
 
-    if len(recommendations) < request.limit and request.inventory:
+    if not request.selection_mode and len(recommendations) < request.limit and request.inventory:
         existing_titles = {item.title for item in recommendations}
         fallback = _fallback_generated_recipes(request, pantry, priority, existing_titles)
         recommendations.extend(fallback[: request.limit - len(recommendations)])
