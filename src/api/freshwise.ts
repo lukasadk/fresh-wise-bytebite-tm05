@@ -42,6 +42,7 @@ import type {
   WastePatternsOut,
   WeeklyWasteRow,
 } from './types';
+import type { PlannedRecipe, PlanRecipeResult } from './types';
 
 const groceryAiBaseUrl = (
   process.env.EXPO_PUBLIC_GROCERY_AI_API_URL
@@ -1191,4 +1192,136 @@ export function userRecipeToRecommendation(recipe: UserRecipe): RecipeRecommenda
  *  pantry food first (same expiry-first ranking as Recommended). */
 export function rankMyRecipes(recipes: UserRecipe[], inventory: FoodItem[]): RecipeRecommendation[] {
   return rankRecipeRecommendations(recipes.map(userRecipeToRecommendation), inventory);
+}
+
+// --- Planned recipes ("Plan to cook") -- /v1/planned-recipes ----------------
+// Saved on the server. Planning a recipe also puts its missing ingredients on
+// the shopping list (the server skips names already on the list or at home).
+
+/** One key per recipe, so the same dish can't be planned twice. */
+export function planKeyOf(recipe: RecipeRecommendation): string {
+  const homemadeId = homemadeRecipeId(recipe);
+  if (homemadeId) return `homemade:${homemadeId}`;
+  const title = (recipe.title || recipe.recipe_name || recipe.recipe_id || 'recipe').trim().toLowerCase();
+  return `title:${title}`.slice(0, 160);
+}
+
+// DUMMY DATA MODE for planned recipes: set to true to try "Plan to cook" in
+// Expo Go before the /v1/planned-recipes backend is deployed. Plans then live
+// in memory on the phone (gone when the app reloads), but the ingredients are
+// added through the normal shopping list calls -- so they go to the real
+// shopping list, or to the dummy one if USE_SHOPPING_MOCK is also true.
+// Set back to false before pushing.
+export const USE_PLANNED_MOCK = false;
+
+let mockPlans: PlannedRecipe[] = [];
+
+function planBody(recipe: RecipeRecommendation) {
+  return {
+    recipe_key: planKeyOf(recipe),
+    title: (recipe.title || recipe.recipe_name || 'Recipe').slice(0, 160),
+    ingredients: (recipe.missing_ingredients ?? []).filter(Boolean).slice(0, 40),
+    recipe,
+  };
+}
+
+// Same rules as the server: skip names already on the list to buy, skip food
+// already at home (the duplicate-stock check), remember which rows it used.
+async function mockPlanRecipe(recipe: RecipeRecommendation): Promise<PlanRecipeResult> {
+  const body = planBody(recipe);
+  let plan = mockPlans.find((p) => p.recipe_key === body.recipe_key);
+  const alreadyPlanned = Boolean(plan);
+  if (!plan) {
+    plan = {
+      planned_id: `mock-plan-${Date.now()}`,
+      recipe_key: body.recipe_key,
+      title: body.title,
+      recipe: body.recipe,
+      shopping_item_ids: [],
+      planned_at: new Date().toISOString(),
+    };
+    mockPlans = [plan, ...mockPlans];
+  }
+  const onList = (await getShoppingList()).to_buy;
+  const result: PlanRecipeResult = { plan, already_planned: alreadyPlanned, added: [], already_on_list: [], already_at_home: [] };
+  const seen = new Set<string>();
+  for (const name of body.ingredients.map((n) => n.trim()).filter(Boolean)) {
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const listed = onList.find((row) => row.name.trim().toLowerCase() === key);
+    if (listed) {
+      result.already_on_list.push(name);
+      if (!plan.shopping_item_ids.includes(listed.list_item_id)) plan.shopping_item_ids.push(listed.list_item_id);
+      continue;
+    }
+    const added = await addShoppingItem({ name, quantity: 1 });
+    if (added.kind === 'duplicate') {
+      result.already_at_home.push(name);
+    } else {
+      plan.shopping_item_ids.push(added.item.list_item_id);
+      onList.push(added.item);
+      result.added.push(name);
+    }
+  }
+  return mockDelay({ ...result, plan: { ...plan } });
+}
+
+async function mockRemovePlannedRecipe(plannedId: string, removeItems: boolean): Promise<void> {
+  const plan = mockPlans.find((p) => p.planned_id === plannedId);
+  if (!plan) throw new ApiError(404, 'Planned recipe not found');
+  mockPlans = mockPlans.filter((p) => p.planned_id !== plannedId);
+  if (!removeItems) return;
+  const shared = new Set(mockPlans.flatMap((p) => p.shopping_item_ids));
+  const toBuy = new Set((await getShoppingList()).to_buy.map((row) => row.list_item_id));
+  for (const id of plan.shopping_item_ids) {
+    if (!shared.has(id) && toBuy.has(id)) await removeShoppingItem(id);
+  }
+}
+
+export const listPlannedRecipes = () =>
+  USE_PLANNED_MOCK
+    ? mockDelay(mockPlans.map((p) => ({ ...p })))
+    : request<PlannedRecipe[]>('/v1/planned-recipes');
+
+/** Saves the recipe to Planned and adds its missing ingredients to the shopping list. */
+export const planRecipe = (recipe: RecipeRecommendation) =>
+  USE_PLANNED_MOCK
+    ? mockPlanRecipe(recipe)
+    : request<PlanRecipeResult>('/v1/planned-recipes', { method: 'POST', body: planBody(recipe) });
+
+/** removeItems=true also takes the plan's shopping list rows off the list if
+ *  they're still "to buy" and no other plan needs them. Leave it false after
+ *  the recipe was cooked. */
+export const removePlannedRecipe = (plannedId: string, removeItems = false) =>
+  USE_PLANNED_MOCK
+    ? mockRemovePlannedRecipe(plannedId, removeItems)
+    : request<void>(`/v1/planned-recipes/${plannedId}${removeItems ? '?remove_items=true' : ''}`, { method: 'DELETE' });
+
+/** A planned recipe with Available / Missing worked out again from today's
+ *  pantry -- what was missing when it was planned may have been bought since. */
+export function plannedToRecommendation(plan: PlannedRecipe, inventory: FoodItem[]): RecipeRecommendation {
+  const saved = plan.recipe ?? {};
+  const names = [
+    ...(saved.available_ingredients ?? saved.matched_ingredients ?? []),
+    ...(saved.missing_ingredients ?? []),
+  ].filter((value, index, all) => value && all.findIndex((v) => v.toLowerCase() === value.toLowerCase()) === index);
+  const base: RecipeRecommendation = {
+    tags: [],
+    servings: null,
+    serving_size: null,
+    expiring_ingredients_matched: [],
+    coverage_score: 0,
+    expiry_weight_score: 0,
+    total_score: 0,
+    ...saved,
+    recipe_id: saved.recipe_id || plan.recipe_key,
+    recipe_name: saved.recipe_name || plan.title,
+    title: saved.title || plan.title,
+    ingredient_tokens: saved.ingredient_tokens?.length ? saved.ingredient_tokens : names,
+    available_ingredients: [],
+    matched_ingredients: [],
+    missing_ingredients: names,
+  };
+  return rankRecipeRecommendations([base], inventory)[0] ?? base;
 }

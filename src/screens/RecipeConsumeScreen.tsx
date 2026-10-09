@@ -9,6 +9,7 @@ import { Minus, Plus, Check } from '../icons/NavIcons';
 import { usePantry, formatQuantity } from '../data/pantryItems';
 import { matchIngredientsToPantry } from '../data/recipeIngredientMatch';
 import { recordOutcome } from '../api/freshwise';
+import { removePlannedRecipe } from '../api/freshwise';
 
 const STEP = 0.5;
 
@@ -110,6 +111,16 @@ export default function RecipeConsumeScreen() {
       return;
     }
     refresh();
+    // Cooked a planned recipe: it's done, so take it off the Planned tab.
+    // Its shopping list rows stay -- they're bought or still useful.
+    const plannedId: string | undefined = route.params?.plannedId;
+    if (plannedId) {
+      try {
+        await removePlannedRecipe(plannedId, false);
+      } catch {
+        // Not worth blocking the cooked flow; the user can remove it by hand.
+      }
+    }
     navigation.popTo('Main', { screen: 'Pantry' });
   };
 

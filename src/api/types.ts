@@ -367,3 +367,24 @@ export type UserRecipe = {
   created_at: string;
   updated_at: string;
 };
+
+// --- Planned recipes ("Plan to cook") -- /v1/planned-recipes ---------------
+
+export type PlannedRecipe = {
+  planned_id: string;
+  recipe_key: string;
+  title: string;
+  /** The recipe as it was shown when planned (RecipeRecommendation shape). */
+  recipe: Partial<RecipeRecommendation>;
+  /** Shopping list rows this plan added or relies on. */
+  shopping_item_ids: string[];
+  planned_at: string;
+};
+
+export type PlanRecipeResult = {
+  plan: PlannedRecipe;
+  already_planned: boolean;
+  added: string[];
+  already_on_list: string[];
+  already_at_home: string[];
+};

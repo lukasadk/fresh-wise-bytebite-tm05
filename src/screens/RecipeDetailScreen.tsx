@@ -1,11 +1,12 @@
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, ChefHat, CheckCircle2, Clock3, Pencil, ShoppingBasket, Sparkles, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, CalendarCheck, CalendarPlus, ChefHat, CheckCircle2, Clock3, Pencil, ShoppingBasket, Sparkles, Trash2 } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { deleteMyRecipe, getMyRecipe, homemadeRecipeId } from '../api/freshwise';
+import { listPlannedRecipes, planKeyOf, planRecipe, removePlannedRecipe } from '../api/freshwise';
 import { ApiError } from '../api/client';
 import type { RecipeRecommendation, UserRecipe } from '../api/types';
 
@@ -51,6 +52,71 @@ export default function RecipeDetailScreen() {
   const [confirmDelete, setConfirmDelete] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [actionError, setActionError] = React.useState<string | null>(null);
+
+  // "Plan to cook": saved on the server (/v1/planned-recipes). plannedId is
+  // passed in from the Planned tab, otherwise looked up by the recipe's key.
+  const [plannedId, setPlannedId] = React.useState<string | null>(route.params?.plannedId ?? null);
+  const [planBusy, setPlanBusy] = React.useState(false);
+  const [planMessage, setPlanMessage] = React.useState<string | null>(null);
+  const [confirmUnplan, setConfirmUnplan] = React.useState(false);
+
+  React.useEffect(() => {
+    if (route.params?.plannedId) return;
+    let alive = true;
+    const key = planKeyOf(recipe);
+    listPlannedRecipes()
+      .then((plans) => {
+        const match = plans.find((p) => p.recipe_key === key);
+        if (alive && match) setPlannedId(match.planned_id);
+      })
+      .catch(() => {}); // Planned status is a nice-to-have on this screen.
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePlan = async () => {
+    if (planBusy) return;
+    setPlanBusy(true);
+    setPlanMessage(null);
+    setActionError(null);
+    try {
+      const result = await planRecipe(recipe);
+      setPlannedId(result.plan.planned_id);
+      const parts: string[] = [];
+      if (result.added.length) {
+        parts.push(`Added ${result.added.length} ingredient${result.added.length === 1 ? '' : 's'} to your shopping list`);
+      }
+      if (result.already_on_list.length) parts.push(`${result.already_on_list.length} already on it`);
+      if (result.already_at_home.length) parts.push(`${result.already_at_home.length} already at home`);
+      setPlanMessage(
+        `${result.already_planned ? 'Already planned' : 'Planned'}. ${
+          parts.length ? parts.join(' · ') + '.' : 'Nothing needed from the shop.'
+        }`,
+      );
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't plan this recipe — try again.");
+    } finally {
+      setPlanBusy(false);
+    }
+  };
+
+  const handleUnplan = async () => {
+    if (!plannedId) return;
+    setConfirmUnplan(false);
+    setPlanBusy(true);
+    setActionError(null);
+    try {
+      await removePlannedRecipe(plannedId, true);
+      setPlannedId(null);
+      setPlanMessage('Removed from Planned, along with its ingredients you have not bought yet.');
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't remove this plan — try again.");
+    } finally {
+      setPlanBusy(false);
+    }
+  };
 
   const handleEdit = async () => {
     if (!myRecipeId || busy) return;
@@ -225,6 +291,36 @@ export default function RecipeDetailScreen() {
           </View>
         ) : null}
 
+        {planMessage ? <Text style={styles.planMessage}>{planMessage}</Text> : null}
+        {plannedId ? (
+          <View style={styles.plannedRow}>
+            <View style={styles.plannedBadge}>
+              <CalendarCheck size={16} color={colors.primary} strokeWidth={2.4} />
+              <Text style={styles.plannedBadgeText}>Planned to cook</Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [styles.unplanButton, pressed && { opacity: 0.85 }]}
+              onPress={() => setConfirmUnplan(true)}
+              disabled={planBusy}
+              accessibilityLabel="Remove from planned recipes"
+            >
+              <Text style={styles.unplanText}>Remove</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [styles.planButton, (pressed || planBusy) && { opacity: 0.8 }]}
+            onPress={handlePlan}
+            disabled={planBusy}
+            accessibilityLabel="Plan to cook later and add missing ingredients to the shopping list"
+          >
+            <CalendarPlus size={17} color={colors.primary} strokeWidth={2.4} />
+            <Text style={styles.planButtonText}>
+              {planBusy ? 'Planning…' : missing.length ? 'Plan to cook · add missing to list' : 'Plan to cook'}
+            </Text>
+          </Pressable>
+        )}
+
         {available.length > 0 ? (
           <Pressable
             style={({ pressed }) => [styles.cookedButton, pressed && { opacity: 0.9 }]}
@@ -232,6 +328,7 @@ export default function RecipeDetailScreen() {
               navigation.navigate('RecipeConsume', {
                 recipeTitle: titleOf(recipe),
                 ingredientNames: available,
+                ...(plannedId ? { plannedId } : {}),
               })
             }
           >
@@ -246,6 +343,14 @@ export default function RecipeDetailScreen() {
         confirmLabel="Delete"
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
+      />
+      <ConfirmDialog
+        visible={confirmUnplan}
+        title={`Remove ${titleOf(recipe)} from Planned?`}
+        message="Its ingredients you haven't bought yet are taken off your shopping list too."
+        confirmLabel="Remove"
+        onConfirm={handleUnplan}
+        onCancel={() => setConfirmUnplan(false)}
       />
     </SafeAreaView>
   );
@@ -499,5 +604,59 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 15,
     color: colors.white,
+  },
+  planButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primaryTint,
+    borderWidth: 1,
+    borderColor: colors.primaryPale,
+  },
+  planButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.primary,
+  },
+  plannedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primaryTint,
+    borderWidth: 1,
+    borderColor: colors.primaryPale,
+  },
+  plannedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  plannedBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.primary,
+  },
+  unplanButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+  },
+  unplanText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.errorText,
+  },
+  planMessage: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.statusFresh,
+    textAlign: 'center',
   },
 });

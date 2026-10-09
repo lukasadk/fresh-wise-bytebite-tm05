@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChefHat, CheckCircle2, ChevronRight, Clock3, Leaf, Plus, RefreshCcw, Sparkles } from 'lucide-react-native';
+import { CalendarCheck, ChefHat, CheckCircle2, ChevronRight, Clock3, Leaf, Plus, RefreshCcw, Sparkles } from 'lucide-react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import {
@@ -23,6 +23,8 @@ import {
   rankMyRecipes,
 } from '../api/freshwise';
 import type { FoodItem, RecipeRecommendation, UserRecipe } from '../api/types';
+import { listPlannedRecipes, plannedToRecommendation } from '../api/freshwise';
+import type { PlannedRecipe } from '../api/types';
 import EstimatedProgressBar, { useEstimatedProgress } from '../components/EstimatedProgressBar';
 import {
   filterRecipeInventoryByIds,
@@ -74,25 +76,31 @@ function IngredientChecklist({
   );
 }
 
-type RecipesTab = 'recommended' | 'mine';
+type RecipesTab = 'recommended' | 'mine' | 'planned';
+const TABS: RecipesTab[] = ['recommended', 'mine', 'planned'];
+const TAB_LABEL: Record<RecipesTab, string> = { recommended: 'Recommended', mine: 'My recipes', planned: 'Planned' };
+const TAB_ICON = { recommended: Sparkles, mine: ChefHat, planned: CalendarCheck };
 
-// "Recommended | My recipes" switch -- the green pill slides between the two.
+// "Recommended | My recipes | Planned" switch -- the green pill slides between them.
 function TabSwitch({ tab, onChange }: { tab: RecipesTab; onChange: (next: RecipesTab) => void }) {
   const [width, setWidth] = React.useState(0);
-  const slide = React.useRef(new Animated.Value(tab === 'mine' ? 1 : 0)).current;
+  const slide = React.useRef(new Animated.Value(TABS.indexOf(tab))).current;
   React.useEffect(() => {
-    Animated.spring(slide, { toValue: tab === 'mine' ? 1 : 0, useNativeDriver: true, speed: 14, bounciness: 6 }).start();
+    Animated.spring(slide, { toValue: TABS.indexOf(tab), useNativeDriver: true, speed: 14, bounciness: 6 }).start();
   }, [tab, slide]);
-  const pillWidth = width > 0 ? (width - 8) / 2 : 0;
-  const translateX = slide.interpolate({ inputRange: [0, 1], outputRange: [0, pillWidth] });
+  const pillWidth = width > 0 ? (width - 8) / TABS.length : 0;
+  const translateX = slide.interpolate({
+    inputRange: TABS.map((_, i) => i),
+    outputRange: TABS.map((_, i) => i * pillWidth),
+  });
   return (
     <View style={styles.tabSwitch} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
       {pillWidth > 0 ? (
         <Animated.View pointerEvents="none" style={[styles.tabPill, { width: pillWidth, transform: [{ translateX }] }]} />
       ) : null}
-      {(['recommended', 'mine'] as const).map((key) => {
+      {TABS.map((key) => {
         const active = tab === key;
-        const Icon = key === 'recommended' ? Sparkles : ChefHat;
+        const Icon = TAB_ICON[key];
         return (
           <Pressable
             key={key}
@@ -101,9 +109,14 @@ function TabSwitch({ tab, onChange }: { tab: RecipesTab; onChange: (next: Recipe
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
           >
-            <Icon size={15} color={active ? colors.white : colors.textSecondary} strokeWidth={2.3} />
-            <Text style={[styles.tabText, active && styles.tabTextActive]}>
-              {key === 'recommended' ? 'Recommended' : 'My recipes'}
+            <Icon size={14} color={active ? colors.white : colors.textSecondary} strokeWidth={2.3} />
+            <Text
+              style={[styles.tabText, active && styles.tabTextActive]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+            >
+              {TAB_LABEL[key]}
             </Text>
           </Pressable>
         );
@@ -129,6 +142,9 @@ export default function RecipesScreen() {
   const mobileCardWidth = Math.max(278, Math.min(330, width - spacing.xxl * 2));
   const [recipes, setRecipes] = React.useState<RecipeRecommendation[]>([]);
   const [inventory, setInventory] = React.useState<FoodItem[]>([]);
+  // Whole usable pantry, even in ingredient-selection mode -- the Planned tab
+  // checks what each planned recipe still needs against everything at home.
+  const [fullPantry, setFullPantry] = React.useState<FoodItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -140,7 +156,9 @@ export default function RecipesScreen() {
   const shownTitles = React.useRef<string[]>([]);
 
   // Homemade recipes ("My recipes"), saved on the server (/v1/my-recipes).
-  const [tab, setTab] = React.useState<RecipesTab>(route.params?.tab === 'mine' ? 'mine' : 'recommended');
+  const [tab, setTab] = React.useState<RecipesTab>(
+    route.params?.tab === 'mine' || route.params?.tab === 'planned' ? route.params.tab : 'recommended',
+  );
   const [myRecipes, setMyRecipes] = React.useState<UserRecipe[]>([]);
   const [myLoading, setMyLoading] = React.useState(true);
   const [myError, setMyError] = React.useState<string | null>(null);
@@ -166,7 +184,7 @@ export default function RecipesScreen() {
   // happened, and clear the params so it only happens once.
   React.useEffect(() => {
     const params = route.params ?? {};
-    if (params.tab === 'mine') setTab('mine');
+    if (params.tab === 'mine' || params.tab === 'planned') setTab(params.tab);
     if (params.savedTitle) setToast(`${params.savedTitle} saved`);
     if (params.deletedTitle) setToast(`${params.deletedTitle} deleted`);
     if (params.tab || params.savedTitle || params.deletedTitle) {
@@ -180,11 +198,41 @@ export default function RecipesScreen() {
     return () => clearTimeout(timeout);
   }, [toast]);
 
+  // Planned recipes ("Plan to cook"), saved on the server (/v1/planned-recipes).
+  const [planned, setPlanned] = React.useState<PlannedRecipe[]>([]);
+  const [plannedLoading, setPlannedLoading] = React.useState(true);
+  const [plannedError, setPlannedError] = React.useState<string | null>(null);
+
+  const loadPlanned = React.useCallback(async () => {
+    try {
+      setPlanned(await listPlannedRecipes());
+      setPlannedError(null);
+    } catch (e: any) {
+      setPlannedError(e?.message || 'Could not load your planned recipes.');
+    } finally {
+      setPlannedLoading(false);
+    }
+  }, []);
+
   // Refetch the saved recipes every time this tab comes back into view.
   useFocusEffect(
     React.useCallback(() => {
       loadMine();
-    }, [loadMine]),
+      loadPlanned();
+      // Re-read the pantry too, so food added since (e.g. a missing
+      // ingredient you just bought) stops showing as "Still need" on Planned.
+      listPantry()
+        .then((pantry) =>
+          setFullPantry(pantry.filter((item) => item.status === 'active' || item.status === 'partially_used')),
+        )
+        .catch(() => {});
+    }, [loadMine, loadPlanned]),
+  );
+
+  // Available / Missing worked out again from today's pantry.
+  const plannedRecipes = React.useMemo(
+    () => planned.map((plan) => ({ plan, recipe: plannedToRecommendation(plan, fullPantry) })),
+    [planned, fullPantry],
   );
 
   // Soon-to-expire pantry food first, same ranking as Recommended.
@@ -222,6 +270,7 @@ export default function RecipesScreen() {
     try {
       const pantry = await listPantry();
       const usablePantry = pantry.filter((item) => item.status === 'active' || item.status === 'partially_used');
+      setFullPantry(usablePantry);
       const recommendationInventory = selectionMode
         ? filterRecipeInventoryByIds(usablePantry, selectedIngredientIds)
         : usablePantry;
@@ -332,7 +381,82 @@ export default function RecipesScreen() {
 
         <TabSwitch tab={tab} onChange={setTab} />
 
-        {tab === 'mine' ? (
+        {tab === 'planned' ? (
+          <View style={styles.recipeSection}>
+            <Text style={styles.sectionTitle}>
+              {plannedRecipes.length ? `Planned to cook (${plannedRecipes.length})` : 'Planned to cook'}
+            </Text>
+            {plannedLoading && !plannedRecipes.length ? (
+              <View style={styles.stateCard}>
+                <Text style={styles.stateText}>Loading your planned recipes…</Text>
+              </View>
+            ) : plannedError && !plannedRecipes.length ? (
+              <View style={[styles.stateCard, styles.errorCard]}>
+                <Text style={styles.errorTitle}>Planned recipes could not load</Text>
+                <Text style={styles.errorText}>{plannedError}</Text>
+                <Pressable style={styles.retryButton} onPress={() => loadPlanned()}>
+                  <RefreshCcw size={16} color={colors.white} />
+                  <Text style={styles.retryText}>Try again</Text>
+                </Pressable>
+              </View>
+            ) : plannedRecipes.length === 0 ? (
+              <View style={styles.stateCard}>
+                <CalendarCheck size={24} color={colors.primary} />
+                <Text style={styles.stateTitle}>No recipes planned yet</Text>
+                <Text style={styles.stateText}>
+                  Open any recipe and tap Plan to cook. Its missing ingredients go straight onto your shopping list.
+                </Text>
+              </View>
+            ) : (
+              plannedRecipes.map(({ plan, recipe }) => {
+                const have = list(recipe.available_ingredients ?? recipe.matched_ingredients);
+                const still = list(recipe.missing_ingredients);
+                const homemadeId = homemadeRecipeId(recipe);
+                const userRecipe = homemadeId ? myRecipes.find((r) => r.recipe_id === homemadeId) : undefined;
+                return (
+                  <Pressable
+                    key={plan.planned_id}
+                    style={({ pressed }) => [styles.mineCard, pressed && styles.recipeCardPressed]}
+                    onPress={() =>
+                      navigation.navigate('RecipeDetail', {
+                        recipe,
+                        plannedId: plan.planned_id,
+                        ...(userRecipe ? { userRecipe } : {}),
+                      })
+                    }
+                  >
+                    <View style={styles.mineIcon}>
+                      <CalendarCheck size={20} color={colors.primary} strokeWidth={2.3} />
+                    </View>
+                    <View style={styles.mineBody}>
+                      <Text style={styles.recipeName} numberOfLines={2}>{recipeTitle(recipe)}</Text>
+                      <View style={styles.chipRow}>
+                        {still.length ? (
+                          <View style={[styles.chip, styles.warnChip]}>
+                            <Leaf size={13} color={colors.expiryWarnText} />
+                            <Text style={styles.warnChipText}>Still need {shortIngredients(still, '')}</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.chip}>
+                            <CheckCircle2 size={13} color={colors.primary} />
+                            <Text style={styles.chipText}>Ready to cook</Text>
+                          </View>
+                        )}
+                        {have.length ? (
+                          <View style={styles.chip}>
+                            <CheckCircle2 size={13} color={colors.primary} />
+                            <Text style={styles.chipText}>Have {have.length}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    </View>
+                    <ChevronRight size={19} color={colors.primary} strokeWidth={2.4} />
+                  </Pressable>
+                );
+              })
+            )}
+          </View>
+        ) : tab === 'mine' ? (
           <View style={styles.recipeSection}>
             <View style={styles.mineHeader}>
               <Text style={styles.sectionTitle}>
@@ -948,12 +1072,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
+    paddingHorizontal: 2,
     paddingVertical: spacing.sm + 2,
   },
   tabText: {
+    flexShrink: 1,
     fontFamily: fonts.bold,
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
   },
   tabTextActive: {
