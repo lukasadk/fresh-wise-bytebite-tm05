@@ -17,6 +17,7 @@ import FoodMatchPicker from '../components/FoodMatchPicker';
 import ShoppingTickedToast from '../components/ShoppingTickedToast';
 import PriceDataLabel from '../components/PriceDataLabel';
 import { currentValue, formatRM } from '../data/foodValue';
+import { Coins, Info, Lightbulb, Tag } from 'lucide-react-native';
 import { usePantryPhoto, deletePantryPhoto } from '../vlm/pantryPhotos';
 
 type IconComponent = typeof Refrigerator;
@@ -260,6 +261,54 @@ export default function FoodDetailScreen({ navigation, route }: any) {
           </View>
         </View>
 
+        {/* Epic 9 (AC 9.1.2-9.1.4) -- Figma frames 74/75. Estimated from the
+            PriceCatcher national median, never what the user paid. */}
+        {estimatedValue !== null ? (
+          <View style={[styles.valueCard, styles.valueCardEstimated]}>
+            <View style={styles.valueCardTop}>
+              <View style={styles.valueCardText}>
+                <View style={styles.valueHeadingRow}>
+                  <Text style={styles.valueHeading}>Estimated food value</Text>
+                  <ValueInfoButton onPress={() => navigation.navigate('EstimatedValueRules')} />
+                </View>
+                <Text style={styles.valueAmount}>Est. {formatRM(estimatedValue)}</Text>
+              </View>
+              <View style={styles.valueCoin}>
+                <Coins size={20} color={colors.valueAmberInk} />
+              </View>
+            </View>
+            <PriceDataLabel style={styles.valueSource} color={colors.textSecondary} />
+          </View>
+        ) : (
+          <View style={styles.valueCard}>
+            <View style={styles.valueHeadingRow}>
+              <Text style={styles.valueHeading}>Estimated food value</Text>
+              <ValueInfoButton onPress={() => navigation.navigate('EstimatedValueRules')} />
+            </View>
+            <View style={styles.unavailableRow}>
+              <View style={styles.unavailableIcon}>
+                <Tag size={20} color={colors.neutralGrey} />
+              </View>
+              <View style={styles.valueCardText}>
+                <Text style={styles.unavailableTitle}>Value not available</Text>
+                <Text style={styles.unavailableBody}>
+                  No matching PriceCatcher item and unit were found for this item.
+                </Text>
+              </View>
+            </View>
+            <View style={styles.valueDivider} />
+            <View style={styles.explainRow}>
+              <Lightbulb size={16} color={colors.statusSoon} />
+              <View style={styles.valueCardText}>
+                <Text style={styles.explainTitle}>What does this mean?</Text>
+                <Text style={styles.unavailableBody}>
+                  This item isn't covered in the current PriceCatcher dataset, so we can't estimate its value right now.
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         <Text style={styles.sectionTitle}>Item details</Text>
         <View style={styles.detailsCard}>
           <DetailRow label="Quantity" value={formatQuantity(item)} />
@@ -267,20 +316,21 @@ export default function FoodDetailScreen({ navigation, route }: any) {
           <DetailRow label="Purchased" value={formatDisplayDate(item.purchaseDate)} />
           <View style={styles.divider} />
           <DetailRow label="Expires" value={formatDisplayDate(item.expiryDate)} />
-          <View style={styles.divider} />
-          {/* Epic 9 (AC 9.1.3): estimated from PriceCatcher, never what the
-              user paid -- so it says "Est." and names its source and month. */}
-          <View style={styles.valueRow}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Estimated value</Text>
-              {estimatedValue !== null ? (
-                <Text style={styles.detailValue}>Est. {formatRM(estimatedValue)}</Text>
-              ) : (
-                <Text style={styles.valueUnavailable}>Value not available</Text>
-              )}
-            </View>
-            {estimatedValue !== null ? <PriceDataLabel style={styles.valueSource} /> : null}
-          </View>
+          {item.estUnitValueRm !== null ? <View style={styles.divider} /> : null}
+          {item.estUnitValueRm !== null ? (
+            <>
+              <DetailRow
+                label="Unit price (est.)"
+                value={`${formatRM(item.estUnitValueRm)}${item.unit ? ` / ${item.unit}` : ''}`}
+              />
+              <View style={styles.infoNote}>
+                <Info size={14} color={colors.infoNoteInk} />
+                <Text style={styles.infoNoteText}>
+                  Estimated from the national median price in PriceCatcher. We don't collect your actual spending.
+                </Text>
+              </View>
+            </>
+          ) : null}
         </View>
 
         <Text style={styles.sectionTitle}>Storage guidance</Text>
@@ -423,6 +473,21 @@ export default function FoodDetailScreen({ navigation, route }: any) {
         bottom={Math.max(insets.bottom, spacing.md) + spacing.lg}
       />
     </SafeAreaView>
+  );
+}
+
+// Epic 9 -- the (i) next to "Estimated food value" opens the matching rules (Figma 86).
+function ValueInfoButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="How estimated value works"
+      hitSlop={10}
+      onPress={onPress}
+      style={({ pressed }) => pressed && { opacity: 0.6 }}
+    >
+      <Info size={14} color={colors.textSecondary} />
+    </Pressable>
   );
 }
 
@@ -593,18 +658,110 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.borderSoft,
   },
-  valueRow: {
-    paddingBottom: spacing.xs,
+  valueCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    gap: spacing.sm,
   },
-  valueUnavailable: {
+  valueCardEstimated: {
+    backgroundColor: colors.valueAmberBg,
+    borderColor: colors.valueAmberBorder,
+  },
+  valueCardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  valueCardText: {
+    flex: 1,
+    gap: 2,
+  },
+  valueHeadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  valueHeading: {
     fontFamily: fonts.semibold,
-    fontSize: 14,
-    color: colors.neutralGrey,
+    fontSize: 13,
+    color: colors.textPrimary,
+  },
+  valueAmount: {
+    fontFamily: fonts.bold,
+    fontSize: 30,
+    color: colors.textPrimary,
+    marginTop: spacing.xs,
+  },
+  valueCoin: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.valueAmberIconBg,
   },
   valueSource: {
-    textAlign: 'right',
-    marginTop: -spacing.sm,
-    paddingBottom: spacing.sm,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  unavailableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.xs,
+  },
+  unavailableIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.neutralChipBg,
+  },
+  unavailableTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 22,
+    color: colors.slateTeal,
+  },
+  unavailableBody: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textSecondary,
+  },
+  valueDivider: {
+    height: 1,
+    backgroundColor: colors.borderSoft,
+    marginVertical: spacing.xs,
+  },
+  explainRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  explainTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.textPrimary,
+  },
+  infoNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: colors.infoNoteBg,
+    borderRadius: radii.sm,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  infoNoteText: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.infoNoteInk,
   },
   guidanceCard: {
     backgroundColor: colors.primaryTint,

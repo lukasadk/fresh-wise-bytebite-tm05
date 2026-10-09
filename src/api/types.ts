@@ -79,6 +79,14 @@ export type FoodValueTopItem = {
   quantity: number;
 };
 
+/** A wasted item with no PriceCatcher estimate (AC 9.3.3 low-coverage list). */
+export type FoodValueUnpricedItem = {
+  name: string;
+  category: string | null;
+  unit: string | null;
+  quantity: number;
+};
+
 export type FoodValueWasted = {
   month: string; // "2026-10"
   is_current_month: boolean;
@@ -98,6 +106,10 @@ export type FoodValueWasted = {
   headline: string | null;
   by_category: FoodValueCategory[];
   top_items: FoodValueTopItem[];
+  /** Every valued item, highest first ("See all"). Optional: older API builds omit it. */
+  all_items?: FoodValueTopItem[];
+  /** Wasted items that could not be valued. Optional: older API builds omit it. */
+  unpriced_items?: FoodValueUnpricedItem[];
 };
 
 export type ConsumptionWasteLog = {

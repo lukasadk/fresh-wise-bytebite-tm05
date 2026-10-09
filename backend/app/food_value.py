@@ -320,7 +320,24 @@ def summarise_wasted(rows: Iterable[WastedRow]) -> dict[str, Any]:
                                      "value": Decimal("0"), "quantity": Decimal("0")})
         g["value"] += item_value(r.unit_value_rm, r.quantity)
         g["quantity"] += r.quantity
-    top_items = sorted(grouped.values(), key=lambda g: g["value"], reverse=True)[:3]
+    ranked_items = sorted(grouped.values(), key=lambda g: g["value"], reverse=True)
+    top_items = ranked_items[:3]
+
+    # Wasted items with no estimate (no PriceCatcher match / unit can't be
+    # converted), grouped by name the same way -- listed on the low-coverage
+    # state so the user can see which items are missing a price.
+    unpriced: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        if r.unit_value_rm is not None:
+            continue
+        key = " ".join(r.name.split()).casefold()
+        g = unpriced.setdefault(key, {"name": " ".join(r.name.split()), "category": r.category,
+                                      "unit": r.unit, "quantity": Decimal("0")})
+        g["quantity"] += r.quantity
+
+    def _item(g: dict[str, Any]) -> dict[str, Any]:
+        return {"name": g["name"], "category": g["category"], "unit": g["unit"],
+                "value_rm": money(g["value"]), "quantity": float(g["quantity"])}
 
     return {
         "wasted_count": wasted_count,
@@ -330,9 +347,11 @@ def summarise_wasted(rows: Iterable[WastedRow]) -> dict[str, Any]:
         "sufficient": wasted_count > 0 and coverage >= MIN_COVERAGE,
         "total_rm": money(total),
         "by_category": categories,
-        "top_items": [
-            {"name": g["name"], "category": g["category"], "unit": g["unit"],
-             "value_rm": money(g["value"]), "quantity": float(g["quantity"])}
-            for g in top_items if g["value"] > 0
+        "top_items": [_item(g) for g in top_items if g["value"] > 0],
+        # Every valued item, highest first -- the "See all" list (AC 9.4.2).
+        "all_items": [_item(g) for g in ranked_items if g["value"] > 0],
+        "unpriced_items": [
+            {"name": g["name"], "category": g["category"], "unit": g["unit"], "quantity": float(g["quantity"])}
+            for g in unpriced.values()
         ],
     }

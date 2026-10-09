@@ -173,6 +173,18 @@ def test_top_three_groups_by_name_ignoring_case():
     assert top[0]["value_rm"] == 16.98 and top[0]["quantity"] == 2
 
 
+def test_all_items_ranks_every_valued_item_and_unpriced_items_are_grouped():
+    s = summarise_wasted([
+        row("Milk", 1, "8.49"), row("Chicken", 1, "9.29", "Protein", "kg"),
+        row("Eggs", 3, "0.48", "Protein", "pcs"), row("Rice", 1, "3.60", "Pantry", "kg"),
+        row("Kuih", 2, None, "Other", "pcs"), row("kuih ", 1, None, "Other", "pcs"), row("Herbs", 1, None),
+    ])
+    assert [t["name"] for t in s["all_items"]] == ["Chicken", "Milk", "Rice", "Eggs"]
+    assert s["top_items"] == s["all_items"][:3]
+    assert [(u["name"], u["quantity"]) for u in s["unpriced_items"]] == [("Kuih", 3.0), ("Herbs", 1.0)]
+    assert "value_rm" not in s["unpriced_items"][0]
+
+
 def test_headline_wording():
     assert _headline(32.4, -12.2, True) == "About RM 32 of food wasted this month, about RM 12 less than last month"
     assert _headline(32.4, 5, True).endswith("about RM 5 more than last month")

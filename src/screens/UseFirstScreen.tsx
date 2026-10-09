@@ -10,11 +10,13 @@ import UrgencyOutline, { urgencyPalette } from '../components/UrgencyOutline';
 import { foodIconFor } from '../icons/FoodIcons';
 import { usePantry, getExpiryInfo, formatDisplayDate, PantryItem } from '../data/pantryItems';
 import PriceDataLabel from '../components/PriceDataLabel';
-import { ChevronRight, X } from '../icons/NavIcons';
+import { AlertTriangle, Check, ChevronRight, X } from '../icons/NavIcons';
+import { Info } from 'lucide-react-native';
 import {
   AT_RISK_DAYS,
   INSUFFICIENT_AT_RISK_TEXT,
   atRiskBannerText,
+  coverageNote,
   currentValue,
   formatRM,
   summariseAtRisk,
@@ -95,6 +97,30 @@ export default function UseFirstScreen({ navigation, route }: any) {
   const [atRiskOnly, setAtRiskOnly] = useState(false);
   const showAtRiskList = atRiskOnly && atRisk.banner !== 'hidden';
 
+  // Figma frame 78 (AC 9.2.4): when a valued at-risk item leaves the list
+  // (consumed, wasted or removed elsewhere), say so once the list refetches.
+  const prevAtRisk = useRef<Map<string, string> | null>(null);
+  const [removedNote, setRemovedNote] = useState<string | null>(null);
+  useEffect(() => {
+    if (loading || error) return;
+    const now = new Map(
+      atRisk.items.filter((i) => currentValue(i) !== null).map((i) => [i.id, i.name] as [string, string]),
+    );
+    const prev = prevAtRisk.current;
+    prevAtRisk.current = now;
+    if (!prev) return;
+    const gone = [...prev.entries()].filter(([id]) => !now.has(id)).map(([, name]) => name);
+    if (gone.length === 0) return;
+    setRemovedNote(
+      `${gone.length === 1 ? gone[0] : `${gone.length} items`} removed — value at risk updated`,
+    );
+  }, [atRisk.items, loading, error]);
+  useEffect(() => {
+    if (!removedNote) return;
+    const timer = setTimeout(() => setRemovedNote(null), 5000);
+    return () => clearTimeout(timer);
+  }, [removedNote]);
+
   const renderRow = (item: PantryItem, withValue: boolean) => {
     const expiry = getExpiryInfo(item);
     const value = withValue ? currentValue(item) : null;
@@ -120,7 +146,7 @@ export default function UseFirstScreen({ navigation, route }: any) {
           expiryLevel={expiry.expiryLevel}
           source={item.source}
           onPress={() => goToDetail(item.id)}
-          valueLabel={withValue ? (value !== null ? formatRM(value) : 'No value') : undefined}
+          valueLabel={withValue ? (value !== null ? formatRM(value) : 'Value unavailable') : undefined}
           valueMuted={withValue && value === null}
         />
       </SwipeToManage>
@@ -131,23 +157,61 @@ export default function UseFirstScreen({ navigation, route }: any) {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Use First</Text>
-        <Text style={styles.subtitle}>Prioritised by expiry so nothing gets forgotten.</Text>
+        <Text style={styles.subtitle}>
+          {showAtRiskList
+            ? `Showing items expiring within the next ${AT_RISK_DAYS} days.`
+            : 'Prioritised by expiry so nothing gets forgotten.'}
+        </Text>
 
-        {/* AC 9.2.2 / 9.2.6 -- hidden entirely when nothing valued is at risk (AC 9.2.5). */}
-        {!error && atRisk.banner !== 'hidden' ? (
-          <View style={styles.atRiskBlock}>
+        {/* AC 9.2.2 / 9.2.6 -- Figma frames 76/80; hidden entirely when nothing
+            valued is at risk (AC 9.2.5). */}
+        {!error && atRisk.banner === 'total' ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityHint="Shows only the items expiring in the next 3 days"
+            onPress={() => setAtRiskOnly(true)}
+            style={({ pressed }) => [styles.atRiskBanner, pressed && { opacity: 0.9 }]}
+          >
+            <View style={styles.atRiskTop}>
+              <View style={[styles.bannerIcon, { backgroundColor: colors.statusSoon }]}>
+                <AlertTriangle size={14} color={colors.white} strokeWidth={2.5} />
+              </View>
+              <View style={styles.bannerTextBlock}>
+                <Text style={[styles.bannerEyebrow, { color: colors.valueAmberInk }]}>FOOD VALUE AT RISK</Text>
+                <Text style={styles.atRiskText}>{atRiskBannerText(atRisk.totalRm)}.</Text>
+              </View>
+            </View>
+            <PriceDataLabel style={styles.bannerSource} color={colors.textPrimary} />
+          </Pressable>
+        ) : !error && atRisk.banner === 'insufficient' ? (
+          <View style={styles.coverageBanner}>
+            <View style={styles.atRiskTop}>
+              <View style={[styles.bannerIcon, { backgroundColor: colors.slateTeal }]}>
+                <Info size={14} color={colors.white} strokeWidth={2.5} />
+              </View>
+              <View style={styles.bannerTextBlock}>
+                <Text style={[styles.bannerEyebrow, { color: colors.slateTeal }]}>PRICE COVERAGE</Text>
+                <Text style={styles.atRiskText}>{INSUFFICIENT_AT_RISK_TEXT}</Text>
+              </View>
+            </View>
+            <Text style={styles.bannerSource}>
+              {coverageNote(atRisk.valuedCount, atRisk.items.length, 'at-risk')}
+            </Text>
+          </View>
+        ) : null}
+
+        {removedNote ? (
+          <View style={styles.removedToast} accessibilityLiveRegion="polite">
+            <Check size={14} color={colors.primary} strokeWidth={2.75} />
+            <Text style={styles.removedText}>{removedNote}</Text>
             <Pressable
-              accessibilityRole={atRisk.banner === 'total' ? 'button' : undefined}
-              disabled={atRisk.banner !== 'total'}
-              onPress={() => setAtRiskOnly(true)}
-              style={({ pressed }) => [styles.atRiskBanner, pressed && { opacity: 0.9 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss"
+              hitSlop={8}
+              onPress={() => setRemovedNote(null)}
             >
-              <Text style={styles.atRiskText}>
-                {atRisk.banner === 'total' ? atRiskBannerText(atRisk.totalRm) : INSUFFICIENT_AT_RISK_TEXT}
-              </Text>
-              {atRisk.banner === 'total' ? <ChevronRight size={18} color={colors.textPrimary} /> : null}
+              <X size={14} color={colors.primary} strokeWidth={2.5} />
             </Pressable>
-            {atRisk.banner === 'total' ? <PriceDataLabel /> : null}
           </View>
         ) : null}
 
@@ -155,14 +219,13 @@ export default function UseFirstScreen({ navigation, route }: any) {
           // AC 9.2.3 -- only what expires within 3 days, each with its RM value.
           <View style={styles.section}>
             <View style={styles.filterHeader}>
-              <Text style={styles.filterTitle}>Expiring in the next {AT_RISK_DAYS} days</Text>
+              <Text style={styles.filterTitle}>At risk now</Text>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setAtRiskOnly(false)}
                 style={({ pressed }) => [styles.showAllChip, pressed && { opacity: 0.85 }]}
               >
                 <Text style={styles.showAllText}>Show all</Text>
-                <X size={14} color={colors.white} strokeWidth={2.5} />
               </Pressable>
             </View>
             <View style={styles.sectionList}>{atRisk.items.map((item) => renderRow(item, true))}</View>
@@ -237,6 +300,12 @@ export default function UseFirstScreen({ navigation, route }: any) {
             </View>
           ),
         )}
+
+        {!error && !loading && items.length > 0 && atRisk.banner === 'hidden' ? (
+          <Text style={styles.nothingAtRisk}>
+            No food with an estimated value expires in the next {AT_RISK_DAYS} days.
+          </Text>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -359,27 +428,84 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginTop: spacing.xs,
   },
-  atRiskBlock: {
-    gap: spacing.xs,
+  // AC 9.2.2 -- Amber Gold, as a pale banner (Figma 76). Dark ink keeps the
+  // text well above WCAG AA on the pale surface.
+  atRiskBanner: {
+    gap: spacing.sm,
+    backgroundColor: colors.valueAmberBg,
+    borderWidth: 1,
+    borderColor: colors.valueAmberBorder,
+    borderRadius: radii.lg,
+    padding: spacing.md + 2,
     marginTop: -spacing.sm,
   },
-  // AC 9.2.2 -- Amber Gold banner. Dark ink rather than white: white on
-  // #C68A2E is ~3:1 and fails WCAG AA for body text; #13331E is ~4.7:1.
-  atRiskBanner: {
+  // AC 9.2.6 -- neutral, not alarming (Figma 80).
+  coverageBanner: {
+    gap: spacing.sm,
+    backgroundColor: colors.coverageBg,
+    borderWidth: 1,
+    borderColor: colors.coverageBorder,
+    borderRadius: radii.lg,
+    padding: spacing.md + 2,
+    marginTop: -spacing.sm,
+  },
+  atRiskTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  bannerIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  bannerTextBlock: {
+    flex: 1,
+    gap: 2,
+  },
+  bannerEyebrow: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    letterSpacing: 0.6,
+  },
+  atRiskText: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    lineHeight: 21,
+    color: colors.textPrimary,
+  },
+  bannerSource: {
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    lineHeight: 15,
+    color: colors.textPrimary,
+  },
+  removedToast: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.statusSoon,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.primaryTint,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    borderRadius: radii.md,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    marginTop: -spacing.sm,
   },
-  atRiskText: {
+  removedText: {
     flex: 1,
-    fontFamily: fonts.bold,
-    fontSize: 15,
-    lineHeight: 20,
-    color: colors.textPrimary,
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    color: colors.primary,
+  },
+  nothingAtRisk: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   filterHeader: {
     flexDirection: 'row',
@@ -391,20 +517,17 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: fonts.bold,
     fontSize: 19,
-    color: colors.statusSoon,
+    color: colors.textPrimary,
   },
   showAllChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.filterChipBg,
+    backgroundColor: colors.neutralChipBg,
     borderRadius: radii.pill,
     paddingVertical: 6,
     paddingHorizontal: spacing.md,
   },
   showAllText: {
     fontFamily: fonts.semibold,
-    fontSize: 13,
-    color: colors.white,
+    fontSize: 12,
+    color: colors.textPrimary,
   },
 });

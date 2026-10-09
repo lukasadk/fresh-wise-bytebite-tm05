@@ -64,6 +64,20 @@ export const colors = {
   // grouped "Other" bar (#8A8F87 Grey in the ACs).
   neutralGrey: '#8A8F87',
 
+  // Epic 9 surfaces from the Figma concept (frames 74-85): pale Amber Gold
+  // "Food value at risk" banner + estimated-value card, neutral "Price
+  // coverage" banner, light info note, and neutral track/chip greys.
+  valueAmberBg: '#FFF4D6',
+  valueAmberBorder: '#F1D38C',
+  valueAmberIconBg: '#FCE7AE',
+  valueAmberInk: '#9A6A12',
+  coverageBg: '#ECF0EE',
+  coverageBorder: '#D7DFDB',
+  infoNoteBg: '#EAF4FB',
+  infoNoteInk: '#3E5A6B',
+  neutralChipBg: '#EEF1EE',
+  barTrack: '#EEF1EE',
+
   // Entry-source tags on pantry rows
   sourceManual: '#8A8F87',
   sourcePhotoAI: '#4A6B7A',

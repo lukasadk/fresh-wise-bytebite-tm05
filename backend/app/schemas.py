@@ -630,6 +630,15 @@ class FoodValueTopItem(BaseModel):
     quantity: float
 
 
+class FoodValueUnpricedItem(BaseModel):
+    """A wasted item with no PriceCatcher estimate (AC 9.3.3 low-coverage list)."""
+
+    name: str
+    category: str | None
+    unit: str | None
+    quantity: float
+
+
 class FoodValueWastedOut(BaseModel):
     """Estimated value of food wasted in one calendar month (AC 9.3.1-9.4.2)."""
 
@@ -650,6 +659,10 @@ class FoodValueWastedOut(BaseModel):
     headline: str | None                # AC 9.3.5 monthly-report headline
     by_category: list[FoodValueCategory]
     top_items: list[FoodValueTopItem]
+    # Every valued item, highest first ("See all"); top_items is its first 3.
+    all_items: list[FoodValueTopItem] = []
+    # Wasted items that could not be valued, for the low-coverage state.
+    unpriced_items: list[FoodValueUnpricedItem] = []
 
 
 # --- Homemade recipes ("My recipes") -----------------------------------------

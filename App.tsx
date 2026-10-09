@@ -45,6 +45,7 @@ import PurchaseInsightScreen from './src/screens/PurchaseInsightScreen';
 import ShoppingListScreen from './src/screens/ShoppingListScreen';
 import AddShoppingItemScreen from './src/screens/AddShoppingItemScreen';
 import FoodValueWastedScreen from './src/screens/FoodValueWastedScreen';
+import EstimatedValueRulesScreen from './src/screens/EstimatedValueRulesScreen';
 import AddRecipeScreen from './src/screens/AddRecipeScreen';
 import BuyingHabitsScreen from './src/screens/BuyingHabitsScreen';
 import NextShopScreen from './src/screens/NextShopScreen';
@@ -320,6 +321,8 @@ export default function App() {
                     <Stack.Screen name={BUYING_HABITS_ROUTE} component={BuyingHabitsScreen} />
                     <Stack.Screen name={PURCHASE_INSIGHT_ROUTE} component={PurchaseInsightScreen} />
                     <Stack.Screen name="FoodValueWasted" component={FoodValueWastedScreen} />
+                    {/* Epic 9 (Figma 86): how an estimated value is matched -- opened from the info icons. */}
+                    <Stack.Screen name="EstimatedValueRules" component={EstimatedValueRulesScreen} />
                     <Stack.Screen name={NEXT_SHOP_ROUTE} component={NextShopScreen} />
                     {/* Epic 8 "+ Add Item" bottom sheet. transparentModal (not RN's
                         <Modal>) so Food Detail can open on top of it and "back"

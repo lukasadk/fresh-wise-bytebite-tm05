@@ -88,6 +88,11 @@ export function changeText(changeRm: number | null): { text: string; tone: 'down
     : { text: `About ${amount} more than last month`, tone: 'up' };
 }
 
+/** AC 9.2.6 / 9.3.3 footer: "Only 1 of 3 at-risk items has an estimated value." */
+export function coverageNote(valued: number, total: number, noun: string): string {
+  return `Only ${valued} of ${total} ${noun} item${total === 1 ? '' : 's'} ${valued === 1 ? 'has' : 'have'} an estimated value.`;
+}
+
 export function unvaluedNote(count: number): string | null {
   if (!count) return null;
   return `${count} item${count === 1 ? '' : 's'} could not be valued`;

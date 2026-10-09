@@ -178,6 +178,8 @@ async def food_value_wasted(
         headline=_headline(total, change, this_summary["sufficient"]),
         by_category=this_summary["by_category"] if this_summary["sufficient"] else [],
         top_items=this_summary["top_items"],
+        all_items=this_summary["all_items"],
+        unpriced_items=this_summary["unpriced_items"],
     )
 
 
