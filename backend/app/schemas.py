@@ -746,3 +746,65 @@ class UserRecipeOut(BaseModel):
     notes: str | None
     created_at: datetime
     updated_at: datetime
+
+
+# --- Planned recipes ("Plan to cook") -- /v1/planned-recipes -----------------
+
+PLANNED_RECIPE_MAX_JSON_CHARS = 20000
+
+
+class PlannedRecipeCreate(BaseModel):
+    # Stable key so the same recipe is never planned twice
+    # ("homemade:<uuid>" for My recipes, "title:<name>" for AI recipes).
+    recipe_key: str = Field(min_length=1, max_length=160)
+    title: str = Field(min_length=1, max_length=160)
+    # Missing ingredients to put on the shopping list.
+    ingredients: list[str] = Field(default_factory=list, max_length=40)
+    # The recipe as the app shows it, so the Planned tab can show it again.
+    recipe: dict = Field(default_factory=dict)
+
+    @field_validator("recipe_key")
+    @classmethod
+    def _strip_key(cls, v: str) -> str:
+        return _clean_text(v, "recipe_key is required")
+
+    @field_validator("title")
+    @classmethod
+    def _strip_title(cls, v: str) -> str:
+        return _clean_text(v, "Enter a recipe name")
+
+    @field_validator("ingredients")
+    @classmethod
+    def _clean_ingredients(cls, v: list[str]) -> list[str]:
+        cleaned = [s.strip() for s in v if s and s.strip()]
+        if any(len(s) > 100 for s in cleaned):
+            raise ValueError("Each ingredient must be 100 characters or fewer")
+        return cleaned
+
+    @field_validator("recipe")
+    @classmethod
+    def _limit_recipe(cls, v: dict) -> dict:
+        import json
+
+        if len(json.dumps(v, default=str)) > PLANNED_RECIPE_MAX_JSON_CHARS:
+            raise ValueError("Recipe is too large to save")
+        return v
+
+
+class PlannedRecipeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    planned_id: UUID
+    recipe_key: str
+    title: str
+    recipe: dict
+    shopping_item_ids: list[str]
+    planned_at: datetime
+
+
+class PlanRecipeResult(BaseModel):
+    plan: PlannedRecipeOut
+    already_planned: bool
+    added: list[str]            # put on the shopping list now
+    already_on_list: list[str]  # a "to buy" row with this name was already there
+    already_at_home: list[str]  # unexpired stock at home, so not added (AC 8.2.1)

@@ -12,7 +12,7 @@ from app.auto_waste import run_daily_auto_waste_expired
 from app.config import get_settings
 from app.db import AsyncSessionLocal, engine
 from app.notifications import run_daily_expiry_check
-from app.routers import dashboard, diet, food_value, logs, pantry, recipes, reference, shopping, user_recipes, users
+from app.routers import dashboard, diet, food_value, logs, pantry, planned_recipes, recipes, reference, shopping, user_recipes, users
 from app.purchase_insights import router as purchase_insights_router
 from app.purchase_insights import shopping_router as purchase_shopping_router
 from app.security import ApiKeyMiddleware, RateLimitMiddleware
@@ -72,6 +72,7 @@ app.include_router(reference.router)
 app.include_router(shopping.router)
 app.include_router(food_value.router)
 app.include_router(user_recipes.router)
+app.include_router(planned_recipes.router)
 app.include_router(purchase_insights_router)
 app.include_router(purchase_shopping_router)
 

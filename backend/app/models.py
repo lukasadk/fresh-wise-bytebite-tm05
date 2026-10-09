@@ -432,3 +432,21 @@ class UserRecipe(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class PlannedRecipe(Base):
+    """A recipe the household plans to cook later ("Planned" tab). See db/006_planned_recipe.sql."""
+
+    __tablename__ = "planned_recipe"
+
+    planned_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("user_profile.user_id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    recipe_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    # Snapshot of the recipe as the app showed it when it was planned.
+    recipe: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}")
+    # list_item_id values of the shopping list rows this plan added.
+    shopping_item_ids: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
+    planned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
