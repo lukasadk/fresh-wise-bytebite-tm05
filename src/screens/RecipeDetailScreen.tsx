@@ -1,12 +1,13 @@
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, CalendarCheck, CalendarPlus, ChefHat, CheckCircle2, Clock3, Pencil, ShoppingBasket, Sparkles, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Bookmark, BookmarkCheck, CalendarCheck, CalendarPlus, ChefHat, CheckCircle2, Clock3, Pencil, ShoppingBasket, Sparkles, Trash2 } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { deleteMyRecipe, getMyRecipe, homemadeRecipeId } from '../api/freshwise';
 import { listPlannedRecipes, planKeyOf, planRecipe, removePlannedRecipe } from '../api/freshwise';
+import { listMyRecipes, saveRecipeToMine } from '../api/freshwise';
 import { ApiError } from '../api/client';
 import type { RecipeRecommendation, UserRecipe } from '../api/types';
 
@@ -75,6 +76,47 @@ export default function RecipeDetailScreen() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // "Save to My recipes" for recommended recipes: a permanent copy in
+  // /v1/my-recipes. Looked up by name so it shows "Saved" if already there.
+  const [savedToMine, setSavedToMine] = React.useState(false);
+  const [saveBusy, setSaveBusy] = React.useState(false);
+  const [saveMessage, setSaveMessage] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (myRecipeId) return;
+    let alive = true;
+    const title = titleOf(recipe).trim().toLowerCase();
+    listMyRecipes()
+      .then((mine) => {
+        if (alive && mine.some((r) => r.title.trim().toLowerCase() === title)) setSavedToMine(true);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSaveToMine = async () => {
+    if (saveBusy || savedToMine) return;
+    setSaveBusy(true);
+    setSaveMessage(null);
+    setActionError(null);
+    try {
+      const result = await saveRecipeToMine(recipe);
+      setSavedToMine(true);
+      setSaveMessage(
+        result.kind === 'exists'
+          ? 'This recipe is already in My recipes.'
+          : 'Saved to My recipes. You can edit it there.',
+      );
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Couldn't save this recipe — try again.");
+    } finally {
+      setSaveBusy(false);
+    }
+  };
 
   const handlePlan = async () => {
     if (planBusy) return;
@@ -169,9 +211,39 @@ export default function RecipeDetailScreen() {
                 <Trash2 size={16} color={colors.errorText} strokeWidth={2.4} />
               </Pressable>
             </View>
-          ) : null}
+          ) : (
+            <Pressable
+              style={({ pressed }) => [
+                styles.saveButton,
+                savedToMine && styles.saveButtonDone,
+                (pressed || saveBusy) && { opacity: 0.85 },
+              ]}
+              onPress={handleSaveToMine}
+              disabled={saveBusy || savedToMine}
+              accessibilityLabel={savedToMine ? 'Saved to My recipes' : 'Save to My recipes'}
+            >
+              {savedToMine ? (
+                <BookmarkCheck size={15} color={colors.white} strokeWidth={2.4} />
+              ) : (
+                <Bookmark size={15} color={colors.primary} strokeWidth={2.4} />
+              )}
+              <Text style={[styles.saveText, savedToMine && styles.saveTextDone]}>
+                {saveBusy ? 'Saving…' : savedToMine ? 'Saved' : 'Save to My recipes'}
+              </Text>
+            </Pressable>
+          )}
         </View>
         {actionError ? <Text style={styles.actionError}>{actionError}</Text> : null}
+        {saveMessage ? (
+          <Pressable
+            onPress={() => navigation.popTo('Main', { screen: 'Recipes', params: { tab: 'mine' } })}
+            accessibilityRole="link"
+          >
+            <Text style={styles.saveMessage}>
+              {saveMessage} <Text style={styles.saveLink}>View My recipes</Text>
+            </Text>
+          </Pressable>
+        ) : null}
 
         {recipe.image_url ? (
           <Image
@@ -604,6 +676,40 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 15,
     color: colors.white,
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 40,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primaryTint,
+    borderWidth: 1,
+    borderColor: colors.primaryPale,
+  },
+  saveButtonDone: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  saveText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.primary,
+  },
+  saveTextDone: {
+    color: colors.white,
+  },
+  saveMessage: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.statusFresh,
+  },
+  saveLink: {
+    fontFamily: fonts.bold,
+    color: colors.primary,
+    textDecorationLine: 'underline',
   },
   planButton: {
     flexDirection: 'row',

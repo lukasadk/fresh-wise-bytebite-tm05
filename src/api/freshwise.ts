@@ -136,9 +136,22 @@ function singularWord(word: string): string {
   return word;
 }
 
+// Recipe matching calls this thousands of times with the same few hundred
+// strings, so the result is cached -- it is a pure function of its input.
+const foodWordsCache = new Map<string, string[]>();
 function foodWords(value: string): string[] {
-  return normaliseRecipeText(value).split(' ').filter(Boolean).map(singularWord);
+  const key = String(value ?? '');
+  const cached = foodWordsCache.get(key);
+  if (cached) return cached;
+  const words = normaliseRecipeText(value).split(' ').filter(Boolean).map(singularWord);
+  if (foodWordsCache.size > 5000) foodWordsCache.clear();
+  foodWordsCache.set(key, words);
+  return words;
 }
+
+/** Lets the phone handle taps (e.g. switching tabs) before the next block of
+ *  recipe matching, instead of freezing until all of it is done. */
+const yieldToUi = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 /** Which food `term` and pantry `name` both are ("apple"), or null if they differ.
  *  "chia seeds or oats" is checked as two alternatives. */
@@ -788,6 +801,7 @@ export async function getRagRecipeRecommendations(
   if (groceryAiServiceKey) headers['X-WasteWise-API-Key'] = groceryAiServiceKey;
   if (groceryAiSharesMainApi && API_KEY) headers[API_KEY_HEADER] = API_KEY;
   try {
+    await yieldToUi();
     const response = await fetch(`${groceryAiBaseUrl}/v1/recipe-rag/recommend`, {
       method: 'POST',
       headers,
@@ -919,6 +933,7 @@ export async function getRagRecipeRecommendations(
         total_score: Number.isFinite(Number(recipe?.score)) ? Number(recipe.score) : 0,
       };
     });
+    await yieldToUi();
     return ensureThreeRecipeRecommendations(
       mapped,
       inventory,
@@ -928,6 +943,7 @@ export async function getRagRecipeRecommendations(
       opts.selectionMode ?? false,
     );
   } catch (error: any) {
+    await yieldToUi();
     if (error?.name === 'AbortError') {
       return localMalaysianRecipeRecommendations(
         inventory,
@@ -1324,4 +1340,63 @@ export function plannedToRecommendation(plan: PlannedRecipe, inventory: FoodItem
     missing_ingredients: names,
   };
   return rankRecipeRecommendations([base], inventory)[0] ?? base;
+}
+
+// --- Save a recommended recipe to "My recipes" ---------------------------
+// Copies an AI or library recipe into /v1/my-recipes so it stays permanently
+// and can be edited, cooked again or planned later. Reuses the My recipes API,
+// so there is no separate backend for this.
+
+const clip = (value: string, max: number) => value.trim().slice(0, max);
+
+/** "2 cups cooked rice" + "rice" -> amount "2 cups cooked". Null when the
+ *  quantity line doesn't mention the ingredient or the amount is too long. */
+function amountFor(name: string, quantities: string[]): string | null {
+  // Whole word, plural allowed: "egg" matches "2 eggs" but not "eggplant".
+  const escaped = name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`\\b${escaped}(?:e?s)?\\b`, 'i');
+  const line = quantities.find((q) => pattern.test(q));
+  if (!line) return null;
+  const amount = line.replace(pattern, ' ')
+    .replace(/\s*,\s*/g, ', ')
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s,;:-]+|[\s,;:-]+$/g, '');
+  return amount && amount.length <= 50 ? amount : null;
+}
+
+export function recommendationToNewUserRecipe(recipe: RecipeRecommendation): NewUserRecipe {
+  const quantities = (recipe.ingredient_quantities ?? []).map(String).filter(Boolean);
+  const names = [
+    ...(recipe.ingredient_tokens?.length
+      ? recipe.ingredient_tokens
+      : [...(recipe.available_ingredients ?? recipe.matched_ingredients ?? []), ...(recipe.missing_ingredients ?? [])]),
+  ]
+    .map(String)
+    .map((n) => n.trim())
+    .filter((n, i, all) => n && all.findIndex((x) => x.toLowerCase() === n.toLowerCase()) === i)
+    .slice(0, 50);
+  const whole = (value: number | null | undefined, min: number, max: number) =>
+    typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max ? Math.round(value) : null;
+  return {
+    title: clip(recipe.title || recipe.recipe_name || 'Recipe', 120),
+    servings: whole(recipe.servings, 1, 50),
+    prep_minutes: whole(recipe.prep_minutes, 0, 1440),
+    cook_minutes: whole(recipe.cook_minutes, 0, 1440),
+    ingredients: names.map((name) => ({ name: clip(name, 100), amount: amountFor(name, quantities) })),
+    steps: (recipe.steps ?? []).map(String).map((step) => clip(step, 500)).filter(Boolean).slice(0, 50),
+    notes: 'Saved from FreshWise recommendations.',
+  };
+}
+
+export type SaveToMineResult = { kind: 'saved' | 'exists'; recipe: UserRecipe };
+
+/** Saves once: a recipe with the same name already in My recipes is returned
+ *  as { kind: 'exists' } instead of being saved a second time. */
+export async function saveRecipeToMine(recipe: RecipeRecommendation): Promise<SaveToMineResult> {
+  const body = recommendationToNewUserRecipe(recipe);
+  if (!body.ingredients.length) throw new ApiError(422, 'This recipe has no ingredients to save.');
+  const title = body.title.toLowerCase();
+  const existing = (await listMyRecipes()).find((r) => r.title.trim().toLowerCase() === title);
+  if (existing) return { kind: 'exists', recipe: existing };
+  return { kind: 'saved', recipe: await createMyRecipe(body) };
 }

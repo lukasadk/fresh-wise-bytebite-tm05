@@ -13,13 +13,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useIsFocused } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 
 const STORAGE_PREFIX = 'freshwise.waitMs.';
 const MAX_AUTO = 0.95; // the bar never claims more than this until the result is in
 const AT_USUAL_TIME = 0.8; // how full the bar is when the usual time has passed
 const FINISH_MS = 350; // the final slide to 100% before moving on
-const TICK_MS = 120;
+const TICK_MS = 250; // label refresh; the bar itself animates on the native thread
 const MIN_EXPECTED_MS = 2000;
 const MAX_EXPECTED_MS = 120000;
 
@@ -97,13 +98,18 @@ type Props = {
 
 export default function EstimatedProgressBar({ startedAt, expectedMs, done }: Props) {
   const [now, setNow] = useState(() => Date.now());
+  const [trackWidth, setTrackWidth] = useState(0);
   const width = useRef(new Animated.Value(0)).current;
+  // Tab screens stay mounted, so without this the bar kept ticking (and
+  // re-rendering) while the user was on another tab -- making the app lag.
+  const focused = useIsFocused();
 
   useEffect(() => {
-    if (startedAt === null || done) return;
+    if (startedAt === null || done || !focused) return;
+    setNow(Date.now());
     const timer = setInterval(() => setNow(Date.now()), TICK_MS);
     return () => clearInterval(timer);
-  }, [startedAt, done]);
+  }, [startedAt, done, focused]);
 
   const elapsed = startedAt === null ? 0 : now - startedAt;
   const fraction = done ? 1 : startedAt === null ? 0 : estimateProgress(elapsed, expectedMs);
@@ -113,7 +119,7 @@ export default function EstimatedProgressBar({ startedAt, expectedMs, done }: Pr
       toValue: fraction,
       duration: done ? FINISH_MS - 50 : TICK_MS,
       easing: done ? Easing.out(Easing.cubic) : Easing.linear,
-      useNativeDriver: false,
+      useNativeDriver: true,
     }).start();
   }, [fraction, done, width]);
 
@@ -129,6 +135,7 @@ export default function EstimatedProgressBar({ startedAt, expectedMs, done }: Pr
     <View style={styles.wrap}>
       <View
         style={styles.track}
+        onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
         accessibilityRole="progressbar"
         accessibilityValue={{ min: 0, max: 100, now: percent }}
         accessibilityLabel="Estimated progress"
@@ -136,7 +143,12 @@ export default function EstimatedProgressBar({ startedAt, expectedMs, done }: Pr
         <Animated.View
           style={[
             styles.fill,
-            { width: width.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) },
+            // Slides a full-width fill in from the left. A transform (unlike
+            // animating width) can run on the native thread, so it stays smooth
+            // even while JavaScript is busy matching recipes.
+            { transform: [{ translateX: width.interpolate({ inputRange: [0, 1], outputRange: [-trackWidth, 0] }) }] },
+            // Hidden until the track has been measured, so it never flashes full.
+            trackWidth > 0 ? null : { opacity: 0 },
           ]}
         />
       </View>
@@ -162,6 +174,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fill: {
+    width: '100%',
     height: '100%',
     borderRadius: radii.pill,
     backgroundColor: colors.primary,

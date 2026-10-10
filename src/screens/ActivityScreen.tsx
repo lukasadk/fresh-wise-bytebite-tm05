@@ -77,6 +77,8 @@ import {
   listPurchaseInsights,
 } from '../api/freshwise';
 import type { FoodkeeperAlternative } from '../api/freshwise';
+import { Alert } from 'react-native';
+import { addShoppingItem } from '../api/freshwise';
 import { ApiError } from '../api/client';
 import { categoryIconFor, foodIconFor } from '../icons/FoodIcons';
 import type { DashboardSummary, WeeklyWasteRow, WasteReason, WastePatternsOut } from '../api/types';
@@ -2362,12 +2364,40 @@ export default function ActivityScreen() {
                 />
                 <AlternativesFooter
                   disabled={!selectedAlternativeId}
-                  onUse={() => {
-                    // TODO: wire up once there's a real endpoint to apply the
-                    // preferred storage method to future add-food flows.
-                    setShowAlternatives(false);
-                    resetAlternatives();
-                    setSelectedAlternativeId(null);
+                  onUse={async () => {
+                    // Adds the chosen alternative to the shopping list (Epic 8),
+                    // then opens the Shop tab so the user sees it there.
+                    if (alternativesState.status !== 'ready') return;
+                    const option = alternativesState.data.options.find((o) => o.id === selectedAlternativeId);
+                    if (!option) return;
+                    const finish = () => {
+                      setShowAlternatives(false);
+                      resetAlternatives();
+                      setSelectedAlternativeId(null);
+                      navigation.navigate('Shop');
+                    };
+                    const add = async (force: boolean) => {
+                      try {
+                        const result = await addShoppingItem({ name: option.title, quantity: 1 }, force);
+                        if (result.kind === 'duplicate') {
+                          // Same duplicate-stock check as the Add Item screen (AC 8.2.1).
+                          const w = result.warning;
+                          Alert.alert(
+                            `${w.pantry_name} is already at home`,
+                            `You have ${w.qty_at_home}${w.unit ? ` ${w.unit}` : ''} in your pantry. Add ${option.title} to your shopping list anyway?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              { text: 'Add anyway', onPress: () => add(true) },
+                            ],
+                          );
+                          return;
+                        }
+                        finish();
+                      } catch {
+                        Alert.alert("Couldn't add to your shopping list", 'Check your connection and try again.');
+                      }
+                    };
+                    await add(false);
                   }}
                   onNotNow={() => {
                     setShowAlternatives(false);

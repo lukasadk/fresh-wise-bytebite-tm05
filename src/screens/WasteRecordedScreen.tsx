@@ -46,7 +46,7 @@ export default function WasteRecordedScreen({ navigation, route }: any) {
         contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.xl }]}
         showsVerticalScrollIndicator={false}
       >
-        <BackButton onPress={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.popTo('Main', { screen: 'Pantry', params: { wasted: item.name } })} />
 
         <View style={styles.checkCircle}>
           <Check size={32} color={colors.primary} strokeWidth={2.5} />

@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CalendarCheck, ChefHat, CheckCircle2, ChevronRight, Clock3, Leaf, Plus, RefreshCcw, Sparkles } from 'lucide-react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -309,8 +310,13 @@ export default function RecipesScreen() {
     }
   }, [focusFoodName, progress.start, progress.finish, progress.cancel, selectedIngredientKey, selectionMode]);
 
+  // Start loading once the screen has finished opening, so the opening
+  // animation and tab taps aren't competing with recipe matching.
   React.useEffect(() => {
-    load();
+    const task = InteractionManager.runAfterInteractions(() => {
+      load();
+    });
+    return () => task.cancel();
   }, [load]);
 
   const expiringCount = inventory.filter((item) => item.days_to_expiry !== null && item.days_to_expiry <= 3).length;
