@@ -97,12 +97,12 @@ async def list_logs(
     user: UserProfile = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # Selects FoodItem.name/unit alongside the log row -- ConsumptionWasteLog
+    # Selects FoodItem.name/unit/category alongside the log row -- ConsumptionWasteLog
     # only stores item_id, and a history list showing a raw UUID instead of
     # "Milk" would be useless. The join already existed here (for the
-    # user_id ownership check); this just also pulls two more columns off it.
+    # user_id ownership check); this just also pulls three more columns off it.
     query = (
-        select(ConsumptionWasteLog, FoodItem.name, FoodItem.unit)
+        select(ConsumptionWasteLog, FoodItem.name, FoodItem.unit, FoodItem.category)
         .join(FoodItem, FoodItem.item_id == ConsumptionWasteLog.item_id)
         .where(FoodItem.user_id == user.user_id)
     )
@@ -128,6 +128,7 @@ async def list_logs(
             logged_at=log.logged_at,
             item_name=name,
             item_unit=unit,
+            item_category=category,
         )
-        for log, name, unit in result.all()
+        for log, name, unit, category in result.all()
     ]

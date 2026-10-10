@@ -184,6 +184,10 @@ class ConsumptionWasteLogOut(BaseModel):
     # item's name in hand from its own separate fetch).
     item_name: str | None = None
     item_unit: str | None = None
+    # Also denormalised from FoodItem, so list screens (e.g. the Insights item
+    # breakdown) can pick the same category icon the Pantry shows for foods whose
+    # NAME has no icon keyword (eggs, chocolate...).
+    item_category: str | None = None
 
 
 # --- Purchase recommendation / over-purchase insight -----------------------

@@ -122,6 +122,9 @@ export type ConsumptionWasteLog = {
   logged_at: string;
   item_name: string | null;
   item_unit: string | null;
+  /** The food's category (Dairy, Protein...), used to pick the same fallback
+   *  icon the Pantry shows. Optional: older API builds don't send it. */
+  item_category?: string | null;
 };
 
 export type DashboardSummary = {

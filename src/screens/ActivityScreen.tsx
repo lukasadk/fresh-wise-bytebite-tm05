@@ -9,8 +9,8 @@
  *                 "This week" zero-state, "What happens next?" hint card.
  *
  * Three tabs: Overview · Patterns · Trends
- * Overview is LIVE: it reads GET /v1/dashboard/summary and
- * GET /v1/dashboard/weekly-waste (see useWeekSummary() below), which in turn
+ * Overview is LIVE: it reads GET /v1/dashboard/summary and GET /v1/logs
+ * (see useWeekSummary() below), which in turn
  * reflect every recordOutcome() call made from MarkConsumedScreen and
  * MarkWastedScreen (WasteRecordedScreen is just the confirmation screen for
  * the latter — the log write already happened by the time it's shown).
@@ -26,18 +26,25 @@
  *     button), icon looked up by the specific item NAME via foodIconFor().
  *     Opens a live FoodKeeper-backed storage-alternatives view on tap (see
  *     useAlternatives() below).
- * Trends is also LIVE: it reads the same GET /v1/dashboard/weekly-waste as
- * Overview (see useTrends() below) and derives both the Weekly view and a
- * client-side-aggregated Monthly view from it — there's no monthly-waste
- * endpoint on the backend. "Goal" has no backend concept either, so the
- * dashed goal line and "On track"/"Above target" message are computed as the
- * period's own running average, not a hardcoded number.
+ * Trends is also LIVE: it reads the individual consumption/waste logs
+ * (GET /v1/logs, the same call Overview uses) and buckets them on the phone
+ * into the last 8 weeks (W1..W8, rolling 7-day windows, so W8 is exactly
+ * Overview's "this week") and the last 6 calendar months (Jan, Feb, ...).
+ * Each point is that period's WASTE RATE in % (wasted items / items wasted or
+ * consumed, counted the same way as Overview -- see data/utilisation.ts).
+ * "Goal" has no backend concept, so the dashed goal line is the average of
+ * the periods in view (8-week / 6-month average); "On track" / "Above target"
+ * says whether the waste rate is at/below or above that average.
  *
  * FIGMA vs DATA (deliberate deviations from the 24–27 mockups):
  *   - Mockups show kg everywhere. Units are free text per item, so a kg total
- *     would be fabricated -- this screen shows RECORD COUNTS ("3 items").
+ *     would be fabricated -- Overview shows ITEM COUNTS instead ("3 items" =
+ *     the quantity logged; see data/utilisation.ts for the unit rule). Patterns
+ *     and Trends still count records, i.e. times marked.
+ *   - Trends plots waste rate (%) instead of kg: a % needs no weights, and it
+ *     matches the Waste rate shown on Overview.
  *   - Mockups show a fixed "Goal 1.4 kg". No goal exists in the backend, so
- *     the goal line is the period's own average.
+ *     the goal line is the average waste rate of the periods in view.
  *   - Category rows keep their category icons (Feature 99 redesign), which
  *     the mockup omits.
  *
@@ -71,9 +78,9 @@ import FoodValueWastedCard from '../components/FoodValueWastedCard';
 import { ChevronRight, Refrigerator, Snowflake, Sun } from '../icons/NavIcons';
 import {
   getDashboardSummary,
-  getWeeklyWaste,
   getWastePatterns,
   getAlternativesFromFoodkeeper,
+  listLogs,
   listPurchaseInsights,
 } from '../api/freshwise';
 import type { FoodkeeperAlternative } from '../api/freshwise';
@@ -81,9 +88,23 @@ import { Alert } from 'react-native';
 import { addShoppingItem } from '../api/freshwise';
 import { ApiError } from '../api/client';
 import { categoryIconFor, foodIconFor } from '../icons/FoodIcons';
-import type { DashboardSummary, WeeklyWasteRow, WasteReason, WastePatternsOut } from '../api/types';
+import type {
+  ConsumptionWasteLog,
+  DashboardSummary,
+  WasteReason,
+  WastePatternsOut,
+} from '../api/types';
 import type { PurchaseRecommendation } from '../data/purchaseStates';
 import { BUYING_HABITS_ROUTE } from '../data/purchaseStates';
+import {
+  UTILISATION_BREAKDOWN_ROUTE,
+  formatItemCount,
+  logTimeMs,
+  percentChange,
+  splitIntoWindows,
+  summariseLogs,
+} from '../data/utilisation';
+import type { BreakdownKind, ItemBreakdownRow } from '../data/utilisation';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -92,15 +113,17 @@ import { BUYING_HABITS_ROUTE } from '../data/purchaseStates';
 type InsightsTab = 'Overview' | 'Patterns' | 'Trends';
 
 type WeekSummary = {
-  // Counts of logged records, NOT weights. Units are free text per item
-  // ("pcs", "g", "carton", "L"...), so summing raw quantities mixed them into
-  // a meaningless number that was then labelled "kg". Counting records is the
-  // one measure that stays honest whatever unit the user typed.
+  // Counts of ITEMS (the quantity logged), NOT weights. Units are free text per
+  // item ("pcs", "g", "carton", "L"...), so a weight total would be fabricated.
+  // 3 eggs wasted is 3 items; a log in a measured unit (g, kg, ml, L...) counts
+  // as 1 -- see data/utilisation.ts for the rule and why.
   wasted_count: number;
   consumed_count: number;
-  utilisation_rate: number;        // 0–1, consumed records / all records
+  utilisation_rate: number;        // 0–1, consumed items / all items
   week_delta_pct: number | null;   // negative = improved (less wasted)
-  food_records: number;
+  food_records: number;            // how many times anything was logged (not items)
+  /** Per-food rows behind Consumed / Wasted, handed to the breakdown screen. */
+  breakdown: ItemBreakdownRow[];
   quick_insight_title: string | null;
   quick_insight: string | null;
 };
@@ -158,13 +181,21 @@ type AlternativesData = {
 type TrendsPeriod = 'Weekly' | 'Monthly';
 
 type TrendsSeries = {
-  points: number[];       // wasted-item records per period, oldest → newest
-  /** "YYYY-MM-DD" per point, same length as points. */
-  periodKeys: string[];
-  goalValue: number;
-  latestValue: number;
-  deltaPct: number | null; // negative = improved (less wasted)
+  /** Waste rate in % (0–100) per period, oldest → newest. null = nothing was
+   *  logged that period, so there is no rate to plot (a gap, not a 0%). */
+  points: (number | null)[];
+  /** X-axis label per point: "W1".."W8" (weekly) or "Jan".."Jun" (monthly). */
+  labels: string[];
+  /** Average of the periods that have data (%). null until at least 2 periods
+   *  have data -- an average of one point is just that point. */
+  goalValue: number | null;
+  latestValue: number | null;    // this period's waste rate (%)
+  /** % the latest waste rate sits above (+) / below (-) the average -- what the
+   *  pill under the chart shows. null when there is no average to compare with,
+   *  or when the average is 0% (a % of zero is undefined). */
+  avgDiffPct: number | null;
   rangeLabel: string;      // e.g. "Last 8 weeks"
+  avgWord: string;         // e.g. "8-week average"
   streakTitle: string;     // e.g. "On track"
   streakNote: string;
 };
@@ -175,10 +206,9 @@ type TrendsData = Record<TrendsPeriod, TrendsSeries>;
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** "1 item" / "3 items" -- Insights counts logged records, not weight. */
+/** "1 item" / "3 items" -- Insights counts items, not weight. */
 function fmtItems(n: number): string {
-  const v = Number.isInteger(n) ? String(n) : n.toFixed(1);
-  return `${v} item${n === 1 ? '' : 's'}`;
+  return formatItemCount(n);
 }
 
 /** Plain number for chart axes/goal: "2" not "2.0", else one decimal. */
@@ -404,9 +434,6 @@ function ThisWeekCard({ summary }: { summary: WeekSummary }) {
           Updated from {summary.food_records} food record
           {summary.food_records === 1 ? '' : 's'}
         </Text>
-        <Text style={heroStyles.wastedValue}>
-          {fmtItems(summary.wasted_count)} wasted
-        </Text>
         {deltaAbs !== null && (
           <Text
             style={[
@@ -415,7 +442,7 @@ function ThisWeekCard({ summary }: { summary: WeekSummary }) {
             ]}
           >
             {isImproving ? '↓' : '↑'} {deltaAbs}%{' '}
-            {isImproving ? 'less' : 'more'} than last week
+            {isImproving ? 'less' : 'more'} waste than last week
           </Text>
         )}
       </View>
@@ -448,16 +475,10 @@ const heroStyles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textSecondary,
   },
-  // Mockup: large serif coral headline ("1.8 kg wasted").
-  wastedValue: {
-    fontFamily: fonts.serif,
-    fontSize: 26,
-    color: colors.statusToday,
-    marginTop: spacing.xs,
-  },
   delta: {
     fontFamily: fonts.semibold,
     fontSize: fontSize.sm,
+    marginTop: spacing.sm,
   },
   right: { marginLeft: spacing.lg },
 });
@@ -523,25 +544,37 @@ function Dot({ color: c }: { color: string }) {
   return <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: c }} />;
 }
 
-function UtilisationSplit({ summary }: { summary: WeekSummary }) {
+/** Both rows are tappable: they open the per-food breakdown (times consumed /
+ *  wasted for each food) on the side that was tapped. */
+function UtilisationSplit({
+  summary,
+  onOpen,
+}: {
+  summary: WeekSummary;
+  onOpen: (kind: BreakdownKind) => void;
+}) {
+  const rows: { kind: BreakdownKind; label: string; count: number; color: string }[] = [
+    { kind: 'consumed', label: 'Consumed', count: summary.consumed_count, color: colors.primary },
+    { kind: 'wasted', label: 'Wasted', count: summary.wasted_count, color: colors.statusToday },
+  ];
   return (
     <View style={splitStyles.wrap}>
       <Text style={splitStyles.heading}>Utilisation split</Text>
       <View style={splitStyles.card}>
-        <View style={splitStyles.row}>
-          <Dot color={colors.primary} />
-          <Text style={splitStyles.rowLabel}>Consumed</Text>
-          <Text style={[splitStyles.rowValue, { color: colors.primary }]}>
-            {fmtItems(summary.consumed_count)}
-          </Text>
-        </View>
-        <View style={[splitStyles.row, splitStyles.rowBorder]}>
-          <Dot color={colors.statusToday} />
-          <Text style={splitStyles.rowLabel}>Wasted</Text>
-          <Text style={[splitStyles.rowValue, { color: colors.statusToday }]}>
-            {fmtItems(summary.wasted_count)}
-          </Text>
-        </View>
+        {rows.map((r, i) => (
+          <Pressable
+            key={r.kind}
+            accessibilityRole="button"
+            accessibilityLabel={`${r.label}: ${fmtItems(r.count)}. See which foods.`}
+            onPress={() => onOpen(r.kind)}
+            style={({ pressed }) => [splitStyles.row, i > 0 && splitStyles.rowBorder, pressed && { opacity: 0.7 }]}
+          >
+            <Dot color={r.color} />
+            <Text style={splitStyles.rowLabel}>{r.label}</Text>
+            <Text style={[splitStyles.rowValue, { color: r.color }]}>{fmtItems(r.count)}</Text>
+            <ChevronRight size={18} color={colors.textSecondary} />
+          </Pressable>
+        ))}
       </View>
     </View>
   );
@@ -1259,104 +1292,82 @@ const periodToggleStyles = StyleSheet.create({
   },
 });
 
-/** "YYYY-MM-DD" (or full ISO datetime) → "8 Sep" (weekly) / "Sep 26" (monthly). */
-function formatPeriodKey(key: string, period: TrendsPeriod): string {
-  // week_start arrives as a full datetime -- strip from 'T' onward first.
-  const datePart = key.split('T')[0];
-  const [year, month, day] = datePart.split('-').map(Number);
-  if (!year || !month || !day) return key;
-  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const mon = MONTHS[(month - 1) % 12];
-  if (period === 'Monthly') return `${mon} ${String(year).slice(2)}`;
-  return `${day} ${mon}`;
-}
-
-/** Which point indices get an X-axis label -- first, last, and up to two
- *  interior ones, never adjacent (prevents collisions on small screens). */
-function pickLabelIndices(n: number): number[] {
-  if (n <= 1) return [0];
-  if (n <= 4) return Array.from({ length: n }, (_, i) => i);
-  const c1 = Math.round(n / 3);
-  const c2 = Math.round((2 * n) / 3);
-  const raw = [...new Set([0, c1, c2, n - 1])].sort((a, b) => a - b);
-  const kept: number[] = [];
-  for (const idx of raw) {
-    if (kept.length === 0 || idx - kept[kept.length - 1] >= 2) kept.push(idx);
-  }
-  return kept;
-}
+/** Month name for a 0-based month index. */
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // SVG line chart. ALL text lives inside the SVG viewBox so it scales with
 // the chart and can never be clipped by the card.
 function TrendChart({
   points,
+  labels,
   goal,
-  periodKeys = [],
-  period = 'Weekly',
 }: {
-  points: number[];
-  goal: number;
-  periodKeys?: string[];
-  period?: TrendsPeriod;
+  points: (number | null)[];
+  labels: string[];
+  /** Average waste rate (%) of the periods in view; null hides the goal line. */
+  goal: number | null;
 }) {
   const SVG_W = 320;
   const SVG_H = 220;
-  const LEFT = 34;
+  const LEFT = 38;
   const RIGHT = 14;
-  const TOP = 22; // room for the "items" unit label above the Y axis
+  const TOP = 22; // room for the unit label above the Y axis
   const BOTTOM = 36;
 
   const PLOT_W = SVG_W - LEFT - RIGHT;
   const PLOT_H = SVG_H - TOP - BOTTOM;
 
-  const allValues = [...points, goal];
-  const dataMax = Math.max(...allValues);
-  const dataMin = Math.min(...allValues);
-  const rawSpan = dataMax - dataMin;
-  // When points genuinely vary, zoom into that range with a little headroom
-  // (unchanged below). When the data is flat or nearly flat -- a single
-  // point, or several periods with the same count, both common early in
-  // testing -- that data-driven span collapses toward zero, which rounded
-  // all three Y-axis gridlines to the same displayed number. In that case,
-  // anchor at zero and scale headroom off the value itself instead, so the
-  // three gridlines are always meaningfully distinct.
-  const isFlat = rawSpan < Math.max(dataMax, 1) * 0.15;
-  const maxV = isFlat ? Math.max(dataMax * 1.2, dataMax + 1, 2) : dataMax + rawSpan * 0.12;
-  const minV = isFlat ? 0 : Math.max(0, dataMin - rawSpan * 0.12);
-  const valueSpan = Math.max(maxV - minV, 0.0001);
+  // Waste rate is a percentage, so the Y axis always starts at 0% and tops out
+  // at the smallest "nice" ceiling (20/40/50/60/80/100%) that clears the
+  // highest point and the goal line. Whole-number gridlines at 0, half and the
+  // ceiling keep the three labels distinct however flat the data is.
+  const plotted = points.filter((p): p is number => p !== null);
+  const peak = Math.max(0, ...plotted, goal ?? 0);
+  const axisMax = [20, 40, 50, 60, 80, 100].find((t) => t >= peak * 1.1) ?? 100;
 
   const toX = (i: number) =>
     points.length > 1 ? LEFT + (i / (points.length - 1)) * PLOT_W : LEFT + PLOT_W / 2;
-  const toY = (v: number) => TOP + PLOT_H - ((v - minV) / valueSpan) * PLOT_H;
+  const toY = (v: number) => TOP + PLOT_H - (Math.min(Math.max(v, 0), axisMax) / axisMax) * PLOT_H;
 
-  const polylinePoints = points.map((v, i) => `${toX(i)},${toY(v)}`).join(' ');
-  const goalY = toY(goal);
-
-  const gridYs = [0.12, 0.5, 0.88].map((f) => TOP + f * PLOT_H);
-  const yLabels = gridYs.map((gy) => {
-    const v = minV + (1 - (gy - TOP) / PLOT_H) * valueSpan;
-    return { y: gy, text: fmtNum(Math.round(v * 10) / 10) };
+  // Line segments between consecutive periods that have data. A period with
+  // nothing logged is a gap in the line, not a drop to 0%.
+  const segments: string[] = [];
+  let run: string[] = [];
+  points.forEach((v, i) => {
+    if (v === null) {
+      if (run.length > 1) segments.push(run.join(' '));
+      run = [];
+    } else {
+      run.push(`${toX(i)},${toY(v)}`);
+    }
   });
+  if (run.length > 1) segments.push(run.join(' '));
 
-  const hasKeys = periodKeys.length === points.length && points.length > 0;
-  const labelIndices = hasKeys ? pickLabelIndices(points.length) : [];
-  const xLabels = labelIndices.map((i) => ({
+  const goalY = goal !== null ? toY(goal) : null;
+
+  const tickValues = [axisMax, axisMax / 2, 0];
+  const gridYs = tickValues.map((v) => toY(v));
+  const yLabels = tickValues.map((v) => ({ y: toY(v), text: `${Math.round(v)}%` }));
+
+  // Every period gets its own label (W1..W8 / Jan..Jun) -- there are never
+  // more than 8, so they fit without thinning.
+  const xLabels = labels.map((text, i) => ({
     x: toX(i),
-    text: formatPeriodKey(periodKeys[i], period),
-    anchor: (i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle') as 'start' | 'middle' | 'end',
+    text,
+    anchor: 'middle' as const,
     color: i === points.length - 1 ? colors.primary : colors.textSecondary,
     fontFamily: i === points.length - 1 ? fonts.semibold : fonts.regular,
   }));
 
   const goalLabelX = Math.min(LEFT + PLOT_W * 0.6, SVG_W - RIGHT - 60);
-  const goalLabelY = Math.max(goalY - 6, TOP + 10);
+  const goalLabelY = goalY !== null ? Math.max(goalY - 6, TOP + 10) : 0;
 
   return (
     <View style={{ width: '100%', aspectRatio: SVG_W / SVG_H }}>
       <Svg width="100%" height="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} preserveAspectRatio="xMidYMid meet">
-        {/* Unit label (mockup shows "kg"; here it's item counts -- see header note) */}
-        <SvgText x={LEFT - 6} y={10} textAnchor="end" fontSize={9} fontFamily={fonts.regular} fill={colors.textSecondary}>
-          items
+        {/* Unit label: the chart plots waste rate in % (see header note) */}
+        <SvgText x={4} y={10} textAnchor="start" fontSize={9} fontFamily={fonts.regular} fill={colors.textSecondary}>
+          Waste rate (%)
         </SvgText>
 
         {gridYs.map((y, i) => (
@@ -1377,38 +1388,47 @@ function TrendChart({
           </SvgText>
         ))}
 
-        <Line
-          x1={LEFT}
-          y1={goalY}
-          x2={LEFT + PLOT_W}
-          y2={goalY}
-          stroke={colors.textSecondary}
-          strokeWidth={1.5}
-          strokeDasharray="5,4"
-        />
-        <SvgText
-          x={goalLabelX}
-          y={goalLabelY}
-          textAnchor="middle"
-          fontSize={10}
-          fontFamily={fonts.semibold}
-          fill={colors.textSecondary}
-        >
-          Goal {fmtNum(goal)}
-        </SvgText>
+        {goal !== null && goalY !== null && (
+          <>
+            <Line
+              x1={LEFT}
+              y1={goalY}
+              x2={LEFT + PLOT_W}
+              y2={goalY}
+              stroke={colors.textSecondary}
+              strokeWidth={1.5}
+              strokeDasharray="5,4"
+            />
+            <SvgText
+              x={goalLabelX}
+              y={goalLabelY}
+              textAnchor="middle"
+              fontSize={10}
+              fontFamily={fonts.semibold}
+              fill={colors.textSecondary}
+            >
+              Goal (avg) {Math.round(goal)}%
+            </SvgText>
+          </>
+        )}
 
-        <Polyline
-          points={polylinePoints}
-          fill="none"
-          stroke={colors.primaryDark}
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {points.map((v, i) => (
-          <Circle key={`dot-${i}`} cx={toX(i)} cy={toY(v)} r={4} fill={colors.primaryDark} />
+        {segments.map((seg, i) => (
+          <Polyline
+            key={`seg-${i}`}
+            points={seg}
+            fill="none"
+            stroke={colors.primaryDark}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         ))}
+
+        {points.map((v, i) =>
+          v === null ? null : (
+            <Circle key={`dot-${i}`} cx={toX(i)} cy={toY(v)} r={4} fill={colors.primaryDark} />
+          ),
+        )}
 
         {xLabels.map((lbl, i) => (
           <SvgText
@@ -1428,35 +1448,40 @@ function TrendChart({
   );
 }
 
-/** Mockup: sits INSIDE the chart card, under the chart -- big serif value +
- *  "this week" on the left, a rounded delta pill + "from last week" on the right. */
+/** Sits INSIDE the chart card, under the chart. Deliberately terse: the waste
+ *  rate + "wasted this week" on the left, and one pill on the right saying how
+ *  it compares with the average ("↓ 30% below average"). */
 function TrendsSummary({ series, periodWord }: { series: TrendsSeries; periodWord: string }) {
-  const hasDelta = series.deltaPct !== null;
-  const isImproving = hasDelta && (series.deltaPct as number) <= 0;
+  const { latestValue, avgDiffPct, goalValue } = series;
+  const hasLatest = latestValue !== null;
+
+  // The pill compares this period with the average -- the same comparison the
+  // dashed goal line and the On track / Above target card make. A relative %,
+  // so every figure here is a percentage. No pill until there is an average.
+  const showPill = hasLatest && goalValue !== null;
+  const avgMag = avgDiffPct === null ? 0 : Math.abs(Math.round(avgDiffPct));
+  const isBelow = avgMag === 0 || (avgDiffPct as number) < 0; // at/below average = good
+  const pillText =
+    avgMag === 0 ? '→ In line with average' : `${isBelow ? '↓' : '↑'} ${avgMag}% ${isBelow ? 'below' : 'above'} average`;
+
   return (
     <View style={trendsSummaryStyles.row}>
       <View style={trendsSummaryStyles.left}>
-        <Text style={trendsSummaryStyles.value}>{fmtItems(series.latestValue)}</Text>
-        <Text style={trendsSummaryStyles.caption}>wasted this {periodWord}</Text>
+        <Text style={trendsSummaryStyles.value}>{hasLatest ? `${Math.round(latestValue as number)}%` : '—'}</Text>
+        <Text style={trendsSummaryStyles.caption}>
+          {hasLatest ? `wasted this ${periodWord}` : `Nothing logged this ${periodWord} yet`}
+        </Text>
       </View>
-      {hasDelta && (
-        <View style={trendsSummaryStyles.right}>
-          <View
-            style={[
-              trendsSummaryStyles.pill,
-              { backgroundColor: isImproving ? colors.primaryTint : colors.expiryUrgentBg },
-            ]}
-          >
-            <Text
-              style={[
-                trendsSummaryStyles.pillText,
-                { color: isImproving ? colors.primary : colors.statusToday },
-              ]}
-            >
-              {isImproving ? '↓' : '↑'} {Math.abs(Math.round(series.deltaPct as number))}%
-            </Text>
-          </View>
-          <Text style={trendsSummaryStyles.caption}>from last {periodWord}</Text>
+      {showPill && (
+        <View
+          style={[
+            trendsSummaryStyles.pill,
+            { backgroundColor: isBelow ? colors.primaryTint : colors.expiryUrgentBg },
+          ]}
+        >
+          <Text style={[trendsSummaryStyles.pillText, { color: isBelow ? colors.primary : colors.statusToday }]}>
+            {pillText}
+          </Text>
         </View>
       )}
     </View>
@@ -1471,7 +1496,6 @@ const trendsSummaryStyles = StyleSheet.create({
     marginTop: spacing.md,
   },
   left: { gap: 2, flex: 1 },
-  right: { alignItems: 'center', gap: 4 },
   value: {
     fontFamily: fonts.serif,
     fontSize: 28,
@@ -1485,11 +1509,11 @@ const trendsSummaryStyles = StyleSheet.create({
   pill: {
     borderRadius: radii.pill,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
   },
   pillText: {
     fontFamily: fonts.bold,
-    fontSize: 16,
+    fontSize: 14,
   },
 });
 
@@ -1825,92 +1849,151 @@ function useAlternatives() {
 // Trends tab — live data hook
 // ---------------------------------------------------------------------------
 //
-// Both Weekly and Monthly come from one getWeeklyWaste(26) call: Weekly uses
-// the raw per-week totals, Monthly buckets those weeks into calendar months
-// client-side. "Goal" = the period's own average (no goal in the backend).
+// Both views come from ONE listLogs() call (the same endpoint Overview uses),
+// bucketed on the phone:
+//   Weekly  -- 8 rolling 7-day windows ending now, so W8 is exactly Overview's
+//              "this week" and W7 its "last week". Labelled W1..W8, oldest first.
+//   Monthly -- the last 6 calendar months (device time), labelled Jan, Feb, ...
+// Each period's value is its WASTE RATE: wasted items / (wasted + consumed
+// items), counted by summariseLogs() exactly as Overview counts them, so the
+// two tabs always agree. A period with nothing logged has no rate (null) and
+// shows as a gap rather than a misleading 0%. Periods before the household's
+// first log are dropped, so a new user sees W1, W2... instead of a row of
+// empty weeks. "Goal" = the average of the periods that have data (no goal in
+// the backend).
 
-type WeekTotal = { weekStart: string; total: number };
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const WEEKS_SHOWN = 8;
+const MONTHS_SHOWN = 6;
 
-/** weekly-waste rows are one row PER REASON per week -- sum per week first. */
-function sumWeeklyTotals(rows: WeeklyWasteRow[]): WeekTotal[] {
-  const totals = new Map<string, number>();
-  for (const row of rows) {
-    totals.set(row.week_start, (totals.get(row.week_start) ?? 0) + row.waste_events);
+/** Waste rate (%) for one bucket of logs, to 1 dp; null when nothing was logged. */
+function wasteRatePct(logs: ConsumptionWasteLog[]): number | null {
+  const { wastedItems, consumedItems } = summariseLogs(logs);
+  const total = wastedItems + consumedItems;
+  return total > 0 ? Math.round((wastedItems / total) * 1000) / 10 : null;
+}
+
+/** Index 0 = oldest week, WEEKS_SHOWN - 1 = the last 7 days. */
+function bucketByWeek(logs: ConsumptionWasteLog[], nowMs: number): ConsumptionWasteLog[][] {
+  const buckets: ConsumptionWasteLog[][] = Array.from({ length: WEEKS_SHOWN }, () => []);
+  for (const log of logs) {
+    const t = logTimeMs(log.logged_at);
+    if (!Number.isFinite(t)) continue;
+    // No upper bound on the newest week: logged_at is the server's clock, and a
+    // phone running slightly behind must not lose its newest records.
+    const weeksAgo = t >= nowMs ? 0 : Math.floor((nowMs - t) / WEEK_MS);
+    if (weeksAgo < WEEKS_SHOWN) buckets[WEEKS_SHOWN - 1 - weeksAgo].push(log);
   }
-  return [...totals.entries()]
-    .map(([weekStart, total]) => ({ weekStart, total }))
-    .sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+  return buckets;
 }
 
-function computeGoal(points: number[]): number {
-  if (!points.length) return 0;
-  const avg = points.reduce((s, v) => s + v, 0) / points.length;
-  return Math.round(avg * 10) / 10;
-}
-
-function computeTrailingStreak(points: number[], goalValue: number): { count: number; onTrack: boolean } {
-  const onTrack = points[points.length - 1] <= goalValue;
-  let count = 0;
-  for (let i = points.length - 1; i >= 0; i--) {
-    if ((points[i] <= goalValue) === onTrack) count++;
-    else break;
+/** Index 0 = oldest month, MONTHS_SHOWN - 1 = the current calendar month. */
+function bucketByMonth(logs: ConsumptionWasteLog[], now: Date): ConsumptionWasteLog[][] {
+  const buckets: ConsumptionWasteLog[][] = Array.from({ length: MONTHS_SHOWN }, () => []);
+  const nowIndex = now.getFullYear() * 12 + now.getMonth();
+  for (const log of logs) {
+    const t = logTimeMs(log.logged_at);
+    if (!Number.isFinite(t)) continue;
+    const d = new Date(t);
+    const monthsAgo = Math.max(0, nowIndex - (d.getFullYear() * 12 + d.getMonth()));
+    if (monthsAgo < MONTHS_SHOWN) buckets[MONTHS_SHOWN - 1 - monthsAgo].push(log);
   }
-  return { count, onTrack };
+  return buckets;
 }
 
-function finishSeries(points: number[], periodKeys: string[], rangeLabel: string): TrendsSeries {
-  if (points.length === 0) {
+function finishSeries(args: {
+  points: (number | null)[];
+  labels: string[];
+  rangeLabel: string;
+  avgWord: string;
+  periodWord: string;
+}): TrendsSeries {
+  const { points, labels, rangeLabel, avgWord, periodWord } = args;
+  const withData = points.filter((p): p is number => p !== null);
+
+  if (withData.length === 0) {
     return {
-      points: [], periodKeys: [], goalValue: 0, latestValue: 0, deltaPct: null, rangeLabel,
+      points: [], labels: [], goalValue: null, latestValue: null, avgDiffPct: null,
+      rangeLabel, avgWord,
       streakTitle: 'No data yet',
       streakNote: 'Mark items as consumed or wasted to start building this chart.',
     };
   }
-  const goalValue = computeGoal(points);
-  const latestValue = points[points.length - 1];
-  const prev = points.length > 1 ? points[points.length - 2] : null;
-  const deltaPct = prev !== null && prev > 0 ? ((latestValue - prev) / prev) * 100 : null;
 
-  if (points.length < 2) {
+  const latest = points[points.length - 1];
+
+  // An average of one period is just that period, so the goal line (and the
+  // comparison against it) only appears once there are at least two.
+  if (withData.length < 2) {
     return {
-      points, periodKeys, goalValue, latestValue, deltaPct: null, rangeLabel,
+      points, labels, goalValue: null, latestValue: latest, avgDiffPct: null,
+      rangeLabel, avgWord,
       streakTitle: 'Just getting started',
       streakNote: 'Keep logging outcomes to start seeing a trend here.',
     };
   }
 
-  const streak = computeTrailingStreak(points, goalValue);
+  const goalValue = withData.reduce((s, v) => s + v, 0) / withData.length;
+  const avgDiffPct = latest !== null ? percentChange(latest, goalValue) : null;
+  const base = { points, labels, goalValue, latestValue: latest, avgDiffPct, rangeLabel, avgWord };
+
+  // The current period has nothing logged yet, so there is nothing to compare.
+  if (latest === null) {
+    return {
+      ...base,
+      streakTitle: `Nothing logged this ${periodWord} yet`,
+      streakNote: `Log what you use or waste to see how this ${periodWord} compares with your ${avgWord}.`,
+    };
+  }
+
+  // Trailing run of periods on the same side of the average as the latest one.
+  // A period with nothing logged ends the run.
+  const onTrack = latest <= goalValue;
+  let count = 0;
+  for (let i = points.length - 1; i >= 0; i--) {
+    const v = points[i];
+    if (v === null || (v <= goalValue) !== onTrack) break;
+    count++;
+  }
+  const span = `${count} ${periodWord}${count === 1 ? '' : 's'}`;
+  const avgText = `${Math.round(goalValue)}%`;
   return {
-    points, periodKeys, goalValue, latestValue, deltaPct, rangeLabel,
-    streakTitle: streak.onTrack ? 'On track' : 'Above target',
-    streakNote: streak.onTrack
-      ? `Waste has stayed at or below your average for ${streak.count} period${streak.count === 1 ? '' : 's'}.`
-      : `Waste has been above your average for ${streak.count} period${streak.count === 1 ? '' : 's'}. Check the Patterns tab to see what's driving it.`,
+    ...base,
+    streakTitle: onTrack ? 'On track' : 'Above target',
+    streakNote: onTrack
+      ? `Your waste rate has stayed at or below your ${avgWord} (${avgText}) for ${span}.`
+      : `Your waste rate has been above your ${avgWord} (${avgText}) for ${span}. Check the Patterns tab to see what's driving it.`,
   };
 }
 
-function buildWeeklySeries(weekTotals: WeekTotal[]): TrendsSeries {
-  const last8 = weekTotals.slice(-8);
-  return finishSeries(
-    last8.map((w) => Math.round(w.total * 100) / 100),
-    last8.map((w) => w.weekStart),
-    'Last 8 weeks',
-  );
+function buildWeeklySeries(logs: ConsumptionWasteLog[], nowMs: number): TrendsSeries {
+  const rates = bucketByWeek(logs, nowMs).map(wasteRatePct);
+  const first = rates.findIndex((r) => r !== null);
+  const points = first === -1 ? [] : rates.slice(first);
+  return finishSeries({
+    points,
+    labels: points.map((_, i) => `W${i + 1}`),
+    rangeLabel: 'Last 8 weeks',
+    // "8-week average" is only true once 8 weeks are in view.
+    avgWord: points.length === WEEKS_SHOWN ? '8-week average' : 'average so far',
+    periodWord: 'week',
+  });
 }
 
-function buildMonthlySeries(weekTotals: WeekTotal[]): TrendsSeries {
-  const byMonth = new Map<string, number>();
-  for (const w of weekTotals) {
-    const monthKey = w.weekStart.slice(0, 7); // "YYYY-MM"
-    byMonth.set(monthKey, (byMonth.get(monthKey) ?? 0) + w.total);
-  }
-  const months = [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  const last6 = months.slice(-6);
-  return finishSeries(
-    last6.map(([, total]) => Math.round(total * 100) / 100),
-    last6.map(([month]) => `${month}-01`),
-    'Last 6 months',
+function buildMonthlySeries(logs: ConsumptionWasteLog[], now: Date): TrendsSeries {
+  const rates = bucketByMonth(logs, now).map(wasteRatePct);
+  const names = rates.map(
+    (_, j) => MONTH_NAMES[new Date(now.getFullYear(), now.getMonth() - (MONTHS_SHOWN - 1 - j), 1).getMonth()],
   );
+  const first = rates.findIndex((r) => r !== null);
+  const points = first === -1 ? [] : rates.slice(first);
+  return finishSeries({
+    points,
+    labels: first === -1 ? [] : names.slice(first),
+    rangeLabel: 'Last 6 months',
+    avgWord: points.length === MONTHS_SHOWN ? '6-month average' : 'average so far',
+    periodWord: 'month',
+  });
 }
 
 type TrendsState =
@@ -1924,12 +2007,19 @@ function useTrends() {
   const load = useCallback(async () => {
     setState({ status: 'loading' });
     try {
-      const rows = await getWeeklyWaste(26);
-      const weekTotals = sumWeeklyTotals(rows);
+      const now = new Date();
+      const nowMs = now.getTime();
+      // Far enough back for BOTH views: 8 rolling weeks, and 6 calendar months
+      // (whichever starts earlier -- the months window, in practice).
+      const monthsStart = new Date(now.getFullYear(), now.getMonth() - (MONTHS_SHOWN - 1), 1).getTime();
+      const since = new Date(Math.min(monthsStart, nowMs - WEEKS_SHOWN * WEEK_MS)).toISOString();
+      const logs = await listLogs({ since });
+      const weekly = buildWeeklySeries(logs, nowMs);
+      const monthly = buildMonthlySeries(logs, now);
       setState({
         status: 'ready',
-        data: { Weekly: buildWeeklySeries(weekTotals), Monthly: buildMonthlySeries(weekTotals) },
-        hasData: weekTotals.length > 0,
+        data: { Weekly: weekly, Monthly: monthly },
+        hasData: weekly.points.length > 0 || monthly.points.length > 0,
       });
     } catch (e) {
       setState({
@@ -1968,20 +2058,24 @@ const WASTE_REASON_PROSE: Record<WasteReason, string> = {
   other: 'Other reasons',
 };
 
-function buildWeekSummary(summary: DashboardSummary, weekly: WeeklyWasteRow[]): WeekSummary {
-  const totalsByWeek = new Map<string, number>();
-  for (const row of weekly) {
-    totalsByWeek.set(row.week_start, (totalsByWeek.get(row.week_start) ?? 0) + row.waste_events);
-  }
-  const weeksSorted = [...totalsByWeek.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  const [thisWeek, lastWeek] = weeksSorted;
-  const weekDeltaPct =
-    thisWeek && lastWeek && lastWeek[1] > 0 ? ((thisWeek[1] - lastWeek[1]) / lastWeek[1]) * 100 : null;
+/** Overview covers the last 7 days -- the same rolling window /summary?days=7 uses. */
+const OVERVIEW_WINDOW_DAYS = 7;
 
-  // Share of records consumed rather than wasted -- from counts, not the
-  // backend's waste_rate (which divides mixed-unit quantities).
+function buildWeekSummary(summary: DashboardSummary, logs: ConsumptionWasteLog[]): WeekSummary {
+  // Item counts come from the individual logs (quantity per log), not from
+  // /summary's event counts -- see data/utilisation.ts. The week-on-week change
+  // measures the 7 days before the same way, so every figure on this screen
+  // counts the same thing.
+  const { current, previous } = splitIntoWindows(logs, Date.now(), OVERVIEW_WINDOW_DAYS);
+  const thisWeek = summariseLogs(current);
+  const lastWeek = summariseLogs(previous);
+  const weekDeltaPct = percentChange(thisWeek.wastedItems, lastWeek.wastedItems);
+
+  // Share of ITEMS consumed rather than wasted -- not the backend's waste_rate,
+  // which divides mixed-unit quantities.
   const foodRecords = summary.total_wasted_events + summary.total_consumed_events;
-  const utilisationRate = foodRecords > 0 ? summary.total_consumed_events / foodRecords : 0;
+  const totalItems = thisWeek.consumedItems + thisWeek.wastedItems;
+  const utilisationRate = totalItems > 0 ? thisWeek.consumedItems / totalItems : 0;
   const isImproving = weekDeltaPct !== null && weekDeltaPct <= 0;
   const topReason = summary.top_waste_reasons[0];
 
@@ -1998,11 +2092,12 @@ function buildWeekSummary(summary: DashboardSummary, weekly: WeeklyWasteRow[]): 
           : 'Record more outcomes to start spotting patterns.';
 
   return {
-    wasted_count: summary.total_wasted_events,
-    consumed_count: summary.total_consumed_events,
+    wasted_count: thisWeek.wastedItems,
+    consumed_count: thisWeek.consumedItems,
     utilisation_rate: utilisationRate,
     week_delta_pct: weekDeltaPct,
     food_records: foodRecords,
+    breakdown: thisWeek.rows,
     quick_insight_title: quickInsightTitle,
     quick_insight: quickInsight,
   };
@@ -2014,11 +2109,14 @@ function useWeekSummary() {
   const load = useCallback(async () => {
     setState({ status: 'loading' });
     try {
-      const [summary, weekly] = await Promise.all([getDashboardSummary(7), getWeeklyWaste(2)]);
+      // 14 days of logs: the last 7 are this week, the 7 before are what the
+      // week-on-week change compares against.
+      const since = new Date(Date.now() - 2 * OVERVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+      const [summary, logs] = await Promise.all([getDashboardSummary(OVERVIEW_WINDOW_DAYS), listLogs({ since })]);
       const hasData = summary.total_wasted_events + summary.total_consumed_events > 0;
       setState({
         status: 'ready',
-        data: hasData ? { state: 'data', summary: buildWeekSummary(summary, weekly) } : { state: 'empty' },
+        data: hasData ? { state: 'data', summary: buildWeekSummary(summary, logs) } : { state: 'empty' },
       });
     } catch (e) {
       setState({
@@ -2152,6 +2250,19 @@ export default function ActivityScreen() {
     }
   }, [alternativesState, selectedAlternativeId]);
 
+  // Pulled out of the JSX so the handler below doesn't depend on TypeScript
+  // keeping a narrowing alive inside a callback.
+  const overviewSummary =
+    overviewState.status === 'ready' && overviewState.data.state === 'data' ? overviewState.data.summary : null;
+  const openBreakdown = (kind: BreakdownKind) => {
+    if (!overviewSummary) return;
+    navigation.navigate(UTILISATION_BREAKDOWN_ROUTE, {
+      initialTab: kind,
+      rows: overviewSummary.breakdown,
+      windowDays: OVERVIEW_WINDOW_DAYS,
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -2177,7 +2288,7 @@ export default function ActivityScreen() {
                   <>
                     <ThisWeekCard summary={overviewState.data.summary} />
                     <StatPills summary={overviewState.data.summary} />
-                    <UtilisationSplit summary={overviewState.data.summary} />
+                    <UtilisationSplit summary={overviewState.data.summary} onOpen={openBreakdown} />
                     {overviewState.data.summary.quick_insight && overviewState.data.summary.quick_insight_title && (
                       <QuickInsightCard
                         title={overviewState.data.summary.quick_insight_title}
@@ -2292,13 +2403,8 @@ export default function ActivityScreen() {
                       <>
                         {/* Mockup: heading, chart and summary all inside one card */}
                         <View style={styles.chartCard}>
-                          <TrendsChartHeading title={chartTitle} subtitle={series.rangeLabel} />
-                          <TrendChart
-                            points={series.points}
-                            goal={series.goalValue}
-                            periodKeys={series.periodKeys}
-                            period={trendsPeriod}
-                          />
+                          <TrendsChartHeading title={chartTitle} subtitle={`${series.rangeLabel} · % of food wasted`} />
+                          <TrendChart points={series.points} labels={series.labels} goal={series.goalValue} />
                           <TrendsSummary series={series} periodWord={periodWord} />
                         </View>
                         <OnTrackCard

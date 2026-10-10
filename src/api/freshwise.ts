@@ -583,10 +583,15 @@ export function recordOutcome(input: {
   });
 }
 
-export function listLogs(opts: { itemId?: string; status?: 'consumed' | 'wasted' } = {}) {
+/** `since` is an ISO datetime (use toISOString(), which ends in Z -- a "+08:00"
+ *  offset would need encoding). A server build that predates the filter just
+ *  ignores it and returns everything, so callers that need a window should also
+ *  filter on logged_at themselves. */
+export function listLogs(opts: { itemId?: string; status?: 'consumed' | 'wasted'; since?: string } = {}) {
   const q = new URLSearchParams();
   if (opts.itemId) q.set('item_id', opts.itemId);
   if (opts.status) q.set('status', opts.status);
+  if (opts.since) q.set('since', opts.since);
   const qs = q.toString();
   return request<ConsumptionWasteLog[]>(`/v1/logs${qs ? `?${qs}` : ''}`);
 }
