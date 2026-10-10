@@ -1449,8 +1449,8 @@ function TrendChart({
 }
 
 /** Sits INSIDE the chart card, under the chart. Deliberately terse: the waste
- *  rate + "wasted this week" on the left, and one pill on the right saying how
- *  it compares with the average ("↓ 30% below average"). */
+ *  rate + "wasted this week" on the left, and on the right one pill ("↓ 30%")
+ *  with "below average" underneath it. Used by both Weekly and Monthly. */
 function TrendsSummary({ series, periodWord }: { series: TrendsSeries; periodWord: string }) {
   const { latestValue, avgDiffPct, goalValue } = series;
   const hasLatest = latestValue !== null;
@@ -1461,8 +1461,8 @@ function TrendsSummary({ series, periodWord }: { series: TrendsSeries; periodWor
   const showPill = hasLatest && goalValue !== null;
   const avgMag = avgDiffPct === null ? 0 : Math.abs(Math.round(avgDiffPct));
   const isBelow = avgMag === 0 || (avgDiffPct as number) < 0; // at/below average = good
-  const pillText =
-    avgMag === 0 ? '→ In line with average' : `${isBelow ? '↓' : '↑'} ${avgMag}% ${isBelow ? 'below' : 'above'} average`;
+  const pillText = avgMag === 0 ? '→ 0%' : `${isBelow ? '↓' : '↑'} ${avgMag}%`;
+  const pillCaption = avgMag === 0 ? 'in line with average' : `${isBelow ? 'below' : 'above'} average`;
 
   return (
     <View style={trendsSummaryStyles.row}>
@@ -1473,15 +1473,18 @@ function TrendsSummary({ series, periodWord }: { series: TrendsSeries; periodWor
         </Text>
       </View>
       {showPill && (
-        <View
-          style={[
-            trendsSummaryStyles.pill,
-            { backgroundColor: isBelow ? colors.primaryTint : colors.expiryUrgentBg },
-          ]}
-        >
-          <Text style={[trendsSummaryStyles.pillText, { color: isBelow ? colors.primary : colors.statusToday }]}>
-            {pillText}
-          </Text>
+        <View style={trendsSummaryStyles.right}>
+          <View
+            style={[
+              trendsSummaryStyles.pill,
+              { backgroundColor: isBelow ? colors.primaryTint : colors.expiryUrgentBg },
+            ]}
+          >
+            <Text style={[trendsSummaryStyles.pillText, { color: isBelow ? colors.primary : colors.statusToday }]}>
+              {pillText}
+            </Text>
+          </View>
+          <Text style={trendsSummaryStyles.caption}>{pillCaption}</Text>
         </View>
       )}
     </View>
@@ -1496,6 +1499,7 @@ const trendsSummaryStyles = StyleSheet.create({
     marginTop: spacing.md,
   },
   left: { gap: 2, flex: 1 },
+  right: { alignItems: 'center', gap: 4 },
   value: {
     fontFamily: fonts.serif,
     fontSize: 28,
@@ -1509,11 +1513,11 @@ const trendsSummaryStyles = StyleSheet.create({
   pill: {
     borderRadius: radii.pill,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
   pillText: {
     fontFamily: fonts.bold,
-    fontSize: 14,
+    fontSize: 16,
   },
 });
 
