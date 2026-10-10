@@ -1455,14 +1455,23 @@ function TrendsSummary({ series, periodWord }: { series: TrendsSeries; periodWor
   const { latestValue, avgDiffPct, goalValue } = series;
   const hasLatest = latestValue !== null;
 
-  // The pill compares this period with the average -- the same comparison the
-  // dashed goal line and the On track / Above target card make. A relative %,
-  // so every figure here is a percentage. No pill until there is an average.
-  const showPill = hasLatest && goalValue !== null;
-  const avgMag = avgDiffPct === null ? 0 : Math.abs(Math.round(avgDiffPct));
-  const isBelow = avgMag === 0 || (avgDiffPct as number) < 0; // at/below average = good
-  const pillText = avgMag === 0 ? '→ 0%' : `${isBelow ? '↓' : '↑'} ${avgMag}%`;
-  const pillCaption = avgMag === 0 ? 'in line with average' : `${isBelow ? 'below' : 'above'} average`;
+  // The pill compares this period against the average -- the same comparison
+  // the dashed goal line makes. avgDiffPct is the ABSOLUTE gap, in percentage
+  // points, between this period's waste rate and the average (so it matches
+  // what you can read off the chart's Y-axis), but it is shown with a plain
+  // "%" to match the other figures on this screen. A negative value means
+  // this period's waste rate sat below the average.
+  // "below average" = improving, so green; "above average" = amber.
+  // Round to 1 dp so tiny floating-point remainders don't show as "0.0%".
+  const ppRaw = avgDiffPct !== null ? Math.round(avgDiffPct * 10) / 10 : null;
+  const showPill = hasLatest && goalValue !== null && ppRaw !== null;
+  const ppAbs = ppRaw !== null ? Math.abs(ppRaw) : 0;
+  // Treat differences smaller than 0.5 as "in line" to avoid showing
+  // "↓ 0.2%" when the user's data is essentially flat.
+  const isNeutral = ppAbs < 0.5;
+  const isBelow = !isNeutral && ppRaw !== null && ppRaw < 0;
+  const pillText = isNeutral ? '→ 0%' : `${isBelow ? '↓' : '↑'} ${ppAbs.toFixed(1)}%`;
+  const pillCaption = isNeutral ? 'in line with average' : `${isBelow ? 'below' : 'above'} average`;
 
   return (
     <View style={trendsSummaryStyles.row}>
@@ -1938,7 +1947,16 @@ function finishSeries(args: {
   }
 
   const goalValue = withData.reduce((s, v) => s + v, 0) / withData.length;
-  const avgDiffPct = latest !== null ? percentChange(latest, goalValue) : null;
+  // Pill comparison: absolute percentage-point difference between this period
+  // and the average. The chart's Y-axis shows absolute waste-rate % values
+  // (e.g. 20%, 40%), so the pill must use the same scale to be verifiable.
+  // A relative comparison (((latest - avg) / avg) * 100) would show a
+  // different magnitude to what the user can read off the chart -- e.g.
+  // if avg = 40% and latest = 30%, the relative figure is -25% but the
+  // chart shows a 10pp drop. Using pp difference gives -10pp, which the
+  // user can directly verify by looking at where the last dot sits vs the
+  // dashed goal line.
+  const avgDiffPct = latest !== null ? latest - goalValue : null;
   const base = { points, labels, goalValue, latestValue: latest, avgDiffPct, rangeLabel, avgWord };
 
   // The current period has nothing logged yet, so there is nothing to compare.
@@ -1960,13 +1978,12 @@ function finishSeries(args: {
     count++;
   }
   const span = `${count} ${periodWord}${count === 1 ? '' : 's'}`;
-  const avgText = `${Math.round(goalValue)}%`;
   return {
     ...base,
-    streakTitle: onTrack ? 'On track' : 'Above target',
+    streakTitle: onTrack ? 'On track' : 'Above average',
     streakNote: onTrack
-      ? `Your waste rate has stayed at or below your ${avgWord} (${avgText}) for ${span}.`
-      : `Your waste rate has been above your ${avgWord} (${avgText}) for ${span}. Check the Patterns tab to see what's driving it.`,
+      ? `Your waste rate has stayed at or below your ${avgWord} for ${span}.`
+      : `Your waste rate has been above your ${avgWord} for ${span}. Check the Patterns tab to see what's driving it.`,
   };
 }
 
@@ -2414,7 +2431,7 @@ export default function ActivityScreen() {
                         <OnTrackCard
                           title={series.streakTitle}
                           body={series.streakNote}
-                          positive={series.streakTitle !== 'Above target'}
+                          positive={series.streakTitle !== 'Above average'}
                         />
                       </>
                     );
