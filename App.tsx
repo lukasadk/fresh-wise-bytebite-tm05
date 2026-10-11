@@ -50,7 +50,7 @@ import EstimatedValueRulesScreen from './src/screens/EstimatedValueRulesScreen';
 import AddRecipeScreen from './src/screens/AddRecipeScreen';
 import BuyingHabitsScreen from './src/screens/BuyingHabitsScreen';
 import NextShopScreen from './src/screens/NextShopScreen';
-import BottomNav from './src/components/BottomNav';
+import SideNav from './src/components/SideNav';
 import LandingScreen from './src/components/LandingScreen';
 import ConfirmDialog from './src/components/ConfirmDialog';
 import { colors, fonts, radii, spacing } from './src/theme/theme';
@@ -83,13 +83,15 @@ const UI_PREVIEW_MODE = Platform.OS === 'web'
     )
   );
 
-// The 4 tabs, shown behind the bottom nav bar.
+// The main pages. Navigation is a sidebar (mentor feedback: too many tabs at
+// the bottom) -- SideNav renders a slim top bar with a menu button, so the
+// tab bar slot sits at the top. Route names are unchanged.
 function MainTabs() {
   return (
     <Tab.Navigator
       id={undefined}
-      screenOptions={{ headerShown: false }}
-      tabBar={(props) => <BottomNav {...props} />}
+      screenOptions={{ headerShown: false, tabBarPosition: 'top' }}
+      tabBar={(props) => <SideNav {...props} />}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Pantry" component={PantryScreen} />

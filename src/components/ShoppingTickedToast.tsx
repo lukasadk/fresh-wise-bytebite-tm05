@@ -7,7 +7,7 @@ type Props = {
   count: number;
   onViewList: () => void;
   onHide: () => void;
-  /** Distance from the bottom edge -- 110 on tab screens clears the nav bar. */
+  /** Distance from the bottom edge. */
   bottom?: number;
   durationMs?: number;
 };

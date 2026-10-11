@@ -6,7 +6,7 @@
 // works for manually added items, the duplicate warning and auto-tick.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import ShoppingRow from '../components/ShoppingRow';
@@ -34,6 +34,9 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 export default function ShoppingListScreen({ navigation }: any) {
+  // Pages run to the bottom edge; the phone's nav-bar inset is added as
+  // scroll padding instead of a blank band (see SideNav).
+  const insets = useSafeAreaInsets();
   const [list, setList] = useState<ShoppingList>(EMPTY_LIST);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -179,9 +182,10 @@ export default function ShoppingListScreen({ navigation }: any) {
   const { bought, skipped } = list;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={[]}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        // Room for the Undo toast at the bottom, plus the phone's nav bar.
+        contentContainerStyle={[styles.content, { paddingBottom: 96 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={colors.primary} />}
       >
@@ -270,7 +274,7 @@ export default function ShoppingListScreen({ navigation }: any) {
 
       {/* "Removed · Undo" (AC 8.1.6) -- coral, like My Pantry's removed toast */}
       {pendingRemoval ? (
-        <View style={styles.toast}>
+        <View style={[styles.toast, { bottom: 28 + insets.bottom }]}>
           <View style={[styles.toastPill, styles.toastPillRemoved]}>
             <Text style={[styles.toastText, styles.toastTextRemoved]}>Removed · </Text>
             <Pressable onPress={handleUndo} hitSlop={10}>
@@ -282,7 +286,7 @@ export default function ShoppingListScreen({ navigation }: any) {
 
       {/* "Add to pantry?" (AC 8.3.5) */}
       {addToPantryItem && !pendingRemoval ? (
-        <View style={styles.toast}>
+        <View style={[styles.toast, { bottom: 28 + insets.bottom }]}>
           <View style={styles.snackbar}>
             <Text style={styles.snackbarText} numberOfLines={1}>
               Add {addToPantryItem.name} to pantry?
@@ -317,8 +321,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.xxl,
     paddingTop: spacing.lg,
-    // Clears the floating bottom nav bar and the toasts that sit above it.
-    paddingBottom: 140,
     gap: spacing.lg,
   },
   headerRow: {
@@ -429,7 +431,7 @@ const styles = StyleSheet.create({
   },
   toast: {
     position: 'absolute',
-    bottom: 110, // clears the floating bottom nav bar (same as My Pantry)
+    bottom: 28, // same as My Pantry
     left: 0,
     right: 0,
     zIndex: 10,

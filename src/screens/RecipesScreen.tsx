@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { InteractionManager } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CalendarCheck, ChefHat, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Leaf, Plus, RefreshCcw, Sparkles } from 'lucide-react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
@@ -127,6 +127,9 @@ function TabSwitch({ tab, onChange }: { tab: RecipesTab; onChange: (next: Recipe
 }
 
 export default function RecipesScreen() {
+  // Pages run to the bottom edge; the phone's nav-bar inset is added as
+  // scroll padding instead of a blank band (see SideNav).
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { width } = useWindowDimensions();
@@ -359,9 +362,9 @@ export default function RecipesScreen() {
   const selectedIngredientSummary = shortIngredients(selectedIngredientNames, 'your selected ingredients');
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={[]}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: spacing.xxl * 2 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
       >
@@ -779,7 +782,7 @@ export default function RecipesScreen() {
         )}
       </ScrollView>
       {toast ? (
-        <View style={styles.toast} pointerEvents="none">
+        <View style={[styles.toast, { bottom: 28 + insets.bottom }]} pointerEvents="none">
           <View style={styles.toastPill}>
             <Text style={styles.toastText}>{toast}</Text>
           </View>
@@ -843,7 +846,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.xxl,
-    paddingBottom: 120,
     gap: spacing.lg,
   },
   hero: {
@@ -1272,7 +1274,7 @@ const styles = StyleSheet.create({
   },
   toast: {
     position: 'absolute',
-    bottom: 110,
+    bottom: 28,
     left: 0,
     right: 0,
     zIndex: 10,

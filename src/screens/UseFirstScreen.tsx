@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useScrollToTop } from '@react-navigation/native';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
 import FoodRow from '../components/FoodRow';
@@ -60,6 +60,9 @@ const SECTIONS = [
 const HERO_RADIUS = radii.xl + 2;
 
 export default function UseFirstScreen({ navigation, route }: any) {
+  // Pages run to the bottom edge; the phone's nav-bar inset is added as
+  // scroll padding instead of a blank band (see SideNav).
+  const insets = useSafeAreaInsets();
   // Start at the top when opened from Home (timestamp param, so every tap
   // re-triggers), and when the Use First tab is tapped again while open.
   const scrollRef = useRef<ScrollView>(null);
@@ -158,8 +161,12 @@ export default function UseFirstScreen({ navigation, route }: any) {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.safe} edges={[]}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[styles.content, { paddingBottom: spacing.xxl + insets.bottom }]}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Use First</Text>
         <Text style={styles.subtitle}>
           {showAtRiskList

@@ -69,7 +69,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import Svg, { Line, Polyline, Circle, Text as SvgText } from 'react-native-svg';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Leaf, Lightbulb } from 'lucide-react-native';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
@@ -2265,6 +2265,9 @@ function BuyingHabitsSummaryCard({
 // ---------------------------------------------------------------------------
 
 export default function ActivityScreen() {
+  // Pages run to the bottom edge; the phone's nav-bar inset is added as
+  // scroll padding instead of a blank band (see SideNav).
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const [activeTab, setActiveTab] = useState<InsightsTab>('Overview');
 
@@ -2319,8 +2322,11 @@ export default function ActivityScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.safe} edges={[]}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: spacing.xxl * 2 + insets.bottom }]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <Text style={styles.title}>Insights</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>

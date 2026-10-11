@@ -78,6 +78,9 @@ export const colors = {
   neutralChipBg: '#EEF1EE',
   barTrack: '#EEF1EE',
 
+  // Dimmed backdrop behind the sidebar menu.
+  overlayScrim: 'rgba(19, 51, 30, 0.35)',
+
   // Entry-source tags on pantry rows
   sourceManual: '#8A8F87',
   sourcePhotoAI: '#4A6B7A',

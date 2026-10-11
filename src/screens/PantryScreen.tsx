@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, FlatList, Pressable, ScrollView, StyleSheet, Platform, useWindowDimensions, LayoutAnimation } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { ChefHat } from 'lucide-react-native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
@@ -35,6 +35,9 @@ const TABLET_WIDTH_BREAKPOINT = 768;
 const NEW_ITEM_PIN_MS = 4000;
 
 export default function PantryScreen({ navigation, route }: any) {
+  // Pages run to the bottom edge; the phone's nav-bar inset is added as
+  // scroll padding instead of a blank band (see SideNav).
+  const insets = useSafeAreaInsets();
   // Start at the top when opened from Home's overview card (route param is a
   // timestamp, so every tap re-triggers), and when the My Pantry tab is tapped
   // again while already open (useScrollToTop).
@@ -377,9 +380,9 @@ export default function PantryScreen({ navigation, route }: any) {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={[]}>
       {toastMessage ? (
-        <View style={styles.toast}>
+        <View style={[styles.toast, { bottom: 28 + insets.bottom }]}>
           <View style={[styles.toastPill, toastType === 'removed' && styles.toastPillRemoved]}>
             <Text style={[styles.toastText, toastType === 'removed' && styles.toastTextRemoved]}>
               {toastMessage}
@@ -392,7 +395,7 @@ export default function PantryScreen({ navigation, route }: any) {
         onHide={hideShoppingTicked}
         onViewList={() => navigation.navigate('Shop')}
         // Sits above the regular toast when both show at once.
-        bottom={toastMessage ? 160 : 110}
+        bottom={(toastMessage ? 80 : 28) + insets.bottom}
       />
       <FlatList
         ref={listRef}
@@ -405,7 +408,8 @@ export default function PantryScreen({ navigation, route }: any) {
         columnWrapperStyle={viewMode === 'grid' ? styles.gridRow : undefined}
         contentContainerStyle={[
           styles.content,
-          selectMode && (recipeSelectMode || selectedIds.size > 0) && styles.contentWithActionBar,
+          { paddingBottom: spacing.xxl + insets.bottom },
+          selectMode && (recipeSelectMode || selectedIds.size > 0) && { paddingBottom: spacing.xxl * 3 + insets.bottom },
         ]}
         refreshing={itemsLoading}
         ListHeaderComponent={
@@ -636,7 +640,7 @@ export default function PantryScreen({ navigation, route }: any) {
       />
 
       {selectionMode === 'manage' && selectedIds.size > 0 ? (
-        <View style={styles.actionBar}>
+        <View style={[styles.actionBar, { paddingBottom: spacing.xl + insets.bottom }]}>
           {bulkError ? <Text style={styles.actionBarError}>{bulkError}</Text> : null}
           <Text style={styles.actionBarCount}>{selectedIds.size} selected</Text>
           <View style={styles.actionBarButtons}>
@@ -664,7 +668,7 @@ export default function PantryScreen({ navigation, route }: any) {
       ) : null}
 
       {recipeSelectMode ? (
-        <View style={styles.actionBar}>
+        <View style={[styles.actionBar, { paddingBottom: spacing.xl + insets.bottom }]}>
           <View style={styles.recipeActionHeader}>
             <Text style={styles.actionBarCount}>Selected: {selectedIds.size}</Text>
             <Pressable onPress={exitSelectMode} accessibilityRole="button">
@@ -721,7 +725,7 @@ const styles = StyleSheet.create({
   },
   toast: {
     position: 'absolute',
-    bottom: 110, // clears the floating bottom nav bar
+    bottom: 28,
     left: 0,
     right: 0,
     zIndex: 10,

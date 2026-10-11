@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
 import QuickAction from '../components/QuickAction';
@@ -150,6 +150,9 @@ function LegendDot({ color, count }: { color: string; count: number }) {
 }
 
 export default function HomeScreen({ navigation }: any) {
+  // Pages run to the bottom edge; the phone's nav-bar inset is added as
+  // scroll padding instead of a blank band (see SideNav).
+  const insets = useSafeAreaInsets();
   const { items } = usePantry();
 
   // Same "needs attention" definition PantryScreen's banner uses -- anything not
@@ -239,8 +242,11 @@ export default function HomeScreen({ navigation }: any) {
   const openUseFirst = () => navigation.navigate('UseFirst', { scrollToTop: Date.now() });
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.safe} edges={[]}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: spacing.xxl + insets.bottom }]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.headerRow}>
           <View>
