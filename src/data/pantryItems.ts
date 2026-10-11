@@ -128,7 +128,15 @@ export function getExpiryInfo(item: Pick<PantryItem, 'daysToExpiry'>): ExpiryInf
   // AC 2.1.4: Coral Red is 0-days/expired ONLY -- 1-3 days is Amber Gold.
   const expiryLevel: ExpiryLevel = daysLeft <= 0 ? 'urgent' : daysLeft <= 3 ? 'warn' : 'safe';
   const rowExpiryLabel =
-    daysLeft < 0 ? 'Expired' : daysLeft === 0 ? 'Today' : daysLeft === 1 ? 'Tomorrow' : `${daysLeft} days`;
+    // "Expired 2d ago" rather than a bare "Expired": how long ago changes
+    // whether it's worth checking or just recording as waste.
+    daysLeft < 0
+      ? `Expired ${-daysLeft}d ago`
+      : daysLeft === 0
+        ? 'Today'
+        : daysLeft === 1
+          ? 'Tomorrow'
+          : `${daysLeft} days`;
   const detailExpiryTitle =
     daysLeft < 0
       ? 'Expired'

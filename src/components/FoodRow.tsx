@@ -4,7 +4,7 @@ import { colors, fonts, radii, spacing } from '../theme/theme';
 import ExpiryPill, { ExpiryLevel } from './ExpiryPill';
 import { foodIconFor } from '../icons/FoodIcons';
 import { PantryItem, SOURCE_LABELS } from '../data/pantryItems';
-import { Check } from '../icons/NavIcons';
+import { Check, ChevronRight } from '../icons/NavIcons';
 
 type Props = {
   name: string;
@@ -23,6 +23,9 @@ type Props = {
   valueLabel?: string;
   /** Grey styling for "No value" when the item has no estimate. */
   valueMuted?: boolean;
+  /** Past its expiry date. Defaults to an "Expired..." expiryLabel, so every
+   *  caller gets the loud expired state without passing anything new. */
+  expired?: boolean;
 };
 
 // Forest Green / Amber Gold / Coral Red -- matches the left-border + dot spec in Epic 2.
@@ -47,18 +50,25 @@ export default function FoodRow({
   onPress,
   valueLabel,
   valueMuted,
+  expired,
 }: Props) {
   const Icon = foodIconFor(name, category);
   const borderColor = expiryLevel ? expiryBorderColor[expiryLevel] : colors.borderSoft;
+  const isExpired = expired ?? /^expired/i.test(expiryLabel);
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole={selectMode ? 'checkbox' : 'button'}
       accessibilityState={selectMode ? { checked: Boolean(selected) } : undefined}
-      accessibilityLabel={selectMode ? `${name}, ${selected ? 'selected' : 'not selected'}` : name}
+      accessibilityLabel={
+        selectMode
+          ? `${name}, ${selected ? 'selected' : 'not selected'}`
+          : `${name}${isExpired ? ', expired' : ''}. Opens details`
+      }
       style={({ pressed }) => [
         styles.row,
         { borderLeftWidth: 4, borderLeftColor: borderColor },
+        isExpired && styles.rowExpired,
         highlighted && styles.rowHighlighted,
         pressed && { opacity: 0.9 },
       ]}
@@ -72,6 +82,11 @@ export default function FoodRow({
       <View style={styles.textCol}>
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>{name}</Text>
+          {isExpired ? (
+            <View style={styles.expiredTag}>
+              <Text style={styles.expiredTagText}>EXPIRED</Text>
+            </View>
+          ) : null}
           {highlighted ? (
             <View style={styles.updatedTag}>
               <Text style={styles.updatedTagText}>{highlightLabel ?? 'Updated'}</Text>
@@ -98,9 +113,10 @@ export default function FoodRow({
           </Text>
         ) : null}
         {expiryLevel && !valueLabel ? <View style={[styles.dot, { backgroundColor: borderColor }]} /> : null}
-        <ExpiryPill label={expiryLabel} level={expiryLevel} />
-        {!selectMode ? <Text style={styles.swipeHint}>Swipe for recipe →</Text> : null}
+        <ExpiryPill label={expiryLabel} level={expiryLevel} solid={isExpired} />
       </View>
+      {/* A visible "this opens" cue -- tap is the primary action, not swipe. */}
+      {!selectMode ? <ChevronRight size={18} color={isExpired ? colors.expiryUrgentText : colors.textSecondary} /> : null}
     </Pressable>
   );
 }
@@ -121,6 +137,24 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
+  },
+  // Expired: the whole card turns coral so it can't be missed in a list.
+  rowExpired: {
+    backgroundColor: colors.expiryUrgentBg,
+    borderColor: colors.expiryUrgentBorder,
+    borderWidth: 1.5,
+  },
+  expiredTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.statusToday,
+  },
+  expiredTagText: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    letterSpacing: 0.5,
+    color: colors.white,
   },
   rowHighlighted: {
     backgroundColor: colors.rowHighlightBg,
@@ -212,10 +246,5 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-  },
-  swipeHint: {
-    fontFamily: fonts.regular,
-    fontSize: 10,
-    color: colors.textSecondary,
   },
 });

@@ -4,7 +4,7 @@ import { colors, fonts, radii, spacing } from '../theme/theme';
 import ExpiryPill, { ExpiryLevel } from './ExpiryPill';
 import { foodIconFor } from '../icons/FoodIcons';
 import { PantryItem, SOURCE_LABELS } from '../data/pantryItems';
-import { Check } from '../icons/NavIcons';
+import { Check, ChevronRight } from '../icons/NavIcons';
 
 type Props = {
   name: string;
@@ -19,6 +19,8 @@ type Props = {
   highlighted?: boolean;
   highlightLabel?: string; // e.g. "New" right after adding -- same as FoodRow
   onPress?: () => void;
+  /** Past its expiry date; defaults to an "Expired..." expiryLabel. */
+  expired?: boolean;
 };
 
 const expiryBorderColor: Record<ExpiryLevel, string> = {
@@ -40,18 +42,25 @@ export default function FoodCard({
   highlighted,
   highlightLabel,
   onPress,
+  expired,
 }: Props) {
   const Icon = foodIconFor(name, category);
   const borderColor = expiryLevel ? expiryBorderColor[expiryLevel] : colors.borderSoft;
+  const isExpired = expired ?? /^expired/i.test(expiryLabel);
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole={selectMode ? 'checkbox' : 'button'}
       accessibilityState={selectMode ? { checked: Boolean(selected) } : undefined}
-      accessibilityLabel={selectMode ? `${name}, ${selected ? 'selected' : 'not selected'}` : name}
+      accessibilityLabel={
+        selectMode
+          ? `${name}, ${selected ? 'selected' : 'not selected'}`
+          : `${name}${isExpired ? ', expired' : ''}. Opens details`
+      }
       style={({ pressed }) => [
         styles.card,
         { borderLeftWidth: 4, borderLeftColor: borderColor },
+        isExpired && styles.cardExpired,
         highlighted && styles.cardHighlighted,
         pressed && { opacity: 0.9 },
       ]}
@@ -60,6 +69,10 @@ export default function FoodCard({
         {selectMode ? (
           <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
             {selected ? <Check size={12} color={colors.white} strokeWidth={3} /> : null}
+          </View>
+        ) : isExpired ? (
+          <View style={styles.expiredTag}>
+            <Text style={styles.expiredTagText}>EXPIRED</Text>
           </View>
         ) : (
           <View />
@@ -86,10 +99,13 @@ export default function FoodCard({
       {expiryDate ? <Text style={styles.expiryDateText} numberOfLines={1}>Exp {expiryDate}</Text> : null}
       <View style={styles.expiryRow}>
         {expiryLevel ? <View style={[styles.dot, { backgroundColor: borderColor }]} /> : null}
-        <ExpiryPill label={expiryLabel} level={expiryLevel} />
+        <ExpiryPill label={expiryLabel} level={expiryLevel} solid={isExpired} />
+        {!selectMode ? (
+          <View style={styles.openCue}>
+            <ChevronRight size={16} color={isExpired ? colors.expiryUrgentText : colors.textSecondary} />
+          </View>
+        ) : null}
       </View>
-      {/* Same hint as the list rows -- the grid cards swipe to Recipes too. */}
-      {!selectMode ? <Text style={styles.swipeHint}>Swipe for recipe →</Text> : null}
     </Pressable>
   );
 }
@@ -109,6 +125,26 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
+  },
+  cardExpired: {
+    backgroundColor: colors.expiryUrgentBg,
+    borderColor: colors.expiryUrgentBorder,
+    borderWidth: 1.5,
+  },
+  expiredTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.statusToday,
+  },
+  expiredTagText: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    letterSpacing: 0.5,
+    color: colors.white,
+  },
+  openCue: {
+    marginLeft: 'auto',
   },
   cardHighlighted: {
     backgroundColor: colors.rowHighlightBg,
@@ -163,13 +199,9 @@ const styles = StyleSheet.create({
   expiryRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'stretch',
     gap: 6,
     marginTop: 4,
-  },
-  swipeHint: {
-    fontFamily: fonts.regular,
-    fontSize: 10,
-    color: colors.textSecondary,
   },
   newTag: {
     marginLeft: 'auto',

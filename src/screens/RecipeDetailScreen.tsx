@@ -8,6 +8,8 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { deleteMyRecipe, getMyRecipe, homemadeRecipeId } from '../api/freshwise';
 import { listPlannedRecipes, planKeyOf, planRecipe, removePlannedRecipe } from '../api/freshwise';
 import { listMyRecipes, saveRecipeToMine } from '../api/freshwise';
+import { usePantry } from '../data/pantryItems';
+import { ingredientExpiries, type IngredientExpiryLevel } from '../data/ingredientExpiry';
 import { ApiError } from '../api/client';
 import type { RecipeRecommendation, UserRecipe } from '../api/types';
 
@@ -97,6 +99,13 @@ export default function RecipeDetailScreen() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Expiry state of each ingredient already at home, most urgent first
+  // (mentor feedback: show WHICH ingredient is about to go off).
+  const { items: pantryItems } = usePantry();
+  const atHome = React.useMemo(() => ingredientExpiries(available, pantryItems), [available.join('|'), pantryItems]);
+  const atHomeKeys = new Set(atHome.map((a) => a.ingredient.toLowerCase()));
+  const availableUnmatched = available.filter((name) => !atHomeKeys.has(name.trim().toLowerCase()));
 
   const handleSaveToMine = async () => {
     if (saveBusy || savedToMine) return;
@@ -319,14 +328,38 @@ export default function RecipeDetailScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Available</Text>
-          <View style={styles.ingredientGrid}>
-            {available.length ? available.map((item) => (
-              <View key={item} style={styles.haveChip}>
-                <CheckCircle2 size={14} color={colors.statusFresh} />
-                <Text style={styles.haveChipText}>{item}</Text>
-              </View>
-            )) : <Text style={styles.mutedText}>No strong pantry match was reported.</Text>}
-          </View>
+          {atHome.length ? (
+            <View style={styles.expiryCard}>
+              {atHome.map((entry) => {
+                const tone = EXPIRY_TONE[entry.level];
+                return (
+                  <View key={entry.ingredient} style={styles.expiryRow}>
+                    <View style={[styles.expiryDot, { backgroundColor: tone.dot }]} />
+                    <View style={styles.expiryNameCol}>
+                      <Text style={styles.expiryName}>{entry.ingredient}</Text>
+                      {entry.pantryName && entry.pantryName.toLowerCase() !== entry.ingredient.toLowerCase() ? (
+                        <Text style={styles.expiryPantryName}>Your {entry.pantryName}</Text>
+                      ) : null}
+                    </View>
+                    <View style={[styles.expiryPill, { backgroundColor: tone.bg }]}>
+                      <Text style={[styles.expiryPillText, { color: tone.text }]}>{entry.label}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
+          {availableUnmatched.length ? (
+            <View style={styles.ingredientGrid}>
+              {availableUnmatched.map((item) => (
+                <View key={item} style={styles.haveChip}>
+                  <CheckCircle2 size={14} color={colors.statusFresh} />
+                  <Text style={styles.haveChipText}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          {!available.length ? <Text style={styles.mutedText}>No strong pantry match was reported.</Text> : null}
         </View>
 
         <View style={styles.section}>
@@ -428,7 +461,58 @@ export default function RecipeDetailScreen() {
   );
 }
 
+// Same colour language as the pantry expiry pills (AC 2.1.4); expired is the
+// solid Coral Red used on expired pantry cards.
+const EXPIRY_TONE: Record<IngredientExpiryLevel, { dot: string; bg: string; text: string }> = {
+  expired: { dot: colors.statusToday, bg: colors.statusToday, text: colors.white },
+  today: { dot: colors.statusToday, bg: colors.expiryUrgentBg, text: colors.expiryUrgentText },
+  soon: { dot: colors.statusSoon, bg: colors.expiryWarnBg, text: colors.expiryWarnText },
+  fresh: { dot: colors.statusFresh, bg: colors.expirySafeBg, text: colors.expirySafeText },
+  unknown: { dot: colors.neutralGrey, bg: colors.neutralChipBg, text: colors.textSecondary },
+};
+
 const styles = StyleSheet.create({
+  expiryCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.xl,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  expiryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  expiryDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  expiryNameCol: {
+    flex: 1,
+  },
+  expiryName: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  expiryPantryName: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  expiryPill: {
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+  },
+  expiryPillText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+  },
   safe: {
     flex: 1,
     backgroundColor: colors.background,

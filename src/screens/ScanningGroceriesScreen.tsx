@@ -3,6 +3,7 @@ import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ReceiptText, ShoppingBasket, Sparkles } from 'lucide-react-native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
+import BackButton from '../components/BackButton';
 import { analyzeGroceryImage, type GroceryRecognitionMode } from '../vlm/apiRecognitionEngine';
 import { editableItems } from '../vlm/editableItem';
 import EstimatedProgressBar, { useEstimatedProgress } from '../components/EstimatedProgressBar';
@@ -176,6 +177,9 @@ export default function ScanningGroceriesScreen({ navigation, route }: any) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.content}>
+        {/* Back (mentor feedback: every pushed screen needs a way back). */}
+        <BackButton onPress={() => navigation.goBack()} />
+
         <View style={styles.headerBlock}>
           <Text style={styles.title}>{isReceipt ? 'Scanning receipt' : 'Scanning groceries'}</Text>
           <Text style={styles.subtitle}>

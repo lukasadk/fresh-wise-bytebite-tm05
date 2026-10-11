@@ -14,7 +14,6 @@ import FoodCard from '../components/FoodCard';
 import Button from '../components/Button';
 import ConfirmDialog from '../components/ConfirmDialog';
 import WasteReasonPicker from '../components/WasteReasonPicker';
-import SwipeToManage from '../components/SwipeToManage';
 import ShoppingTickedToast from '../components/ShoppingTickedToast';
 import { Plus, ChevronDown, ChevronUp, List, LayoutGrid, PackageOpen, X, Check } from '../icons/NavIcons';
 import { formatQuantity, getExpiryInfo, formatDisplayDate, usePantry, PantryItem } from '../data/pantryItems';
@@ -608,22 +607,9 @@ export default function PantryScreen({ navigation, route }: any) {
                   onPress={handlePress}
                 />
             );
-            // Grid cards swipe to Recipes like the list rows do (was list-only).
-            // flex: 1 on both Swipeable wrappers keeps cards in a row equal height.
-            return (
-              <View style={styles.gridCell}>
-                {selectMode ? card : (
-                  <SwipeToManage
-                    onManage={() => navigation.navigate('Recipes')}
-                    actionLabel="Recipe"
-                    containerStyle={{ flex: 1 }}
-                    childrenContainerStyle={{ flex: 1 }}
-                  >
-                    {card}
-                  </SwipeToManage>
-                )}
-              </View>
-            );
+            // Tap opens the item (mentor feedback: swipe wasn't discoverable
+            // for first-time users); Food Detail links on to recipes.
+            return <View style={styles.gridCell}>{card}</View>;
           }
           const row = (
             <FoodRow
@@ -641,22 +627,10 @@ export default function PantryScreen({ navigation, route }: any) {
               onPress={handlePress}
             />
           );
-          // Swipe-to-manage is disabled during bulk select -- a tap there
-          // already means "select this item", so a swipe revealing anything
-          // would be a second, conflicting interpretation of the same gesture.
-          //
-          // Tap and swipe now lead to two DIFFERENT places, not variations of
-          // the same one: tap opens this item's own Food Detail page
-          // (handlePress/openItem above); swipe instead goes to Recipes, to
-          // find something to cook with it. There's no per-item recipe
-          // filtering endpoint yet, so swipe lands on the same general
-          // Recipes tab regardless of which item was swiped -- not a
-          // recipe list scoped to that specific ingredient.
-          return selectMode ? row : (
-            <SwipeToManage onManage={() => navigation.navigate('Recipes')} actionLabel="Recipe">
-              {row}
-            </SwipeToManage>
-          );
+          // Tap opens this item's Food Detail (or selects it in bulk mode).
+          // The old swipe-to-Recipes gesture is gone: first-time users didn't
+          // find it, and Food Detail already has "Find recipes with this item".
+          return row;
         }}
         ItemSeparatorComponent={viewMode === 'list' ? () => <View style={{ height: spacing.md }} /> : undefined}
       />

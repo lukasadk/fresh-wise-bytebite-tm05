@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
 import FoodRow from '../components/FoodRow';
-import SwipeToManage from '../components/SwipeToManage';
 import UrgencyOutline, { urgencyPalette } from '../components/UrgencyOutline';
 import { foodIconFor } from '../icons/FoodIcons';
 import { usePantry, getExpiryInfo, formatDisplayDate, PantryItem } from '../data/pantryItems';
@@ -22,16 +21,23 @@ import {
   summariseAtRisk,
 } from '../data/foodValue';
 
+// Already past its date. Shown in its own section ABOVE everything else
+// (mentor feedback): expired food needs a different action -- check it, then
+// record it -- rather than "use it", so it is not mixed into Use Today.
+const isExpired = (item: Pick<PantryItem, 'daysToExpiry'>) =>
+  item.daysToExpiry !== null && item.daysToExpiry !== undefined && item.daysToExpiry < 0;
+
 // AC 2.2.4 -- the three bands, in priority order. Boundaries match
 // getExpiryInfo()/ExpiryPill exactly (Coral Red is 0-days/expired only), so a
 // row's badge colour can never disagree with the section it sits under.
+// Expired items are pulled out first, so "Use Today" is today only.
 const SECTIONS = [
   {
     key: 'today',
     title: 'Use Today',
     color: colors.statusToday,
-    blurb: 'Expired or expiring today.',
-    match: (days: number | null) => days !== null && days <= 0,
+    blurb: 'Expiring today — use these first.',
+    match: (days: number | null) => days === 0,
   },
   {
     key: 'soon',
@@ -72,17 +78,22 @@ export default function UseFirstScreen({ navigation, route }: any) {
   // one here would just double the request on every visit to this screen.
   const { items, loading, error } = usePantry();
 
-  // The single most urgent item gets the hero treatment and is then EXCLUDED
-  // from its section below, so nothing appears on this screen twice.
-  const priority: PantryItem | undefined = items[0];
+  // Expired items get their own section; the hero and bands only show food
+  // that can still be used.
+  const expiredItems = useMemo(() => items.filter(isExpired), [items]);
+  const usable = useMemo(() => items.filter((item) => !isExpired(item)), [items]);
+
+  // The single most urgent usable item gets the hero treatment and is then
+  // EXCLUDED from its section below, so nothing appears on this screen twice.
+  const priority: PantryItem | undefined = usable[0];
 
   const buckets = useMemo(() => {
-    const rest = items.slice(1);
+    const rest = usable.slice(1);
     return SECTIONS.map((section) => ({
       ...section,
       items: rest.filter((item) => section.match(item.daysToExpiry)),
     }));
-  }, [items]);
+  }, [usable]);
 
   const heroExpiry = priority ? getExpiryInfo(priority) : null;
   const heroPalette = urgencyPalette(heroExpiry?.expiryLevel);
@@ -121,35 +132,28 @@ export default function UseFirstScreen({ navigation, route }: any) {
     return () => clearTimeout(timer);
   }, [removedNote]);
 
+  // Tap opens the item (mentor feedback: swipe was not discoverable for
+  // first-time users). Expired rows open Record Outcome directly, since the
+  // only thing left to do with them is say whether they were eaten or wasted.
   const renderRow = (item: PantryItem, withValue: boolean) => {
     const expiry = getExpiryInfo(item);
     const value = withValue ? currentValue(item) : null;
+    const expired = isExpired(item);
     return (
-      // Swipe matches the row's "Swipe for recipe" hint and
-      // Pantry's behaviour; tapping the row still opens Food Detail.
-      <SwipeToManage
+      <FoodRow
         key={item.id}
-        onManage={() =>
-          navigation.navigate('Recipes', {
-            focusFoodName: item.name,
-            focusFoodId: item.id,
-          })
-        }
-        actionLabel="Recipe"
-      >
-        <FoodRow
-          name={item.name}
-          category={item.category}
-          subtitle={item.category}
-          expiryDate={formatDisplayDate(item.expiryDate)}
-          expiryLabel={expiry.rowExpiryLabel}
-          expiryLevel={expiry.expiryLevel}
-          source={item.source}
-          onPress={() => goToDetail(item.id)}
-          valueLabel={withValue ? (value !== null ? formatRM(value) : 'Value unavailable') : undefined}
-          valueMuted={withValue && value === null}
-        />
-      </SwipeToManage>
+        name={item.name}
+        category={item.category}
+        subtitle={item.category}
+        expiryDate={formatDisplayDate(item.expiryDate)}
+        expiryLabel={expiry.rowExpiryLabel}
+        expiryLevel={expiry.expiryLevel}
+        expired={expired}
+        source={item.source}
+        onPress={() => (expired ? navigation.navigate('RecordOutcome', { id: item.id }) : goToDetail(item.id))}
+        valueLabel={withValue ? (value !== null ? formatRM(value) : 'Value unavailable') : undefined}
+        valueMuted={withValue && value === null}
+      />
     );
   };
 
@@ -237,24 +241,43 @@ export default function UseFirstScreen({ navigation, route }: any) {
             <Text style={styles.messageTitle}>Can't reach the API</Text>
             <Text style={styles.messageBody}>{error}</Text>
           </View>
-        ) : !priority || !HeroIcon ? (
+        ) : null}
+
+        {/* Expired -- its own loud section at the top. */}
+        {!showAtRiskList && !error && expiredItems.length > 0 ? (
+          <View style={styles.expiredBlock}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionDot, { backgroundColor: colors.statusToday }]} />
+              <Text style={[styles.sectionTitle, { color: colors.statusToday }]}>Expired</Text>
+              <Text style={styles.expiredCount}>{expiredItems.length}</Text>
+            </View>
+            <Text style={styles.expiredBlurb}>
+              Past their date. Check each one, then tap to record it as eaten or wasted.
+            </Text>
+            <View style={styles.sectionList}>{expiredItems.map((item) => renderRow(item, false))}</View>
+          </View>
+        ) : null}
+
+        {showAtRiskList || (loading && items.length === 0) || error ? null : !priority || !HeroIcon ? (
+          expiredItems.length > 0 ? null : (
           <View style={styles.messageCard}>
             <Text style={styles.messageTitle}>Nothing to prioritise</Text>
             <Text style={styles.messageBody}>
               Your pantry is empty — add food to see what needs using first.
             </Text>
           </View>
+          )
         ) : (
-          <SwipeToManage
-            onManage={() => goToDetail(priority.id)}
-            borderRadius={HERO_RADIUS}
-            // Lets UrgencyOutline's glow extend past the card edge instead of
-            // being clipped by Swipeable's default overflow: 'hidden'.
-            containerStyle={{ overflow: 'visible' }}
-          >
-            {/* Terracotta + pulsing coral outline when expired/today, ochre +
-                pulsing amber outline when 1-3 days, original green otherwise. */}
-            <UrgencyOutline level={heroExpiry?.expiryLevel} borderRadius={HERO_RADIUS}>
+          // Terracotta + pulsing coral outline when due today, ochre + pulsing
+          // amber outline when 1-3 days, original green otherwise. The whole
+          // card taps through to the item.
+          <UrgencyOutline level={heroExpiry?.expiryLevel} borderRadius={HERO_RADIUS}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${priority.name}, ${heroExpiry?.detailExpiryTitle ?? ''}. Opens details`}
+              onPress={() => goToDetail(priority.id)}
+              style={({ pressed }) => pressed && { opacity: 0.94 }}
+            >
               <View style={[styles.hero, { backgroundColor: heroPalette.background }]}>
                 <View style={styles.heroTopRow}>
                   <View style={styles.heroTextBlock}>
@@ -279,11 +302,14 @@ export default function UseFirstScreen({ navigation, route }: any) {
                       })
                     }
                   />
-                  <Text style={[styles.swipeHint, { color: heroPalette.muted }]}>Swipe to manage →</Text>
+                  <View style={styles.detailsCue}>
+                    <Text style={[styles.swipeHint, { color: heroPalette.muted }]}>Details</Text>
+                    <ChevronRight size={16} color={heroPalette.muted} />
+                  </View>
                 </View>
               </View>
-            </UrgencyOutline>
-          </SwipeToManage>
+            </Pressable>
+          </UrgencyOutline>
         )}
 
         {!showAtRiskList && buckets.map((section) =>
@@ -371,6 +397,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  detailsCue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  expiredBlock: {
+    gap: spacing.sm,
+    backgroundColor: colors.expiryUrgentBg,
+    borderWidth: 1,
+    borderColor: colors.alertBorder,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+  },
+  expiredCount: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.white,
+    backgroundColor: colors.statusToday,
+    borderRadius: radii.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+    overflow: 'hidden',
+  },
+  expiredBlurb: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.alertTitle,
+    marginTop: -spacing.xs,
   },
   swipeHint: {
     fontFamily: fonts.semibold,

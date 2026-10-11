@@ -2,6 +2,7 @@ import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii, spacing } from '../theme/theme';
+import BackButton from '../components/BackButton';
 import { foodIconFor } from '../icons/FoodIcons';
 import type { EditableItem } from '../vlm/editableItem';
 import { findDuplicateProductIds } from '../vlm/editableItem';
@@ -23,6 +24,9 @@ export default function DetectionCompleteScreen({ navigation, route }: any) {
         contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.xl }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Back (mentor feedback: every pushed screen needs a way back). */}
+        <BackButton onPress={() => navigation.goBack()} />
+
         <View style={styles.headerBlock}>
           <Text style={styles.title}>Detection complete</Text>
           <Text style={styles.subtitle}>

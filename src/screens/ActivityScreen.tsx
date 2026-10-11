@@ -74,6 +74,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Leaf, Lightbulb } from 'lucide-react-native';
 import { colors, fonts, fontSize, radii, spacing } from '../theme/theme';
 import Button from '../components/Button';
+import BackButton from '../components/BackButton';
 import FoodValueWastedCard from '../components/FoodValueWastedCard';
 import { ChevronRight, Refrigerator, Snowflake, Sun } from '../icons/NavIcons';
 import {
@@ -1531,7 +1532,17 @@ const trendsSummaryStyles = StyleSheet.create({
 });
 
 /** Mockup: leaf badge + serif title + body. Amber variant when above average. */
-function OnTrackCard({ title, body, positive = true }: { title: string; body: string; positive?: boolean }) {
+function OnTrackCard({
+  title,
+  body,
+  positive = true,
+  action,
+}: {
+  title: string;
+  body: string;
+  positive?: boolean;
+  action?: { label: string; onPress: () => void };
+}) {
   return (
     <View style={[onTrackStyles.card, !positive && onTrackStyles.cardWarn]}>
       <LeafBadge
@@ -1542,6 +1553,16 @@ function OnTrackCard({ title, body, positive = true }: { title: string; body: st
       <View style={onTrackStyles.body}>
         <Text style={[onTrackStyles.title, !positive && onTrackStyles.titleWarn]}>{title}</Text>
         <Text style={onTrackStyles.text}>{body}</Text>
+        {action ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={action.onPress}
+            style={({ pressed }) => [onTrackStyles.action, pressed && { opacity: 0.6 }]}
+          >
+            <Text style={[onTrackStyles.actionText, !positive && onTrackStyles.titleWarn]}>{action.label}</Text>
+            <ChevronRight size={14} color={positive ? colors.primary : colors.statusSoon} />
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -1560,6 +1581,8 @@ const onTrackStyles = StyleSheet.create({
     backgroundColor: colors.expiryWarnBg,
   },
   body: { flex: 1, gap: 4 },
+  action: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: spacing.xs },
+  actionText: { fontFamily: fonts.bold, fontSize: fontSize.base, color: colors.primary },
   title: {
     fontFamily: fonts.serif,
     fontSize: 18,
@@ -1978,12 +2001,23 @@ function finishSeries(args: {
     count++;
   }
   const span = `${count} ${periodWord}${count === 1 ? '' : 's'}`;
+  // Say what the numbers MEAN, not just which side of the line they fall on
+  // (mentor feedback): this period's rate, the average it's measured against,
+  // and what to do next.
+  const pct = (v: number) => `${Math.round(v)}%`;
+  const gap = Math.round(Math.abs(latest - goalValue));
+  const comparison =
+    gap === 0
+      ? `This ${periodWord} you wasted ${pct(latest)} of the food you logged — right on your ${avgWord}.`
+      : `This ${periodWord} you wasted ${pct(latest)} of the food you logged, ${gap} point${gap === 1 ? '' : 's'} ${
+          onTrack ? 'better' : 'worse'
+        } than your ${avgWord} of ${pct(goalValue)}.`;
   return {
     ...base,
     streakTitle: onTrack ? 'On track' : 'Above average',
     streakNote: onTrack
-      ? `Your waste rate has stayed at or below your ${avgWord} for ${span}.`
-      : `Your waste rate has been above your ${avgWord} for ${span}. Check the Patterns tab to see what's driving it.`,
+      ? `${comparison} You've stayed at or below average for ${span} — keep using what expires first.`
+      : `${comparison} It's been above average for ${span}; the Patterns tab shows which foods and reasons are driving it.`,
   };
 }
 
@@ -2432,6 +2466,17 @@ export default function ActivityScreen() {
                           title={series.streakTitle}
                           body={series.streakNote}
                           positive={series.streakTitle !== 'Above average'}
+                          // A next step for each verdict, so the message leads somewhere.
+                          action={
+                            series.streakTitle === 'Above average'
+                              ? { label: 'See what is driving it', onPress: () => switchTab('Patterns') }
+                              : series.streakTitle === 'On track'
+                                ? {
+                                    label: 'See what to use first',
+                                    onPress: () => navigation.navigate('UseFirst', { scrollToTop: Date.now() }),
+                                  }
+                                : undefined
+                          }
                         />
                       </>
                     );
@@ -2444,6 +2489,17 @@ export default function ActivityScreen() {
         {/* Alternatives (from Patterns → Key insight) */}
         {showAlternatives && (
           <>
+            {/* Back to Patterns (mentor feedback: no dead ends). */}
+            <View style={styles.subViewBack}>
+              <BackButton
+                onPress={() => {
+                  setShowAlternatives(false);
+                  resetAlternatives();
+                  setSelectedAlternativeId(null);
+                }}
+              />
+              <Text style={styles.subViewBackLabel}>Back to Patterns</Text>
+            </View>
             {alternativesState.status === 'loading' && <OverviewLoading />}
 
             {alternativesState.status === 'error' && (
@@ -2549,6 +2605,17 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  subViewBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: -spacing.sm,
+  },
+  subViewBackLabel: {
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.base,
+    color: colors.textSecondary,
   },
   content: {
     padding: spacing.xxl,

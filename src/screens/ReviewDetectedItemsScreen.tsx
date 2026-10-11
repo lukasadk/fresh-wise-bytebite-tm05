@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
+import BackButton from '../components/BackButton';
 import { foodIconFor } from '../icons/FoodIcons';
 import { addPantryItem, lookupStorage } from '../api/freshwise';
 import type { FoodItemStorage } from '../api/types';
@@ -168,6 +169,9 @@ export default function ReviewDetectedItemsScreen({ navigation, route }: any) {
         contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.xl }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Back (mentor feedback: every pushed screen needs a way back). */}
+        <BackButton onPress={() => navigation.goBack()} />
+
         <View style={styles.headerBlock}>
           <Text style={styles.title}>Review detected items</Text>
           <Text style={styles.subtitle}>Confirm details before adding them to your pantry.</Text>

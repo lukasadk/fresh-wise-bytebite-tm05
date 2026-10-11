@@ -30,12 +30,14 @@ const palette: Record<ExpiryLevel, { bg: string; text: string }> = {
   safe: { bg: colors.expirySafeBg, text: colors.expirySafeText },
 };
 
-export default function ExpiryPill({ label, level }: { label: string; level?: ExpiryLevel }) {
+/** `solid` = filled Coral Red with white text, for items already past their
+ *  date -- louder than the pale "Today" pill so expired food stands out. */
+export default function ExpiryPill({ label, level, solid }: { label: string; level?: ExpiryLevel; solid?: boolean }) {
   const resolved = level ?? levelForDaysLabel(label);
-  const { bg, text } = palette[resolved];
+  const { bg, text } = solid ? { bg: colors.statusToday, text: colors.white } : palette[resolved];
   return (
     <View style={[styles.pill, { backgroundColor: bg }]}>
-      <Text style={[styles.text, { color: text }]}>{label}</Text>
+      <Text style={[styles.text, { color: text }, solid && styles.textSolid]}>{label}</Text>
     </View>
   );
 }
@@ -51,5 +53,8 @@ const styles = StyleSheet.create({
   text: {
     fontFamily: fonts.semibold,
     fontSize: 11,
+  },
+  textSolid: {
+    fontFamily: fonts.bold,
   },
 });

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import { foodIconFor } from '../icons/FoodIcons';
-import { Check, ChevronRight } from '../icons/NavIcons';
+import { Check, ChevronRight, X } from '../icons/NavIcons';
 import { formatAmount, formatWithUnit } from '../data/quantity';
 import { purchaseStateStyle } from '../data/purchaseStates';
 import type { ShoppingItem } from '../api/types';
@@ -12,6 +12,8 @@ type Props = {
   onToggle: () => void;
   /** Opens the Item Purchase Insight page (AC 8.1.4). Omitted = row not tappable. */
   onPress?: () => void;
+  /** Visible remove button (replaces the hidden swipe-to-remove gesture). */
+  onRemove?: () => void;
 };
 
 function formatBoughtDate(iso: string | null): string {
@@ -22,7 +24,7 @@ function formatBoughtDate(iso: string | null): string {
 
 // Same card language as FoodRow (pale green card, soft border, food icon,
 // small pill tags) so the Shopping List reads as part of My Pantry.
-export default function ShoppingRow({ item, onToggle, onPress }: Props) {
+export default function ShoppingRow({ item, onToggle, onPress, onRemove }: Props) {
   const Icon = foodIconFor(item.name, item.category ?? undefined);
   const bought = item.status === 'bought';
   const partial = !bought && item.remaining_qty < item.quantity;
@@ -88,6 +90,17 @@ export default function ShoppingRow({ item, onToggle, onPress }: Props) {
         ) : null}
         {onPress ? <ChevronRight size={16} color={colors.textSecondary} /> : null}
       </View>
+      {onRemove ? (
+        <Pressable
+          onPress={onRemove}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove ${item.name} from the list`}
+          style={({ pressed }) => [styles.removeButton, pressed && { opacity: 0.7 }]}
+        >
+          <X size={14} color={colors.textSecondary} strokeWidth={2.5} />
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 }
@@ -107,6 +120,16 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
+  },
+  removeButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   rowBought: {
     backgroundColor: colors.card,

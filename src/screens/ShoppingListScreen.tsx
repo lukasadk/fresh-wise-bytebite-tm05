@@ -10,7 +10,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import ShoppingRow from '../components/ShoppingRow';
-import SwipeToRemove from '../components/SwipeToRemove';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AlertBanner from '../components/AlertBanner';
 import Button from '../components/Button';
@@ -213,16 +212,17 @@ export default function ShoppingListScreen({ navigation }: any) {
             {toBuy.map((item) => {
               const tappable = item.source === 'suggested' && canOpenInsight;
               return (
-                <SwipeToRemove key={item.list_item_id} onRemove={() => handleRemove(item)}>
-                  <ShoppingRow
-                    item={item}
-                    onToggle={() => handleToggle(item)}
-                    onPress={tappable ? () => openInsight(item) : undefined}
-                  />
-                </SwipeToRemove>
+                // Visible × instead of the old swipe-left gesture (mentor
+                // feedback: first-time users don't discover swipes).
+                <ShoppingRow
+                  key={item.list_item_id}
+                  item={item}
+                  onToggle={() => handleToggle(item)}
+                  onPress={tappable ? () => openInsight(item) : undefined}
+                  onRemove={() => handleRemove(item)}
+                />
               );
             })}
-            <Text style={styles.swipeHint}>Swipe left on an item to remove it</Text>
           </View>
         )}
 

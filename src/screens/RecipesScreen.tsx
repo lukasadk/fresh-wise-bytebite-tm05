@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CalendarCheck, ChefHat, CheckCircle2, ChevronRight, Clock3, Leaf, Plus, RefreshCcw, Sparkles } from 'lucide-react-native';
+import { CalendarCheck, ChefHat, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Leaf, Plus, RefreshCcw, Sparkles } from 'lucide-react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { colors, fonts, radii, spacing } from '../theme/theme';
 import {
@@ -140,7 +140,9 @@ export default function RecipesScreen() {
     ? route.params.focusFoodName
     : null;
   const isWebLayout = Platform.OS === 'web';
-  const mobileCardWidth = Math.max(278, Math.min(330, width - spacing.xxl * 2));
+  // Narrower than the screen so the next card peeks in -- a visible cue that
+  // the row scrolls sideways.
+  const mobileCardWidth = Math.max(260, Math.min(320, width - spacing.xxl * 2 - 44));
   const [recipes, setRecipes] = React.useState<RecipeRecommendation[]>([]);
   const [inventory, setInventory] = React.useState<FoodItem[]>([]);
   // Whole usable pantry, even in ingredient-selection mode -- the Planned tab
@@ -155,6 +157,10 @@ export default function RecipesScreen() {
   // Every recipe title shown since the last full reload, so "Show other
   // recipes" keeps moving on to new ones instead of repeating.
   const shownTitles = React.useRef<string[]>([]);
+  // Earlier sets of three, so "Show other recipes" can be undone with
+  // "Previous recipes" instead of losing the ones the user liked.
+  const [previousSets, setPreviousSets] = React.useState<RecipeRecommendation[][]>([]);
+  const recipesRef = React.useRef<RecipeRecommendation[]>([]);
 
   // Homemade recipes ("My recipes"), saved on the server (/v1/my-recipes).
   const [tab, setTab] = React.useState<RecipesTab>(
@@ -230,6 +236,28 @@ export default function RecipesScreen() {
     }, [loadMine, loadPlanned]),
   );
 
+  // Which of the top-3 cards is showing, for the dots under the carousel.
+  const [cardIndex, setCardIndex] = React.useState(0);
+  const carouselRef = React.useRef<ScrollView>(null);
+  React.useEffect(() => {
+    recipesRef.current = recipes;
+    // A new set always starts on its first card.
+    setCardIndex(0);
+    carouselRef.current?.scrollTo({ x: 0, animated: false });
+  }, [recipes]);
+
+  const goToCard = (index: number) => {
+    const target = Math.max(0, Math.min(recipes.length - 1, index));
+    carouselRef.current?.scrollTo({ x: target * (mobileCardWidth + spacing.md), animated: true });
+    setCardIndex(target);
+  };
+
+  const showPreviousSet = () => {
+    if (!previousSets.length) return;
+    setRecipes(previousSets[previousSets.length - 1]);
+    setPreviousSets(previousSets.slice(0, -1));
+  };
+
   // Available / Missing worked out again from today's pantry.
   const plannedRecipes = React.useMemo(
     () => planned.map((plan) => ({ plan, recipe: plannedToRecommendation(plan, fullPantry) })),
@@ -255,6 +283,7 @@ export default function RecipesScreen() {
 
   React.useEffect(() => {
     shownTitles.current = [];
+    setPreviousSets([]);
     setRecipes([]);
     setInventory([]);
     setLoading(true);
@@ -300,6 +329,12 @@ export default function RecipesScreen() {
       if (!isRefresh) await progress.finish(); // fill to 100% before showing the cards
       const shown = recommended.slice(0, 3);
       shownTitles.current = [...seenBefore, ...shown.map(recipeTitle)];
+      if (different && recipesRef.current.length) {
+        const current = recipesRef.current;
+        setPreviousSets((sets) => [...sets, current]);
+      } else if (!different && !isRefresh) {
+        setPreviousSets([]); // a fresh load starts a new history
+      }
       setRecipes(shown);
     } catch (e: any) {
       setError(e?.message || 'Could not load recipe recommendations.');
@@ -590,11 +625,21 @@ export default function RecipesScreen() {
           <View style={styles.recipeSection}>
             <Text style={styles.sectionTitle}>Top 3 recommendations</Text>
             <ScrollView
+              ref={carouselRef}
               horizontal={!isWebLayout}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={[styles.recipeCards, isWebLayout && styles.recipeCardsWeb]}
               snapToInterval={!isWebLayout ? mobileCardWidth + spacing.md : undefined}
               decelerationRate="fast"
+              scrollEventThrottle={32}
+              onScroll={
+                !isWebLayout
+                  ? (e) => {
+                      const next = Math.round(e.nativeEvent.contentOffset.x / (mobileCardWidth + spacing.md));
+                      if (next !== cardIndex) setCardIndex(Math.max(0, Math.min(recipes.length - 1, next)));
+                    }
+                  : undefined
+              }
             >
               {recipes.map((recipe, index) => {
                 const priority = list(recipe.priority_ingredients ?? recipe.expiring_ingredients_matched);
@@ -675,6 +720,52 @@ export default function RecipesScreen() {
                 );
               })}
             </ScrollView>
+            {/* Mentor feedback: make the sideways swipe visible -- the next card
+                peeks in, and dots + "Next recipe" show there is more. */}
+            {!isWebLayout && recipes.length > 1 ? (
+              <View style={styles.carouselNav}>
+                <View style={styles.carouselDots}>
+                  {recipes.map((r, i) => (
+                    <Pressable
+                      key={`dot-${r.recipe_id}-${i}`}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Show recipe ${i + 1} of ${recipes.length}`}
+                      onPress={() => goToCard(i)}
+                      style={[styles.carouselDot, i === cardIndex && styles.carouselDotActive]}
+                    />
+                  ))}
+                </View>
+                {cardIndex < recipes.length - 1 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => goToCard(cardIndex + 1)}
+                    style={({ pressed }) => [styles.nextRecipe, pressed && { opacity: 0.6 }]}
+                  >
+                    <Text style={styles.nextRecipeText}>
+                      Swipe for next recipe ({cardIndex + 2} of {recipes.length})
+                    </Text>
+                    <ChevronRight size={16} color={colors.primary} strokeWidth={2.4} />
+                  </Pressable>
+                ) : (
+                  <Text style={styles.carouselEnd}>
+                    {cardIndex + 1} of {recipes.length}
+                  </Text>
+                )}
+              </View>
+            ) : null}
+            {/* Going back to the previous set of three after "Show other recipes". */}
+            {previousSets.length > 0 ? (
+              <Pressable
+                style={({ pressed }) => [styles.previousSetButton, pressed && { opacity: 0.85 }]}
+                onPress={showPreviousSet}
+                accessibilityRole="button"
+                accessibilityHint="Brings back the recipes you were looking at before"
+              >
+                <ChevronLeft size={16} color={colors.textSecondary} strokeWidth={2.4} />
+                <Text style={styles.previousSetText}>Previous recipes</Text>
+              </Pressable>
+            ) : null}
             <Pressable
               style={({ pressed }) => [styles.otherButton, pressed && { opacity: 0.85 }]}
               onPress={() => load(false, true)}
@@ -699,6 +790,53 @@ export default function RecipesScreen() {
 }
 
 const styles = StyleSheet.create({
+  carouselNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: -spacing.xs,
+  },
+  nextRecipe: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  nextRecipeText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.primary,
+  },
+  previousSetButton: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: spacing.sm,
+  },
+  previousSetText: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  carouselDots: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  carouselDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.border,
+  },
+  carouselDotActive: {
+    width: 22,
+    backgroundColor: colors.primary,
+  },
+  carouselEnd: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
   safe: {
     flex: 1,
     backgroundColor: colors.background,

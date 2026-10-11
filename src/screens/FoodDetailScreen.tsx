@@ -433,12 +433,15 @@ export default function FoodDetailScreen({ navigation, route }: any) {
 
         {pickError ? <Text style={styles.removeError}>{pickError}</Text> : null}
 
+        {/* A real button (mentor feedback) -- recording what happened to the
+            food is this page's main action, not a footnote link. */}
         <Pressable
-          style={({ pressed }) => [styles.outcomeLink, pressed && { opacity: 0.7 }]}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.outcomeButton, pressed && { opacity: 0.85 }]}
           onPress={() => navigation.navigate('RecordOutcome', { id: item.id })}
         >
-          <Text style={styles.outcomeLinkText}>Record food outcome</Text>
-          <ArrowRight size={16} color={colors.primary} />
+          <Text style={styles.outcomeButtonText}>Record food outcome</Text>
+          <ArrowRight size={18} color={colors.white} />
         </Pressable>
 
         {removeError ? <Text style={styles.removeError}>{removeError}</Text> : null}
@@ -839,17 +842,20 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     color: colors.textSecondary,
   },
-  outcomeLink: {
+  outcomeButton: {
+    alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs + 2,
-    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+    paddingVertical: spacing.md + 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
   },
-  outcomeLinkText: {
+  outcomeButtonText: {
     fontFamily: fonts.bold,
-    fontSize: 14,
-    color: colors.primary,
+    fontSize: 15,
+    color: colors.white,
   },
   removeButton: {
     alignSelf: 'stretch',
