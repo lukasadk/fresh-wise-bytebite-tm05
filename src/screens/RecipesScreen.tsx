@@ -425,6 +425,24 @@ export default function RecipesScreen() {
 
         <TabSwitch tab={tab} onChange={setTab} />
 
+        {/* Ingredient picker entry: the picker itself lives on My Pantry, which
+            users looking for recipes don't think to open. */}
+        {tab === 'recommended' && !selectionMode ? (
+          <Pressable
+            style={({ pressed }) => [styles.pickEntry, pressed && { opacity: 0.85 }]}
+            onPress={changeIngredients}
+            accessibilityRole="button"
+            accessibilityHint="Opens My Pantry so you can tick the foods you want to cook with"
+          >
+            <ChefHat size={18} color={colors.primary} strokeWidth={2.4} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pickEntryTitle}>Choose your own ingredients</Text>
+              <Text style={styles.pickEntryText}>Pick foods from your pantry and get recipes for just those.</Text>
+            </View>
+            <ChevronRight size={18} color={colors.primary} strokeWidth={2.4} />
+          </Pressable>
+        ) : null}
+
         {tab === 'planned' ? (
           <View style={styles.recipeSection}>
             <Text style={styles.sectionTitle}>
@@ -1291,6 +1309,27 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 14,
     color: colors.white,
+  },
+  pickEntry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.primaryPale,
+    backgroundColor: colors.primaryTint,
+  },
+  pickEntryTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  pickEntryText: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textSecondary,
   },
   otherButton: {
     alignSelf: 'center',
