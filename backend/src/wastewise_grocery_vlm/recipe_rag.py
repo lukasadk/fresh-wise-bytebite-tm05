@@ -60,6 +60,10 @@ RECIPE_IMAGE_URLS: dict[str, str] = {
 # where that behaviour was especially misleading.
 RECIPE_IMAGE_BY_ID: dict[str, str] = {
     "my-009": "https://upload.wikimedia.org/wikipedia/commons/7/76/Telur_goreng_tomato_kacau_dengan_nasi.jpg",
+    "my-017": "/static/recipe-images/curated-bread/roti-john-served.jpg",
+    "my-031": "/static/recipe-images/curated-bread/french-toast-jam-butter.jpg",
+    "my-032": "/static/recipe-images/curated-bread/french-toast-banana-blueberries.jpg",
+    "my-033": "/static/recipe-images/curated-bread/bread-pudding-june-2020.jpg",
 }
 
 RECIPE_IMAGE_BY_TITLE: dict[str, str] = {
@@ -78,6 +82,79 @@ RECIPE_IMAGE_COMBINATIONS: tuple[tuple[frozenset[str], str], ...] = (
     (
         frozenset({"egg", "rice"}),
         "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8e/Egg_Fried_rice.jpg/1280px-Egg_Fried_rice.jpg",
+    ),
+)
+
+
+# Curated real-food photos are stored with the API so recipe cards do not
+# depend on a third-party CDN at runtime. The pools are intentionally specific
+# to the finished dish. A stable hash distributes repeated generated recipe
+# variants across several accurate photos without changing between requests.
+RECIPE_IMAGE_TITLE_INGREDIENT_POOLS: tuple[
+    tuple[tuple[str, ...], frozenset[str], tuple[str, ...]], ...
+] = (
+    (
+        ("stuffed roti canai",),
+        frozenset({"sardine"}),
+        ("/static/recipe-images/curated-bread/roti-sardin.jpg",),
+    ),
+    (
+        ("ramly style burger", "ramly burger"),
+        frozenset({"beef"}),
+        ("/static/recipe-images/curated-bread/beef-burger-malaysia.jpg",),
+    ),
+)
+
+RECIPE_IMAGE_TITLE_POOLS: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
+    (
+        ("roti john",),
+        ("/static/recipe-images/curated-bread/roti-john-served.jpg",),
+    ),
+    (
+        ("kaya toast", "kaya bread"),
+        (
+            "/static/recipe-images/curated-bread/kaya-toast-merlion-cafe.jpg",
+            "/static/recipe-images/curated-bread/kaya-toast-sweet-breakfast.jpg",
+            "/static/recipe-images/curated-bread/kaya-toast-klia.jpg",
+            "/static/recipe-images/curated-bread/kaya-toast-ipoh.jpg",
+            "/static/recipe-images/curated-bread/kaya-toast-egg-dip.jpg",
+            "/static/recipe-images/curated-bread/kaya-steamed-bread.jpg",
+        ),
+    ),
+    (
+        ("condensed milk toast", "roti bakar susu", "milk toast"),
+        ("/static/recipe-images/curated-bread/condensed-milk-toast.jpg",),
+    ),
+    (
+        ("french toast",),
+        (
+            "/static/recipe-images/curated-bread/french-toast-berries.jpg",
+            "/static/recipe-images/curated-bread/french-toast-jam-butter.jpg",
+            "/static/recipe-images/curated-bread/french-toast-banana-blueberries.jpg",
+        ),
+    ),
+    (
+        ("bread pudding",),
+        (
+            "/static/recipe-images/curated-bread/bread-pudding-june-2020.jpg",
+            "/static/recipe-images/curated-bread/bread-pudding-cruise.jpg",
+        ),
+    ),
+    (
+        ("stuffed roti canai",),
+        (
+            "/static/recipe-images/curated-bread/murtabak.jpg",
+            "/static/recipe-images/curated-bread/murtabak-raja.jpg",
+            "/static/recipe-images/curated-bread/roti-canai-lepak.jpg",
+            "/static/recipe-images/curated-bread/roti-canai-dal-kl.jpg",
+        ),
+    ),
+    (
+        ("ramly style burger", "ramly burger"),
+        (
+            "/static/recipe-images/curated-bread/ramly-burger.jpg",
+            "/static/recipe-images/curated-bread/burger-malaysia-alt.jpg",
+        ),
     ),
 )
 
@@ -333,6 +410,13 @@ def _generated_recipe_image_manifest() -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
+def _stable_image_choice(recipe_id: str, title: str, image_urls: tuple[str, ...]) -> str:
+    """Choose from a precise image pool deterministically for repeatable UI."""
+
+    digest = sha256(f"{recipe_id}|{_clean(title)}".encode("utf-8")).digest()
+    return image_urls[int.from_bytes(digest[:8], "big") % len(image_urls)]
+
+
 def _image_for_recipe(
     recipe_id: str,
     title: str,
@@ -340,13 +424,6 @@ def _image_for_recipe(
     explicit_url: str | None = None,
 ) -> str:
     """Return the closest known image without letting a broad keyword win."""
-
-    generated_entry = _generated_recipe_image_manifest().get(recipe_id)
-    generated_path = generated_entry.get("path") if isinstance(generated_entry, dict) else None
-    if isinstance(generated_path, str) and generated_path.startswith("/static/recipe-images/"):
-        generated_file = PROJECT_ROOT / "app" / "static" / generated_path.removeprefix("/static/")
-        if generated_file.is_file():
-            return generated_path
 
     if recipe_id in RECIPE_IMAGE_BY_ID:
         return RECIPE_IMAGE_BY_ID[recipe_id]
@@ -362,17 +439,37 @@ def _image_for_recipe(
         if alias in cleaned_title
     }
     recipe_tokens = canonical_ingredients | title_tokens
+
+    for title_patterns, required_ingredients, image_urls in RECIPE_IMAGE_TITLE_INGREDIENT_POOLS:
+        if (
+            any(pattern in cleaned_title for pattern in title_patterns)
+            and required_ingredients.issubset(recipe_tokens)
+        ):
+            return _stable_image_choice(recipe_id, title, image_urls)
+
+    for title_patterns, image_urls in RECIPE_IMAGE_TITLE_POOLS:
+        if any(pattern in cleaned_title for pattern in title_patterns):
+            return _stable_image_choice(recipe_id, title, image_urls)
+
     for required, image_url in RECIPE_IMAGE_COMBINATIONS:
         if required.issubset(recipe_tokens):
             return image_url
 
-    # The 500 synthetic hf-my records reused eleven representative source
-    # images across hundreds of ingredient variants. Those URLs are useful as
-    # dataset provenance but are not reliable recipe-card photos. Prefer the
-    # title/ingredient fallback unless an exact per-recipe AI image exists in
-    # the manifest (handled first above).
+    # A non-synthetic recipe's own image is stronger evidence than its generic
+    # generated illustration. The 500 hf-my records reused eleven source
+    # photos across hundreds of variants, so their explicit URLs remain
+    # provenance only and are deliberately not used as recipe-card photos.
     if explicit_url and explicit_url.strip() and not recipe_id.startswith("hf-my-"):
         return explicit_url.strip()
+
+    # AI-generated per-recipe images remain a useful last-resort fallback, but
+    # they must never mask a curated exact-dish photo above.
+    generated_entry = _generated_recipe_image_manifest().get(recipe_id)
+    generated_path = generated_entry.get("path") if isinstance(generated_entry, dict) else None
+    if isinstance(generated_path, str) and generated_path.startswith("/static/recipe-images/"):
+        generated_file = PROJECT_ROOT / "app" / "static" / generated_path.removeprefix("/static/")
+        if generated_file.is_file():
+            return generated_path
     return _image_for_keywords(title, *ingredients)
 
 

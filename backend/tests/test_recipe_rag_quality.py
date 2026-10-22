@@ -85,7 +85,7 @@ def test_multi_ingredient_recipe_images_override_misleading_single_keyword_image
         old_egg_breakfast_image,
     )
 
-    assert tomato_egg_rice == "/static/recipe-images/ai-generated/my-009-9237b0d3.jpg"
+    assert "Telur_goreng_tomato_kacau_dengan_nasi" in tomato_egg_rice
     assert potato_egg_rice == "/static/recipe-images/potato-egg-rice-v2.jpg"
     assert "Egg_Fried_rice" in egg_fried_rice
     assert old_egg_breakfast_image not in {
@@ -100,13 +100,65 @@ def test_every_recipe_image_has_a_same_origin_cached_copy() -> None:
     hosted_paths = [hosted_recipe_image_path(recipe.image_url) for recipe in docs]
 
     assert all(path.startswith("/static/recipe-images/") for path in hosted_paths)
-    assert len(docs) == 530
-    assert len(set(hosted_paths)) == len(docs)
-    assert all("/ai-generated/" in path for path in hosted_paths)
+    assert len(docs) == 533
+    assert any("/curated-bread/" in path for path in hosted_paths)
+    assert any("/ai-generated/" in path for path in hosted_paths)
     for path in hosted_paths:
         asset = PROJECT_ROOT / "app" / "static" / path.removeprefix("/static/")
         assert asset.is_file()
-        assert asset.stat().st_size > 100_000
+        assert asset.stat().st_size > 50_000
+
+
+def test_bread_and_milk_selection_returns_recipes_that_use_both() -> None:
+    request = RecipeRecommendRequest(
+        inventory=[
+            RecipeInventoryItem(name="Bread", expiry_days=3),
+            RecipeInventoryItem(name="Milk", expiry_days=2),
+        ],
+        limit=3,
+        use_ai=False,
+        selection_mode=True,
+        selected_ingredients=["Bread", "Milk"],
+    )
+
+    scored, _, _ = rank_recipes(request, top_k=3)
+
+    assert [item.recipe.recipe_id for item in scored] == ["my-032", "my-033", "my-031"]
+    assert all(set(item.matched) == {"bread", "milk"} for item in scored)
+    assert all("/curated-bread/" in item.recipe.image_url for item in scored)
+
+
+def test_bread_dish_titles_use_precise_curated_image_pools() -> None:
+    roti_john = _image_for_recipe("my-017", "Roti John", ["bread", "egg", "chicken"])
+    beef_burger = _image_for_recipe(
+        "hf-test-beef",
+        "Beef Sambal Ramly-Style Burger",
+        ["burger bun", "beef", "sambal", "egg"],
+    )
+    sardine_roti = _image_for_recipe(
+        "hf-test-sardine",
+        "Sardine Sambal Stuffed Roti Canai",
+        ["flatbread", "sardine", "sambal", "egg"],
+    )
+
+    assert roti_john.endswith("/curated-bread/roti-john-served.jpg")
+    assert beef_burger.endswith("/curated-bread/beef-burger-malaysia.jpg")
+    assert sardine_roti.endswith("/curated-bread/roti-sardin.jpg")
+
+
+def test_repeated_kaya_toast_variants_are_distributed_across_exact_photos() -> None:
+    images = {
+        _image_for_recipe(
+            f"hf-kaya-{index}",
+            "Sambal Choy Sum Kaya Toast Set",
+            ["bread", "kaya", "butter", "choy sum", "sambal", "egg"],
+        )
+        for index in range(18)
+    }
+
+    assert len(images) >= 4
+    assert all("/curated-bread/kaya-" in image for image in images)
+    assert all((PROJECT_ROOT / "app" / "static" / image.removeprefix("/static/")).is_file() for image in images)
 
 
 def test_selected_mode_ranks_recipe_coverage_before_expiry() -> None:

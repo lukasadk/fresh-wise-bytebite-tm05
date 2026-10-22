@@ -2235,6 +2235,38 @@ const RECIPE_IMAGES = {
   fruit: '/static/recipe-images/fallback-fruit-v2.png',
 } as const;
 
+const CURATED_BREAD_IMAGES = {
+  rotiJohn: ['/static/recipe-images/curated-bread/roti-john-served.jpg'],
+  kayaToast: [
+    '/static/recipe-images/curated-bread/kaya-toast-merlion-cafe.jpg',
+    '/static/recipe-images/curated-bread/kaya-toast-sweet-breakfast.jpg',
+    '/static/recipe-images/curated-bread/kaya-toast-klia.jpg',
+    '/static/recipe-images/curated-bread/kaya-toast-ipoh.jpg',
+    '/static/recipe-images/curated-bread/kaya-toast-egg-dip.jpg',
+    '/static/recipe-images/curated-bread/kaya-steamed-bread.jpg',
+  ],
+  milkToast: ['/static/recipe-images/curated-bread/condensed-milk-toast.jpg'],
+  frenchToast: [
+    '/static/recipe-images/curated-bread/french-toast-berries.jpg',
+    '/static/recipe-images/curated-bread/french-toast-jam-butter.jpg',
+    '/static/recipe-images/curated-bread/french-toast-banana-blueberries.jpg',
+  ],
+  breadPudding: [
+    '/static/recipe-images/curated-bread/bread-pudding-june-2020.jpg',
+    '/static/recipe-images/curated-bread/bread-pudding-cruise.jpg',
+  ],
+  stuffedRoti: [
+    '/static/recipe-images/curated-bread/murtabak.jpg',
+    '/static/recipe-images/curated-bread/murtabak-raja.jpg',
+    '/static/recipe-images/curated-bread/roti-canai-lepak.jpg',
+    '/static/recipe-images/curated-bread/roti-canai-dal-kl.jpg',
+  ],
+  ramlyBurger: [
+    '/static/recipe-images/curated-bread/ramly-burger.jpg',
+    '/static/recipe-images/curated-bread/burger-malaysia-alt.jpg',
+  ],
+} as const;
+
 const recipeImageBaseUrl = (
   process.env.EXPO_PUBLIC_GROCERY_AI_API_URL
   ?? process.env.EXPO_PUBLIC_WASTEWISE_BROWSER_MODEL_API_URL
@@ -2245,11 +2277,27 @@ function hostedRecipeImage(path: string): string {
   return path.startsWith('/') ? `${recipeImageBaseUrl}${path}` : path;
 }
 
+function stableRecipeImage(title: string, images: readonly string[]): string {
+  let hash = 2166136261;
+  for (let index = 0; index < title.length; index += 1) {
+    hash ^= title.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return images[(hash >>> 0) % images.length];
+}
+
 function imageForRecipe(hint: MalaysianRecipeHint): string {
   const title = normalise(hint.title);
   const text = normalise([hint.title, ...hint.ingredients].join(' '));
   let image: string;
-  if (/noodle|mee|bee hoon|vermicelli|laksa|ramen/.test(text)) image = RECIPE_IMAGES.noodles;
+  if (/roti john/.test(title)) image = stableRecipeImage(title, CURATED_BREAD_IMAGES.rotiJohn);
+  else if (/kaya (toast|bread)/.test(title)) image = stableRecipeImage(title, CURATED_BREAD_IMAGES.kayaToast);
+  else if (/condensed milk toast|roti bakar susu|milk toast/.test(title)) image = stableRecipeImage(title, CURATED_BREAD_IMAGES.milkToast);
+  else if (/french toast/.test(title)) image = stableRecipeImage(title, CURATED_BREAD_IMAGES.frenchToast);
+  else if (/bread pudding/.test(title)) image = stableRecipeImage(title, CURATED_BREAD_IMAGES.breadPudding);
+  else if (/stuffed roti canai|murtabak/.test(title)) image = stableRecipeImage(title, CURATED_BREAD_IMAGES.stuffedRoti);
+  else if (/ramly style burger|ramly burger/.test(title)) image = stableRecipeImage(title, CURATED_BREAD_IMAGES.ramlyBurger);
+  else if (/noodle|mee|bee hoon|vermicelli|laksa|ramen/.test(text)) image = RECIPE_IMAGES.noodles;
   else if (/bread|roti|toast|sandwich/.test(title)) image = RECIPE_IMAGES.bread;
   else if (/curry|kari|masak lemak|santan|coconut milk/.test(text)) image = RECIPE_IMAGES.curry;
   else if (/fish|ikan|sardine|salmon|prawn|shrimp/.test(text)) image = RECIPE_IMAGES.fish;

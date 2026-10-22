@@ -53,6 +53,15 @@ const groceryAiBaseUrl = (
 const groceryAiServiceKey = (process.env.EXPO_PUBLIC_GROCERY_AI_SERVICE_KEY ?? '').trim();
 const groceryAiTimeoutMs = 60_000;
 const groceryAiSharesMainApi = groceryAiBaseUrl === API_BASE_URL.replace(/\/+$/, '');
+
+function absoluteGroceryAiAssetUrl(pathOrUrl: unknown): string | null {
+  if (typeof pathOrUrl !== 'string') return null;
+  const value = pathOrUrl.trim();
+  if (!value) return null;
+  if (/^(?:https?:|data:|file:|content:)/i.test(value)) return value;
+  return `${groceryAiBaseUrl}${value.startsWith('/') ? '' : '/'}${value}`;
+}
+
 type RecipeRagOptions = {
   limit?: number;
   language?: 'en' | 'zh';
@@ -923,7 +932,7 @@ export async function getRagRecipeRecommendations(
           ? recipe.ingredient_quantities.map(String).filter(Boolean)
           : [],
         steps: Array.isArray(recipe?.steps) ? recipe.steps.map(String).filter(Boolean) : [],
-        image_url: typeof recipe?.image_url === 'string' && recipe.image_url.trim() ? recipe.image_url.trim() : null,
+        image_url: absoluteGroceryAiAssetUrl(recipe?.image_url),
         image_alt: typeof recipe?.image_alt === 'string' && recipe.image_alt.trim()
           ? recipe.image_alt.trim()
           : `Serving suggestion for ${title}`,

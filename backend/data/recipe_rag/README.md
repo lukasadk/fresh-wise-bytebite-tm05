@@ -1,6 +1,6 @@
 # FreshWise Malaysian Recipe RAG
 
-The runtime knowledge base currently contains 530 Malaysian recipe records. Every
+The runtime knowledge base currently contains 533 Malaysian recipe records. Every
 recipe has ingredient quantities, preparation and cooking times, at least six
 numbered cooking instructions, an HTTPS image URL, and alternative text.
 
@@ -54,7 +54,8 @@ Check the current Kaggle dataset licence before redistributing its files.
 
 ## Data files
 
-- `mini_recipes.json`: original 18 detailed recipes.
+- `mini_recipes.json`: 21 detailed recipes, including three bread-and-milk
+  recipes added for precise Pantry matching.
 - `malaysian_recipes_expanded.json`: 12 additional detailed recipes.
 - `generated_recipes_500.json`: 500 deterministic, image-grounded Malaysian
   recipe variants generated from verified dataset row metadata.

@@ -144,6 +144,216 @@
       "file_title": "potato-egg-rice-v2.jpg",
       "source_page": "FreshWise project-generated asset",
       "license": "Project asset; generated with the built-in image generation tool"
+    },
+    {
+      "id": "commons-roti-john-served",
+      "recipe_id": "title:roti-john",
+      "file_title": "Roti John - served.jpg",
+      "local_path": "/static/recipe-images/curated-bread/roti-john-served.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Roti_John_-_served.jpg",
+      "author": "stef yau",
+      "license": "CC BY 2.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-kaya-toast-merlion-cafe",
+      "recipe_id": "title:kaya-toast",
+      "file_title": "Dessert Merlion Singapore Cafe Kaya Toast.jpg",
+      "local_path": "/static/recipe-images/curated-bread/kaya-toast-merlion-cafe.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Dessert_Merlion_Singapore_Cafe_Kaya_Toast.jpg",
+      "author": "Deoma12",
+      "license": "CC BY-SA 4.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-kaya-toast-sweet-breakfast",
+      "recipe_id": "title:kaya-toast",
+      "file_title": "Kaya Toast, a sweet breakfast!.jpg",
+      "local_path": "/static/recipe-images/curated-bread/kaya-toast-sweet-breakfast.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Kaya_Toast,_a_sweet_breakfast!.jpg",
+      "author": "Exdintary",
+      "license": "CC BY-SA 4.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-kaya-toast-klia",
+      "recipe_id": "title:kaya-toast",
+      "file_title": "Kaya toast with butter set, Ya Kun Kaya Toast, KLIA1, 2025 (01).jpg",
+      "local_path": "/static/recipe-images/curated-bread/kaya-toast-klia.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Kaya_toast_with_butter_set,_Ya_Kun_Kaya_Toast,_KLIA1,_2025_(01).jpg",
+      "author": "Bahnfrend",
+      "license": "CC BY-SA 4.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-kaya-toast-ipoh",
+      "recipe_id": "title:kaya-toast",
+      "file_title": "Kaya toast, Yinzo Kopi, Ipoh, Malaysia with cup of coffee.jpg",
+      "local_path": "/static/recipe-images/curated-bread/kaya-toast-ipoh.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Kaya_toast,_Yinzo_Kopi,_Ipoh,_Malaysia_with_cup_of_coffee.jpg",
+      "author": "Sharon Hahn Darlin",
+      "license": "CC BY 2.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-kaya-toast-egg-dip",
+      "recipe_id": "title:kaya-toast",
+      "file_title": "Kaya toast dip into soft boiled egg.jpg",
+      "local_path": "/static/recipe-images/curated-bread/kaya-toast-egg-dip.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Kaya_toast_dip_into_soft_boiled_egg.jpg",
+      "author": "Pinklily08",
+      "license": "CC BY-SA 4.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-kaya-steamed-bread",
+      "recipe_id": "title:kaya-bread",
+      "file_title": "Kaya butter steamed bread from Ya Kun Kaya Toast, Singapore - 20160716-01.jpg",
+      "local_path": "/static/recipe-images/curated-bread/kaya-steamed-bread.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Kaya_butter_steamed_bread_from_Ya_Kun_Kaya_Toast,_Singapore_-_20160716-01.jpg",
+      "author": "Jacklee",
+      "license": "CC BY-SA 4.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-condensed-milk-toast",
+      "recipe_id": "title:milk-toast",
+      "file_title": "Condensed milk toast.jpg",
+      "local_path": "/static/recipe-images/curated-bread/condensed-milk-toast.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Condensed_milk_toast.jpg",
+      "author": "Gideon Tsang",
+      "license": "CC BY-SA 2.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-french-toast-berries",
+      "recipe_id": "title:french-toast",
+      "file_title": "Carissa Gan 2016-02-18 (Unsplash LdfLThHJB7c).jpg",
+      "local_path": "/static/recipe-images/curated-bread/french-toast-berries.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Carissa_Gan_2016-02-18_(Unsplash_LdfLThHJB7c).jpg",
+      "author": "Carissa Gan",
+      "license": "CC0 1.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-french-toast-jam-butter",
+      "recipe_id": "title:french-toast",
+      "file_title": "A French Toast with Fruit jam and butter.jpg",
+      "local_path": "/static/recipe-images/curated-bread/french-toast-jam-butter.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:A_French_Toast_with_Fruit_jam_and_butter.jpg",
+      "author": "Peachyeung316",
+      "license": "CC BY-SA 4.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-french-toast-banana-blueberries",
+      "recipe_id": "title:french-toast",
+      "file_title": "Banana bread French toast with blueberries (35504201734).jpg",
+      "local_path": "/static/recipe-images/curated-bread/french-toast-banana-blueberries.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Banana_bread_French_toast_with_blueberries_(35504201734).jpg",
+      "author": "Ruth Hartnup",
+      "license": "CC BY 2.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-bread-pudding-june-2020",
+      "recipe_id": "title:bread-pudding",
+      "file_title": "Bread pudding June 2020.jpg",
+      "local_path": "/static/recipe-images/curated-bread/bread-pudding-june-2020.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Bread_pudding_June_2020.jpg",
+      "author": "Philafrenzy",
+      "license": "CC BY-SA 4.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-bread-pudding-cruise",
+      "recipe_id": "title:bread-pudding",
+      "file_title": "Bread pudding on cruise ship.jpeg",
+      "local_path": "/static/recipe-images/curated-bread/bread-pudding-cruise.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Bread_pudding_on_cruise_ship.jpeg",
+      "author": "Grandmaster Huon",
+      "license": "CC0 1.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-murtabak-stuffed-roti",
+      "recipe_id": "title:stuffed-roti-canai",
+      "file_title": "Murtabak.jpg",
+      "local_path": "/static/recipe-images/curated-bread/murtabak.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Murtabak.jpg",
+      "author": "Mojackjutaily",
+      "license": "CC BY-SA 4.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-murtabak-raja",
+      "recipe_id": "title:stuffed-roti-canai",
+      "file_title": "Murtabak Raja Kelantan.jpg",
+      "local_path": "/static/recipe-images/curated-bread/murtabak-raja.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Murtabak_Raja_Kelantan.jpg",
+      "author": "Yosri",
+      "license": "CC BY-SA 3.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-roti-canai-lepak",
+      "recipe_id": "title:stuffed-roti-canai",
+      "file_title": "Roti chanai at Lepak Victoria Park (cropped).jpg",
+      "local_path": "/static/recipe-images/curated-bread/roti-canai-lepak.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Roti_chanai_at_Lepak_Victoria_Park_(cropped).jpg",
+      "author": "Orderinchaos",
+      "license": "CC BY-SA 4.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-roti-canai-dal-kl",
+      "recipe_id": "title:stuffed-roti-canai",
+      "file_title": "Roti canai with dal in Kuala Lumpur, July 2014.jpg",
+      "local_path": "/static/recipe-images/curated-bread/roti-canai-dal-kl.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Roti_canai_with_dal_in_Kuala_Lumpur,_July_2014.jpg",
+      "author": "Sunnya343",
+      "license": "CC BY-SA 4.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-roti-sardin",
+      "recipe_id": "title:stuffed-roti-canai+sardine",
+      "file_title": "Roti sardin 20231105 101634.jpg",
+      "local_path": "/static/recipe-images/curated-bread/roti-sardin.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Roti_sardin_20231105_101634.jpg",
+      "author": "Wiki Farazi",
+      "license": "CC0 1.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-ramly-burger",
+      "recipe_id": "title:ramly-style-burger",
+      "file_title": "Burger Ramli (Gerai Burger).jpg",
+      "local_path": "/static/recipe-images/curated-bread/ramly-burger.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Burger_Ramli_(Gerai_Burger).jpg",
+      "author": "DominicTei",
+      "license": "CC BY-SA 4.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-burger-malaysia-alt",
+      "recipe_id": "title:ramly-style-burger",
+      "file_title": "Burger 1.jpg",
+      "local_path": "/static/recipe-images/curated-bread/burger-malaysia-alt.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Burger_1.jpg",
+      "author": "Aryan Dubey",
+      "license": "CC BY-SA 4.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
+    },
+    {
+      "id": "commons-beef-burger-malaysia",
+      "recipe_id": "title:ramly-style-burger+beef",
+      "file_title": "Beef Burger In Kota Kinabalu, Malaysia.jpg",
+      "local_path": "/static/recipe-images/curated-bread/beef-burger-malaysia.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Beef_Burger_In_Kota_Kinabalu,_Malaysia.jpg",
+      "author": "thienzieyung",
+      "license": "CC BY 2.0",
+      "modifications": "Cropped to 3:2, resized, colour/contrast adjusted, and JPEG-compressed by FreshWise"
     }
   ]
 }

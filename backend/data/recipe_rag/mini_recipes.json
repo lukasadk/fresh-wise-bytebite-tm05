@@ -358,5 +358,65 @@
     "cook_minutes": 5,
     "tags": ["malaysian-chinese", "vegetable", "quick", "side-dish"],
     "servings": 2
+  },
+  {
+    "recipe_id": "my-031",
+    "title": "Kaya French Toast",
+    "ingredients": ["bread", "milk", "egg", "kaya", "butter"],
+    "ingredient_quantities": ["4 slices sandwich bread", "120 ml full cream milk", "2 eggs", "3 tbsp kaya", "1 tbsp butter", "1 pinch salt"],
+    "steps": [
+      "Spread the kaya over two bread slices, top with the remaining slices, and press the edges gently to make two sandwiches.",
+      "Whisk the milk, eggs, and salt in a shallow bowl for 45 seconds until evenly combined.",
+      "Dip each sandwich for 20 seconds per side so the bread absorbs some custard without becoming soggy.",
+      "Melt half the butter in a non-stick pan over medium-low heat and add one sandwich.",
+      "Cook for 3 to 4 minutes per side until deep golden and the egg custard is set, then repeat with the remaining butter and sandwich.",
+      "Rest for 1 minute, cut each sandwich diagonally, and serve warm with no uncooked egg visible in the centre."
+    ],
+    "image_url": "/static/recipe-images/curated-bread/french-toast-jam-butter.jpg",
+    "image_alt": "Golden kaya French toast served warm on a plate",
+    "prep_minutes": 8,
+    "cook_minutes": 14,
+    "tags": ["malaysian", "kopitiam-inspired", "bread", "milk", "breakfast"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-032",
+    "title": "Banana Milk French Toast",
+    "ingredients": ["bread", "milk", "egg", "banana", "butter"],
+    "ingredient_quantities": ["4 slices sandwich bread", "150 ml full cream milk", "2 eggs", "1 ripe banana", "1 tbsp butter", "1/4 tsp ground cinnamon"],
+    "steps": [
+      "Slice the banana into thin rounds and arrange half between two pairs of bread slices to form two sandwiches.",
+      "Whisk the milk, eggs, and cinnamon in a shallow bowl for 45 seconds until smooth.",
+      "Dip each sandwich for 20 seconds per side, keeping the banana filling inside the bread.",
+      "Melt half the butter in a non-stick pan over medium-low heat and cook one sandwich for 3 to 4 minutes per side.",
+      "Repeat with the remaining butter and sandwich until both are golden and the egg custard is fully set.",
+      "Rest for 1 minute, top with the remaining banana slices, and serve warm."
+    ],
+    "image_url": "/static/recipe-images/curated-bread/french-toast-banana-blueberries.jpg",
+    "image_alt": "Banana French toast served with fresh fruit",
+    "prep_minutes": 8,
+    "cook_minutes": 14,
+    "tags": ["malaysian-home-cooking", "bread", "milk", "banana", "breakfast"],
+    "servings": 2
+  },
+  {
+    "recipe_id": "my-033",
+    "title": "Bread and Milk Pudding",
+    "ingredients": ["bread", "milk", "egg", "sugar", "butter"],
+    "ingredient_quantities": ["6 slices day-old bread", "350 ml full cream milk", "2 eggs", "3 tbsp sugar", "1 tbsp butter", "2 tbsp raisins (optional)", "1/4 tsp ground cinnamon"],
+    "steps": [
+      "Heat the oven to 180 C, butter a 20 cm baking dish, and tear the bread into bite-sized pieces.",
+      "Arrange the bread and optional raisins evenly in the prepared dish.",
+      "Whisk the milk, eggs, sugar, and cinnamon for 1 minute until the sugar begins to dissolve.",
+      "Pour the custard over the bread, press the pieces down gently, and leave them to soak for 10 minutes.",
+      "Bake at 180 C for 28 to 32 minutes until the top is golden and the centre is set rather than liquid.",
+      "Cool for 8 minutes before cutting, then serve warm."
+    ],
+    "image_url": "/static/recipe-images/curated-bread/bread-pudding-june-2020.jpg",
+    "image_alt": "Golden bread and milk pudding with raisins",
+    "prep_minutes": 15,
+    "cook_minutes": 32,
+    "tags": ["malaysian-home-cooking", "bread", "milk", "dessert", "reduce-waste"],
+    "servings": 4
   }
 ]
