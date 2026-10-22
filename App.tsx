@@ -57,6 +57,7 @@ import { colors, fonts, radii, spacing } from './src/theme/theme';
 import { registerDevice } from './src/api/freshwise';
 import { isFreshInstall, checkClipboardForDeviceId, adoptDeviceId, copyDeviceIdToClipboard } from './src/api/device';
 import { registerPushNotificationsAsync } from './src/notifications/pushRegistration';
+import { prepareExpiryReminders } from './src/notifications/localExpiryReminders';
 import {
   BUYING_HABITS_ROUTE,
   NEXT_SHOP_ROUTE,
@@ -236,6 +237,7 @@ export default function App() {
   useEffect(() => {
     if (UI_PREVIEW_MODE || !landingDismissed || !profileRegistered || pushRegistrationStarted.current) return;
     pushRegistrationStarted.current = true;
+    prepareExpiryReminders().catch(() => {});
     registerPushNotificationsAsync().catch(() => {
       // Notifications are helpful but not required for the pantry/AI flows.
       // The in-app Amber/Coral banner remains the web fallback and the mobile

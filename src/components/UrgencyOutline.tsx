@@ -58,13 +58,11 @@ type Props = {
   children: React.ReactNode;
 };
 
-const CORE_WIDTH = 3;
-// Glow rings drawn OUTSIDE the card edge -- this halo is what makes it read as
-// an actual light switching on, rather than a line fading in and out.
-const GLOW_RINGS = [
-  { spread: 3, width: 3, peak: 0.45 },
-  { spread: 7, width: 4, peak: 0.18 },
-];
+const CORE_WIDTH = 2;
+// Single border only. The outer glow rings were removed because, together with
+// the core line, they read as a heavy double border. Add rings back here
+// (e.g. { spread: 3, width: 3, peak: 0.45 }) to restore the halo.
+const GLOW_RINGS: { spread: number; width: number; peak: number }[] = [];
 
 // Blink pattern, like a warning beacon: snap ON, hold, snap OFF, stay dark.
 // Expired blinks faster than "expiring soon".

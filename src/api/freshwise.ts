@@ -18,6 +18,7 @@ import {
 import { selectMalaysianRecipeHints } from '../data/malaysianRecipeRag';
 import { toRecipeInventoryPayload } from '../data/recipeSelection';
 import { getDeviceTimeZone } from '../data/timezone';
+import { syncExpiryReminders } from '../notifications/localExpiryReminders';
 import type { PurchaseRecommendation } from '../data/purchaseStates';
 import type {
   ConsumptionWasteLog,
@@ -455,7 +456,12 @@ export function listPantry(opts: { status?: string; expiringWithinDays?: number 
     q.set('expiring_within_days', String(opts.expiringWithinDays));
   }
   const qs = q.toString();
-  return request<FoodItem[]>(`/v1/pantry${qs ? `?${qs}` : ''}`);
+  const result = request<FoodItem[]>(`/v1/pantry${qs ? `?${qs}` : ''}`);
+  // Full pantry loaded: refresh the phone's local expiry reminders.
+  if (!opts.status && opts.expiringWithinDays === undefined) {
+    result.then((items) => syncExpiryReminders(items)).catch(() => {});
+  }
+  return result;
 }
 
 export const getPantryItem = (itemId: string) => request<FoodItem>(`/v1/pantry/${itemId}`);

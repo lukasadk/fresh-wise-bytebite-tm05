@@ -45,8 +45,13 @@ function HeroCard({ slide, onViewUseFirst }: { slide: Slide; onViewUseFirst: () 
         <View style={styles.heroText}>
           <Text style={[styles.heroEyebrow, { color: palette.muted }]}>{slide.eyebrow}</Text>
           <View style={styles.heroNameRow}>
-            {LeadIcon ? <LeadIcon size={44} /> : null}
-            <Text style={[styles.heroTitle, styles.heroName, { color: palette.text }]} numberOfLines={2}>
+            {LeadIcon ? <LeadIcon size={36} /> : null}
+            <Text
+              style={[styles.heroTitle, styles.heroName, { color: palette.text }]}
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
               {lead ? lead.item.name : 'All fresh'}
             </Text>
           </View>
@@ -230,6 +235,9 @@ export default function HomeScreen({ navigation }: any) {
 
   const [slideWidth, setSlideWidth] = useState(0);
   const [slideIndex, setSlideIndex] = useState(0);
+  // Each slide's own height, so the carousel (and its outline) fits the card
+  // being shown instead of the tallest card.
+  const [slideHeights, setSlideHeights] = useState<Record<string, number>>({});
   const sliderRef = useRef<ScrollView>(null);
   const activeIndex = Math.min(slideIndex, slides.length - 1);
   const onSlideEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -255,9 +263,6 @@ export default function HomeScreen({ navigation }: any) {
               <Text style={styles.greeting}>{greetingText}</Text>
             </View>
             <Text style={styles.title}>Let's save food today</Text>
-          </View>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarLetter}>M</Text>
           </View>
         </View>
 
@@ -286,9 +291,18 @@ export default function HomeScreen({ navigation }: any) {
                   showsHorizontalScrollIndicator={false}
                   onMomentumScrollEnd={onSlideEnd}
                   scrollEventThrottle={16}
+                  style={{ height: slideHeights[slides[activeIndex]?.key] || undefined }}
+                  contentContainerStyle={{ alignItems: 'flex-start' }}
                 >
-                  {slides.map((slide) => (
-                    <View key={slide.key} style={{ width: slideWidth || undefined }}>
+                  {slideWidth > 0 && slides.map((slide) => (
+                    <View
+                      key={slide.key}
+                      style={{ width: slideWidth }}
+                      onLayout={(e) => {
+                        const h = Math.round(e.nativeEvent.layout.height);
+                        setSlideHeights((prev) => (prev[slide.key] === h ? prev : { ...prev, [slide.key]: h }));
+                      }}
+                    >
                       <HeroCard slide={slide} onViewUseFirst={openUseFirst} />
                     </View>
                   ))}
@@ -429,19 +443,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
     maxWidth: 300,
   },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primaryTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarLetter: {
-    fontFamily: fonts.bold,
-    fontSize: 17,
-    color: colors.primary,
-  },
   slider: {
     borderRadius: radii.xl,
     overflow: 'hidden',
@@ -463,14 +464,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   heroButton: {
-    marginTop: 'auto',
+    marginTop: spacing.sm,
     alignSelf: 'flex-start',
   },
   alsoChipMore: {
     paddingLeft: spacing.md,
   },
   hero: {
-    flexGrow: 1,
     backgroundColor: colors.primary,
     borderRadius: radii.xl,
     padding: spacing.xl,
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     fontFamily: fonts.serif,
-    fontSize: 30,
+    fontSize: 28,
     color: colors.white,
   },
   heroNameRow: {
@@ -526,11 +526,12 @@ const styles = StyleSheet.create({
   },
   heroText: {
     flex: 1,
+    minWidth: 0,
     gap: 4,
   },
   heroBadge: {
-    width: 80,
-    height: 80,
+    width: 68,
+    height: 68,
     borderRadius: radii.lg,
     backgroundColor: colors.card,
     alignItems: 'center',
